@@ -5,8 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueue } from '@/hooks/useQueue';
 import { Patient } from '@/pages/Patients';
 
 interface PatientDialogProps {
@@ -18,7 +20,9 @@ interface PatientDialogProps {
 
 export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [queueNumber, setQueueNumber] = useState<string | null>(null);
   const { toast } = useToast();
+  const { addToQueue } = useQueue();
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -87,16 +91,30 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
         });
       } else {
         // Create new patient
-        const { error } = await supabase
+        const { data: newPatient, error } = await supabase
           .from('patients')
-          .insert(formData);
+          .insert(formData)
+          .select()
+          .single();
 
         if (error) throw error;
 
-        toast({
-          title: "Success",
-          description: "Patient added successfully",
-        });
+        // Auto-add to queue for new patients
+        try {
+          const queueResult = await addToQueue(newPatient.id);
+          setQueueNumber(queueResult.queueNumber);
+          
+          toast({
+            title: "Patient Added & Queued",
+            description: `Patient registered and assigned queue number: ${queueResult.queueNumber}`,
+          });
+        } catch (queueError) {
+          console.error('Error adding to queue:', queueError);
+          toast({
+            title: "Patient Added",
+            description: "Patient registered but could not be added to queue automatically",
+          });
+        }
       }
 
       onSave();
@@ -119,6 +137,16 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
           <DialogTitle>
             {patient ? 'Edit Patient' : 'Add New Patient'}
           </DialogTitle>
+          {queueNumber && (
+            <div className="flex items-center justify-center gap-2 p-3 bg-green-50 rounded-lg">
+              <Badge className="bg-green-500 text-white text-lg px-3 py-1">
+                Queue Number: {queueNumber}
+              </Badge>
+              <span className="text-sm text-green-700">
+                Patient successfully registered and added to today's queue!
+              </span>
+            </div>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -260,11 +288,13 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {queueNumber ? 'Close' : 'Cancel'}
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : patient ? 'Update Patient' : 'Add Patient'}
-            </Button>
+            {!queueNumber && (
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving...' : patient ? 'Update Patient' : 'Add Patient & Queue'}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

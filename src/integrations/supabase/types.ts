@@ -221,6 +221,51 @@ export type Database = {
           },
         ]
       }
+      patient_queue: {
+        Row: {
+          assigned_doctor_id: string | null
+          checked_in_at: string | null
+          consultation_completed_at: string | null
+          consultation_started_at: string | null
+          created_at: string
+          estimated_consultation_duration: number | null
+          id: string
+          patient_id: string
+          queue_date: string
+          queue_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_doctor_id?: string | null
+          checked_in_at?: string | null
+          consultation_completed_at?: string | null
+          consultation_started_at?: string | null
+          created_at?: string
+          estimated_consultation_duration?: number | null
+          id?: string
+          patient_id: string
+          queue_date?: string
+          queue_number: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_doctor_id?: string | null
+          checked_in_at?: string | null
+          consultation_completed_at?: string | null
+          consultation_started_at?: string | null
+          created_at?: string
+          estimated_consultation_duration?: number | null
+          id?: string
+          patient_id?: string
+          queue_date?: string
+          queue_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           address: string | null
@@ -322,6 +367,10 @@ export type Database = {
     }
     Functions: {
       generate_invoice_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_queue_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

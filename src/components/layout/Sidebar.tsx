@@ -9,7 +9,9 @@ import {
   FileText, 
   CreditCard,
   Settings,
-  Home
+  Home,
+  Clock,
+  Monitor
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -20,6 +22,8 @@ interface SidebarProps {
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Patients', href: '/patients', icon: Users },
+  { name: 'Queue Management', href: '/queue', icon: Clock },
+  { name: 'Queue Display', href: '/display', icon: Monitor },
   { name: 'Appointments', href: '/appointments', icon: Calendar },
   { name: 'Consultations', href: '/consultations', icon: FileText },
   { name: 'Billing', href: '/billing', icon: CreditCard },

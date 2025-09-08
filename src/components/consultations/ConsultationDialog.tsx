@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQueue } from '@/hooks/useQueue';
 import { ConsultationNote } from '@/pages/Consultations';
 
 interface ConsultationDialogProps {
@@ -23,6 +24,7 @@ export function ConsultationDialog({ open, onOpenChange, consultation, onSave }:
   const [appointments, setAppointments] = useState<any[]>([]);
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { updateQueueStatus, queue } = useQueue();
 
   const [formData, setFormData] = useState({
     appointment_id: '',
@@ -43,6 +45,22 @@ export function ConsultationDialog({ open, onOpenChange, consultation, onSave }:
       height: ''
     }
   });
+
+  useEffect(() => {
+    // Auto-update queue status when consultation starts
+    if (open && formData.patient_id && profile?.id) {
+      const today = new Date().toISOString().split('T')[0];
+      const queueEntry = queue.find(entry => 
+        entry.patient_id === formData.patient_id && 
+        entry.queue_date === today && 
+        entry.status === 'waiting'
+      );
+      
+      if (queueEntry) {
+        updateQueueStatus(queueEntry.id, 'in_consultation', profile.id);
+      }
+    }
+  }, [open, formData.patient_id, profile?.id, queue, updateQueueStatus]);
 
   useEffect(() => {
     if (open) {
@@ -159,9 +177,21 @@ export function ConsultationDialog({ open, onOpenChange, consultation, onSave }:
 
         if (error) throw error;
 
+        // Update queue status to completed
+        const today = new Date().toISOString().split('T')[0];
+        const queueEntry = queue.find(entry => 
+          entry.patient_id === formData.patient_id && 
+          entry.queue_date === today && 
+          entry.status === 'in_consultation'
+        );
+        
+        if (queueEntry) {
+          await updateQueueStatus(queueEntry.id, 'completed');
+        }
+
         toast({
           title: "Success",
-          description: "Consultation note added successfully",
+          description: "Consultation note added successfully. Patient marked as completed in queue.",
         });
       }
 
