@@ -268,6 +268,7 @@ export type Database = {
       }
       patients: {
         Row: {
+          additional_notes: string | null
           address: string | null
           allergies: string | null
           created_at: string | null
@@ -282,9 +283,14 @@ export type Database = {
           last_name: string
           medical_history: string | null
           phone: string | null
+          preferred_name: string | null
+          referral_source: string | null
+          secondary_phone: string | null
           updated_at: string | null
+          visit_reason: string | null
         }
         Insert: {
+          additional_notes?: string | null
           address?: string | null
           allergies?: string | null
           created_at?: string | null
@@ -299,9 +305,14 @@ export type Database = {
           last_name: string
           medical_history?: string | null
           phone?: string | null
+          preferred_name?: string | null
+          referral_source?: string | null
+          secondary_phone?: string | null
           updated_at?: string | null
+          visit_reason?: string | null
         }
         Update: {
+          additional_notes?: string | null
           address?: string | null
           allergies?: string | null
           created_at?: string | null
@@ -316,7 +327,11 @@ export type Database = {
           last_name?: string
           medical_history?: string | null
           phone?: string | null
+          preferred_name?: string | null
+          referral_source?: string | null
+          secondary_phone?: string | null
           updated_at?: string | null
+          visit_reason?: string | null
         }
         Relationships: [
           {
