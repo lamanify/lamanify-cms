@@ -22,20 +22,46 @@ export default function ResetPassword() {
   const type = searchParams.get('type');
 
   useEffect(() => {
-    // If we have a token and type, this is a password reset link
-    if (token && type === 'recovery') {
-      // The session should be automatically set by Supabase
-      console.log('Password reset link detected');
-    }
-  }, [token, type]);
+    const handleAuthStateChange = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
 
-  // If user is already authenticated and not coming from a reset link, redirect
-  if (user && !token) {
+      if (accessToken && refreshToken && type === 'recovery') {
+        // This is a password reset link, set the session
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+
+        if (error) {
+          console.error('Error setting session:', error);
+          toast({
+            title: "Error",
+            description: "Invalid or expired reset link",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    handleAuthStateChange();
+  }, [toast]);
+
+  // Check if this is a password reset session
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const accessToken = hashParams.get('access_token');
+  const resetType = hashParams.get('type');
+  const isPasswordReset = accessToken && resetType === 'recovery';
+
+  // If user is already authenticated and not in a password reset flow, redirect to home
+  if (user && !isPasswordReset) {
     return <Navigate to="/" replace />;
   }
 
-  // If no token is present, redirect to auth page
-  if (!token) {
+  // If no reset parameters and no authenticated user, redirect to auth page
+  if (!isPasswordReset && !user) {
     return <Navigate to="/auth" replace />;
   }
 
