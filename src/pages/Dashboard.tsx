@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Calendar, FileText, DollarSign, Activity, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { UserManagement } from '@/components/admin/UserManagement';
 
 interface DashboardStats {
   totalPatients: number;
@@ -14,6 +16,7 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
+  const { profile } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 0,
     todayAppointments: 0,
@@ -181,6 +184,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Admin User Management - Only for Admin users */}
+      {profile?.role === 'admin' && (
+        <UserManagement />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Appointments */}
