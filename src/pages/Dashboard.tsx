@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Calendar, FileText, DollarSign, Activity, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { UserManagement } from '@/components/admin/UserManagement';
+import { EnhancedUserManagement } from '@/components/admin/EnhancedUserManagement';
 
 interface DashboardStats {
   totalPatients: number;
@@ -187,7 +187,7 @@ export default function Dashboard() {
 
       {/* Admin User Management - Only for Admin users */}
       {profile?.role === 'admin' && (
-        <UserManagement />
+        <EnhancedUserManagement />
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">

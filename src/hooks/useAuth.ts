@@ -10,6 +10,11 @@ export interface UserProfile {
   role: 'admin' | 'doctor' | 'nurse' | 'receptionist';
   phone?: string;
   email?: string;
+  status?: 'active' | 'inactive' | 'pending';
+  invitation_status?: 'pending' | 'accepted' | 'expired';
+  invited_by?: string;
+  invited_at?: string;
+  last_login_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -68,7 +73,7 @@ export function useAuth() {
         return;
       }
 
-      setProfile(data);
+      setProfile(data as UserProfile);
     } catch (error) {
       console.error('Profile fetch error:', error);
     } finally {
