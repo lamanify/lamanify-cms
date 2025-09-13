@@ -334,9 +334,14 @@ export type Database = {
           email: string | null
           first_name: string
           id: string
+          invitation_status: string | null
+          invited_at: string | null
+          invited_by: string | null
+          last_login_at: string | null
           last_name: string
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status: string | null
           updated_at: string | null
         }
         Insert: {
@@ -344,9 +349,14 @@ export type Database = {
           email?: string | null
           first_name: string
           id: string
+          invitation_status?: string | null
+          invited_at?: string | null
+          invited_by?: string | null
+          last_login_at?: string | null
           last_name: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -354,12 +364,25 @@ export type Database = {
           email?: string | null
           first_name?: string
           id?: string
+          invitation_status?: string | null
+          invited_at?: string | null
+          invited_by?: string | null
+          last_login_at?: string | null
           last_name?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
