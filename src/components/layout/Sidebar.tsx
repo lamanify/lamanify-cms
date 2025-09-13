@@ -25,7 +25,7 @@ const navigation = [
   { name: 'Queue Management', href: '/queue', icon: Clock },
   { name: 'Queue Display', href: '/display', icon: Monitor },
   { name: 'Appointments', href: '/appointments', icon: Calendar },
-  { name: 'Consultations', href: '/consultations', icon: FileText },
+  { name: 'Consultation Waiting', href: '/consultation-waiting', icon: FileText },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
