@@ -57,6 +57,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        queue: {
+          new: "hsl(var(--queue-new))",
+          waiting: "hsl(var(--queue-waiting))",
+          urgent: "hsl(var(--queue-urgent))",
+          priority: "hsl(var(--queue-priority))",
+          "priority-foreground": "hsl(var(--queue-priority-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

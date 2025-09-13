@@ -45,6 +45,13 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 0%;
     --info: 217 91% 60%;
     --info-foreground: 210 40% 98%;
+    
+    /* Queue status colors */
+    --queue-new: 142 76% 50%;
+    --queue-waiting: 45 93% 47%;
+    --queue-urgent: 0 84% 60%;
+    --queue-priority: 345 82% 57%;
+    --queue-priority-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 98%;
 
