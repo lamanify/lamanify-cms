@@ -15,6 +15,7 @@ import ConsultationInterface from "@/pages/ConsultationInterface";
 import Billing from "@/pages/Billing";
 import Settings from "@/pages/Settings";
 import AuthPage from "@/components/auth/AuthPage";
+import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/patients" element={<AppLayout><Patients /></AppLayout>} />
           <Route path="/queue" element={<AppLayout><Queue /></AppLayout>} />

@@ -178,6 +178,40 @@ export function useAuth() {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        toast({
+          title: "Password Reset Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Please check your email for password reset instructions.",
+      });
+
+      return { error: null };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      toast({
+        title: "Password Reset Error",
+        description: message,
+        variant: "destructive",
+      });
+      return { error: { message } };
+    }
+  };
+
   return {
     user,
     session,
@@ -186,6 +220,7 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
+    resetPassword,
     refetchProfile: () => user && fetchUserProfile(user.id)
   };
 }
