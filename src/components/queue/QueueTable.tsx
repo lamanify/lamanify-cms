@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Clock, AlertTriangle, Users } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, User } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 
 interface QueueTableProps {
@@ -61,7 +61,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   if (queue.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+        <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p className="text-lg">No patients in queue today</p>
       </div>
     );
