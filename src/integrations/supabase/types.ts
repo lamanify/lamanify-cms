@@ -151,6 +151,60 @@ export type Database = {
           },
         ]
       }
+      consultation_files: {
+        Row: {
+          consultation_note_id: string | null
+          consultation_session_id: string
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          consultation_note_id?: string | null
+          consultation_session_id: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          consultation_note_id?: string | null
+          consultation_session_id?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_consultation_files_note"
+            columns: ["consultation_note_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_consultation_files_session"
+            columns: ["consultation_session_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultation_notes: {
         Row: {
           appointment_id: string
@@ -220,6 +274,138 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      consultation_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          doctor_id: string
+          id: string
+          patient_id: string
+          paused_at: string | null
+          queue_id: string | null
+          started_at: string
+          status: string
+          total_duration_minutes: number | null
+          updated_at: string
+          urgency_level: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          doctor_id: string
+          id?: string
+          patient_id: string
+          paused_at?: string | null
+          queue_id?: string | null
+          started_at?: string
+          status?: string
+          total_duration_minutes?: number | null
+          updated_at?: string
+          urgency_level?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          patient_id?: string
+          paused_at?: string | null
+          queue_id?: string | null
+          started_at?: string
+          status?: string
+          total_duration_minutes?: number | null
+          updated_at?: string
+          urgency_level?: string | null
+        }
+        Relationships: []
+      }
+      medical_services: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          name: string
+          preparation_notes: string | null
+          price: number
+          requires_equipment: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          name: string
+          preparation_notes?: string | null
+          price: number
+          requires_equipment?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          name?: string
+          preparation_notes?: string | null
+          price?: number
+          requires_equipment?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      medications: {
+        Row: {
+          brand_name: string | null
+          category: string | null
+          contraindications: string[] | null
+          created_at: string
+          dosage_forms: string[] | null
+          generic_name: string | null
+          id: string
+          interactions: string[] | null
+          name: string
+          price_per_unit: number | null
+          side_effects: string[] | null
+          strength_options: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          brand_name?: string | null
+          category?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          dosage_forms?: string[] | null
+          generic_name?: string | null
+          id?: string
+          interactions?: string[] | null
+          name: string
+          price_per_unit?: number | null
+          side_effects?: string[] | null
+          strength_options?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string | null
+          category?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          dosage_forms?: string[] | null
+          generic_name?: string | null
+          id?: string
+          interactions?: string[] | null
+          name?: string
+          price_per_unit?: number | null
+          side_effects?: string[] | null
+          strength_options?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       patient_queue: {
         Row: {
@@ -395,6 +581,89 @@ export type Database = {
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_items: {
+        Row: {
+          consultation_note_id: string | null
+          consultation_session_id: string
+          created_at: string
+          dosage_instructions: string | null
+          duration_days: number | null
+          frequency: string | null
+          id: string
+          item_type: string
+          medication_id: string | null
+          notes: string | null
+          quantity: number | null
+          rate: number
+          service_id: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          consultation_note_id?: string | null
+          consultation_session_id: string
+          created_at?: string
+          dosage_instructions?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          id?: string
+          item_type: string
+          medication_id?: string | null
+          notes?: string | null
+          quantity?: number | null
+          rate: number
+          service_id?: string | null
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          consultation_note_id?: string | null
+          consultation_session_id?: string
+          created_at?: string
+          dosage_instructions?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          id?: string
+          item_type?: string
+          medication_id?: string | null
+          notes?: string | null
+          quantity?: number | null
+          rate?: number
+          service_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_treatment_items_consultation_note"
+            columns: ["consultation_note_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_treatment_items_consultation_session"
+            columns: ["consultation_session_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_treatment_items_medication"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_treatment_items_service"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "medical_services"
             referencedColumns: ["id"]
           },
         ]

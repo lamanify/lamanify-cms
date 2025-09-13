@@ -10,6 +10,8 @@ import Queue from "@/pages/Queue";
 import QueueDisplay from "@/pages/QueueDisplay";
 import Appointments from "@/pages/Appointments";
 import Consultations from "@/pages/Consultations";
+import ConsultationWaitingList from "@/pages/ConsultationWaitingList";
+import ConsultationInterface from "@/pages/ConsultationInterface";
 import Billing from "@/pages/Billing";
 import Settings from "@/pages/Settings";
 import AuthPage from "@/components/auth/AuthPage";
@@ -31,6 +33,8 @@ const App = () => (
           <Route path="/display" element={<QueueDisplay />} />
           <Route path="/appointments" element={<AppLayout><Appointments /></AppLayout>} />
           <Route path="/consultations" element={<AppLayout><Consultations /></AppLayout>} />
+          <Route path="/consultation-waiting" element={<AppLayout><ConsultationWaitingList /></AppLayout>} />
+          <Route path="/consultation/:sessionId" element={<AppLayout><ConsultationInterface /></AppLayout>} />
           <Route path="/billing" element={<AppLayout><Billing /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
