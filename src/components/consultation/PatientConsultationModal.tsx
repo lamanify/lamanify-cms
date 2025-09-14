@@ -189,89 +189,83 @@ export function PatientConsultationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden p-0">
-        <div className="flex flex-col h-[95vh]">
-          {/* Header Section */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <ArrowLeft className="h-5 w-5" />
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
+        <div className="flex flex-col h-[90vh]">
+          {/* Compact Header Section */}
+          <div className="flex items-center justify-between p-4 border-b bg-background">
+            <div className="flex items-center space-x-3">
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-muted-foreground" />
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold text-foreground mb-2">{patient.first_name} {patient.last_name}</h1>
-                  <div className="flex items-center space-x-4 text-muted-foreground">
-                    <span className="text-lg">
+                  <h1 className="text-xl font-bold text-foreground">{patient.first_name} {patient.last_name}</h1>
+                  <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                    <span>
                       {patient.date_of_birth ? `${calculateAge(patient.date_of_birth)} years old` : 'Age unknown'}, {patient.gender || 'Gender unknown'}
                     </span>
                     {patient.patient_id && (
-                      <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                      <span className="font-mono bg-muted px-1 py-0.5 rounded text-xs">
                         ID: {patient.patient_id}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Top Navigation */}
-            <div className="flex items-center space-x-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="appointment">Appointment</TabsTrigger>
-                  <TabsTrigger value="consultation">Consultation</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="icon">
-                  <Bell className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
+              <div className="flex items-center space-x-2 ml-4">
+                <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
+                <span className="text-xs text-muted-foreground">Waiting: {getWaitTime()}</span>
               </div>
             </div>
+            
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
-          {/* Main Content */}
+          {/* Main Content with Tabs */}
           <div className="flex-1 flex overflow-hidden">
-            {/* Left Panel */}
-            <div className="w-64 border-r p-4 space-y-4">
-              {/* Allergy Card */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Allergy</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Edit className="h-4 w-4" />
+            {/* Compact Left Panel */}
+            <div className="w-48 border-r p-3 space-y-3 bg-muted/20">
+              <Card className="p-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium">Allergy</span>
+                  <Button variant="ghost" size="icon" className="h-4 w-4">
+                    <Edit className="h-3 w-3" />
                   </Button>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    {patient.allergies || 'No known allergies'}
-                  </p>
-                </CardContent>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {patient.allergies || 'No known allergies'}
+                </p>
               </Card>
 
-              {/* Payment Card */}
-              <Card className="bg-primary text-primary-foreground">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Payment</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-primary-foreground hover:text-primary-foreground/80">
-                    <Edit className="h-4 w-4" />
+              <Card className="bg-primary text-primary-foreground p-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium">Payment</span>
+                  <Button variant="ghost" size="icon" className="h-4 w-4 text-primary-foreground hover:text-primary-foreground/80">
+                    <Edit className="h-3 w-3" />
                   </Button>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">Patient's Payment method</p>
-                  <p className="text-sm font-semibold">Self-pay</p>
-                </CardContent>
+                </div>
+                <p className="text-xs">Self-pay</p>
               </Card>
             </div>
 
-            {/* Center Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            {/* Main Content with Tabs */}
+            <div className="flex-1 flex flex-col">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                <TabsList className="w-full justify-start rounded-none border-b bg-background">
+                  <TabsTrigger value="consultation" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    Consultation
+                  </TabsTrigger>
+                  <TabsTrigger value="treatment" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    Treatment & Billing
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="consultation" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
               {/* Waiting Status */}
               <div className="flex items-center mb-6">
                 <div className="flex items-center space-x-2">
@@ -280,309 +274,253 @@ export function PatientConsultationModal({
                 </div>
               </div>
 
-              {/* Consultation Notes */}
-              <div className="mb-6">
-                <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
-                  <h3 className="font-semibold">Write Consultation Notes here</h3>
-                </div>
-                <div className="border border-t-0 rounded-b-lg p-4">
-                  <Textarea
-                    placeholder="Type your consultation notes here"
-                    value={consultationNotes}
-                    onChange={(e) => setConsultationNotes(e.target.value)}
-                    className="min-h-[120px] mb-4 resize-none"
-                  />
-                  
-                  {/* Formatting Toolbar */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <Bold className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Italic className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Underline className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <List className="h-4 w-4" />
-                      </Button>
+                  {/* Consultation Notes */}
+                  <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
+                    <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
+                  </div>
+                  <div className="border border-t-0 rounded-b-lg p-3">
+                    <Textarea
+                      placeholder="Type your consultation notes here"
+                      value={consultationNotes}
+                      onChange={(e) => setConsultationNotes(e.target.value)}
+                      className="min-h-[100px] mb-3 resize-none text-sm"
+                    />
+                    
+                    {/* Formatting Toolbar */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Bold className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Italic className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Underline className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <List className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm" onClick={handleAttachPhoto} className="h-7 text-xs">
+                          <Camera className="h-3 w-3 mr-1" />
+                          Attach photo
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={saveConsultationNotes}
+                          variant={isDraftSaved ? "secondary" : "default"}
+                          className="h-7 text-xs"
+                        >
+                          <Save className="h-3 w-3 mr-1" />
+                          {isDraftSaved ? "Draft Saved" : "Save"}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" onClick={handleAttachPhoto}>
-                        <Camera className="h-4 w-4 mr-2" />
-                        Attach photo
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        onClick={saveConsultationNotes}
-                        variant={isDraftSaved ? "secondary" : "default"}
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        {isDraftSaved ? "Draft Saved" : "Save"}
-                      </Button>
+                  </div>
+
+                  {/* Diagnosis Section */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="flex-1">
+                        <label className="text-sm font-medium mb-1 block">Diagnosis</label>
+                        <Select value={diagnosis} onValueChange={setDiagnosis}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Select diagnosis" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="common-cold">Common Cold</SelectItem>
+                            <SelectItem value="flu">Influenza</SelectItem>
+                            <SelectItem value="hypertension">Hypertension</SelectItem>
+                            <SelectItem value="diabetes">Diabetes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button variant="outline" size="sm" className="h-7 text-xs">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Set appointment
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-7 text-xs">
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload file
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </TabsContent>
 
-              {/* Diagnosis Section */}
-              <div className="mb-6">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="flex-1">
-                    <label className="text-sm font-medium mb-2 block">Diagnosis</label>
-                    <Select value={diagnosis} onValueChange={setDiagnosis}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select diagnosis" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="common-cold">Common Cold</SelectItem>
-                        <SelectItem value="flu">Influenza</SelectItem>
-                        <SelectItem value="hypertension">Hypertension</SelectItem>
-                        <SelectItem value="diabetes">Diabetes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Set appointment
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload file
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Medicine/Services Table */}
-              <div className="mb-6">
-                <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
-                  <h3 className="font-semibold">Insert your medicine, services and documents here</h3>
-                </div>
-                <div className="border border-t-0 rounded-b-lg">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="border-b">
-                        <tr className="text-left">
-                          <th className="p-3 text-sm font-medium">#</th>
-                          <th className="p-3 text-sm font-medium">ITEM</th>
-                          <th className="p-3 text-sm font-medium">QTY</th>
-                          <th className="p-3 text-sm font-medium">PRICE TIER</th>
-                          <th className="p-3 text-sm font-medium">RATE</th>
-                          <th className="p-3 text-sm font-medium">AMOUNT</th>
-                          <th className="p-3 text-sm font-medium">DOSAGE</th>
-                          <th className="p-3 text-sm font-medium">INSTRUCTION</th>
-                          <th className="p-3 text-sm font-medium">FREQUENCY</th>
-                          <th className="p-3 text-sm font-medium">DURATION</th>
-                          <th className="p-3 text-sm font-medium">ACTION</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Add Item Row - Always visible at the top */}
-                        <tr className="bg-muted/20 border-b">
-                          <td className="p-2 text-sm font-medium text-muted-foreground">+</td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Item name"
-                              value={newItem.item}
-                              onChange={(e) => setNewItem({...newItem, item: e.target.value})}
-                              className="h-8 border-0 bg-transparent focus:bg-white"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              type="number"
-                              placeholder="1"
-                              value={newItem.quantity}
-                              onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
-                              className="h-8 border-0 bg-transparent focus:bg-white w-16"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Select value={newItem.priceTier} onValueChange={(value) => setNewItem({...newItem, priceTier: value})}>
-                              <SelectTrigger className="h-8 border-0 bg-transparent focus:bg-white">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Standard">Standard</SelectItem>
-                                <SelectItem value="Premium">Premium</SelectItem>
-                                <SelectItem value="Discounted">Discounted</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={newItem.rate}
-                              onChange={(e) => setNewItem({...newItem, rate: parseFloat(e.target.value) || 0})}
-                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
-                            />
-                          </td>
-                          <td className="p-2 text-sm font-medium">
-                            RM {(newItem.quantity * newItem.rate).toFixed(2)}
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Dosage"
-                              value={newItem.dosage}
-                              onChange={(e) => setNewItem({...newItem, dosage: e.target.value})}
-                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Instruction"
-                              value={newItem.instruction}
-                              onChange={(e) => setNewItem({...newItem, instruction: e.target.value})}
-                              className="h-8 border-0 bg-transparent focus:bg-white w-24"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Frequency"
-                              value={newItem.frequency}
-                              onChange={(e) => setNewItem({...newItem, frequency: e.target.value})}
-                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Duration"
-                              value={newItem.duration}
-                              onChange={(e) => setNewItem({...newItem, duration: e.target.value})}
-                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Button 
-                              size="sm" 
-                              onClick={addTreatmentItem}
-                              disabled={!newItem.item.trim()}
-                              className="h-8 w-16"
-                            >
-                              Add
-                            </Button>
-                          </td>
-                        </tr>
-                        
-                        {/* Treatment Items */}
-                        {treatmentItems.length === 0 ? (
-                          <tr>
-                            <td className="p-3 text-sm text-muted-foreground text-center" colSpan={11}>
-                              Add items using the form above
-                            </td>
-                          </tr>
-                        ) : (
-                          treatmentItems.map((item, index) => (
-                            <tr key={item.id} className="border-b hover:bg-muted/10">
-                              <td className="p-3 text-sm">{index + 1}</td>
-                              <td className="p-3 text-sm font-medium">{item.item}</td>
-                              <td className="p-3 text-sm">{item.quantity}</td>
-                              <td className="p-3 text-sm">{item.priceTier}</td>
-                              <td className="p-3 text-sm">RM {item.rate.toFixed(2)}</td>
-                              <td className="p-3 text-sm font-medium">RM {item.amount.toFixed(2)}</td>
-                              <td className="p-3 text-sm">{item.dosage || '-'}</td>
-                              <td className="p-3 text-sm">{item.instruction || '-'}</td>
-                              <td className="p-3 text-sm">{item.frequency || '-'}</td>
-                              <td className="p-3 text-sm">{item.duration || '-'}</td>
-                              <td className="p-3 text-sm">
+                <TabsContent value="treatment" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
+                  {/* Medicine/Services Table */}
+                  <div>
+                    <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
+                      <h3 className="font-medium text-sm">Insert your medicine, services and documents here</h3>
+                    </div>
+                    <div className="border border-t-0 rounded-b-lg">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="border-b">
+                            <tr className="text-left">
+                              <th className="p-2 text-xs font-medium">#</th>
+                              <th className="p-2 text-xs font-medium">ITEM</th>
+                              <th className="p-2 text-xs font-medium">QTY</th>
+                              <th className="p-2 text-xs font-medium">PRICE TIER</th>
+                              <th className="p-2 text-xs font-medium">RATE</th>
+                              <th className="p-2 text-xs font-medium">AMOUNT</th>
+                              <th className="p-2 text-xs font-medium">DOSAGE</th>
+                              <th className="p-2 text-xs font-medium">INSTRUCTION</th>
+                              <th className="p-2 text-xs font-medium">FREQUENCY</th>
+                              <th className="p-2 text-xs font-medium">DURATION</th>
+                              <th className="p-2 text-xs font-medium">ACTION</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Add Item Row - Always visible at the top */}
+                            <tr className="bg-muted/20 border-b">
+                              <td className="p-1 text-xs font-medium text-muted-foreground">+</td>
+                              <td className="p-1">
+                                <Input
+                                  placeholder="Item name"
+                                  value={newItem.item}
+                                  onChange={(e) => setNewItem({...newItem, item: e.target.value})}
+                                  className="h-7 border-0 bg-transparent focus:bg-white text-xs"
+                                />
+                              </td>
+                              <td className="p-1">
+                                <Input
+                                  type="number"
+                                  placeholder="1"
+                                  value={newItem.quantity}
+                                  onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
+                                  className="h-7 border-0 bg-transparent focus:bg-white w-12 text-xs"
+                                />
+                              </td>
+                              <td className="p-1">
+                                <Select value={newItem.priceTier} onValueChange={(value) => setNewItem({...newItem, priceTier: value})}>
+                                  <SelectTrigger className="h-7 border-0 bg-transparent focus:bg-white text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Standard">Standard</SelectItem>
+                                    <SelectItem value="Premium">Premium</SelectItem>
+                                    <SelectItem value="Discounted">Discounted</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="p-1">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={newItem.rate}
+                                  onChange={(e) => setNewItem({...newItem, rate: parseFloat(e.target.value) || 0})}
+                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
+                                />
+                              </td>
+                              <td className="p-1 text-xs font-medium">
+                                RM {(newItem.quantity * newItem.rate).toFixed(2)}
+                              </td>
+                              <td className="p-1">
+                                <Input
+                                  placeholder="Dosage"
+                                  value={newItem.dosage}
+                                  onChange={(e) => setNewItem({...newItem, dosage: e.target.value})}
+                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
+                                />
+                              </td>
+                              <td className="p-1">
+                                <Input
+                                  placeholder="Instruction"
+                                  value={newItem.instruction}
+                                  onChange={(e) => setNewItem({...newItem, instruction: e.target.value})}
+                                  className="h-7 border-0 bg-transparent focus:bg-white w-20 text-xs"
+                                />
+                              </td>
+                              <td className="p-1">
+                                <Input
+                                  placeholder="Frequency"
+                                  value={newItem.frequency}
+                                  onChange={(e) => setNewItem({...newItem, frequency: e.target.value})}
+                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
+                                />
+                              </td>
+                              <td className="p-1">
+                                <Input
+                                  placeholder="Duration"
+                                  value={newItem.duration}
+                                  onChange={(e) => setNewItem({...newItem, duration: e.target.value})}
+                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
+                                />
+                              </td>
+                              <td className="p-1">
                                 <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => removeTreatmentItem(item.id)}
-                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                  size="sm" 
+                                  onClick={addTreatmentItem}
+                                  disabled={!newItem.item.trim()}
+                                  className="h-7 w-12 text-xs"
                                 >
-                                  <X className="h-3 w-3" />
+                                  Add
                                 </Button>
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="flex justify-end p-4 border-t">
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">Total RM {getTotalAmount().toFixed(2)}</p>
+                            
+                            {/* Treatment Items */}
+                            {treatmentItems.length === 0 ? (
+                              <tr>
+                                <td className="p-2 text-xs text-muted-foreground text-center" colSpan={11}>
+                                  Add items using the form above
+                                </td>
+                              </tr>
+                            ) : (
+                              treatmentItems.map((item, index) => (
+                                <tr key={item.id} className="border-b hover:bg-muted/10">
+                                  <td className="p-2 text-xs">{index + 1}</td>
+                                  <td className="p-2 text-xs font-medium">{item.item}</td>
+                                  <td className="p-2 text-xs">{item.quantity}</td>
+                                  <td className="p-2 text-xs">{item.priceTier}</td>
+                                  <td className="p-2 text-xs">RM {item.rate.toFixed(2)}</td>
+                                  <td className="p-2 text-xs font-medium">RM {item.amount.toFixed(2)}</td>
+                                  <td className="p-2 text-xs">{item.dosage || '-'}</td>
+                                  <td className="p-2 text-xs">{item.instruction || '-'}</td>
+                                  <td className="p-2 text-xs">{item.frequency || '-'}</td>
+                                  <td className="p-2 text-xs">{item.duration || '-'}</td>
+                                  <td className="p-2 text-xs">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => removeTreatmentItem(item.id)}
+                                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex justify-end p-3 border-t">
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">Total RM {getTotalAmount().toFixed(2)}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Panel - Patient History */}
-            <div className="w-80 border-l">
-              <div className="bg-primary text-primary-foreground p-4">
-                <h3 className="font-semibold">Patient History</h3>
-              </div>
-              
-              <div className="p-4">
-                {/* History Tabs */}
-                <Tabs value={historyTab} onValueChange={setHistoryTab} className="mb-4">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-                    <TabsTrigger value="diagnosis" className="text-xs">Diagnosis</TabsTrigger>
-                    <TabsTrigger value="medication" className="text-xs">Medication</TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs">Documents</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {/* Time Filter */}
-                <div className="mb-4">
-                  <Select value={timeFilter} onValueChange={setTimeFilter}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                      <ChevronDown className="h-4 w-4" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all-time">All time</SelectItem>
-                      <SelectItem value="last-month">Last month</SelectItem>
-                      <SelectItem value="last-year">Last year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Search */}
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search..." className="pl-10" />
-                </div>
-
-                {/* Date Section */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm font-medium">19 Sep 2023</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
-                </div>
-
-                {/* Pagination */}
-                <div className="flex items-center justify-between mt-4">
-                  <Button variant="ghost" size="icon" disabled>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm">1/1</span>
-                  <Button variant="ghost" size="icon" disabled>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
 
           {/* Bottom Action Buttons */}
-          <div className="flex items-center justify-end space-x-3 p-6 border-t">
+          <div className="flex items-center justify-end space-x-3 p-4 border-t bg-background">
             <Button 
               variant="outline" 
               onClick={() => onCallPatient(queueEntry.id)}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 h-9"
             >
-              <span>Call patient in</span>
+              <span className="text-sm">Call patient in</span>
               <ChevronDown className="h-4 w-4" />
             </Button>
             
@@ -600,7 +538,7 @@ export function PatientConsultationModal({
                     console.error('Failed to start consultation:', error);
                   }
                 }}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90 h-9 text-sm"
               >
                 Start consultation
               </Button>
@@ -614,20 +552,17 @@ export function PatientConsultationModal({
                       treatmentItems: treatmentItems
                     });
                     
-                    if (onMarkDone) {
-                      onMarkDone({
-                        notes: consultationNotes,
-                        diagnosis: diagnosis,
-                        treatmentItems: treatmentItems
-                      });
-                    }
+                    toast({
+                      title: "Consultation Completed",
+                      description: "All consultation data has been saved to patient's medical history",
+                    });
+                    
                     onClose();
                   } catch (error) {
                     console.error('Failed to complete consultation:', error);
                   }
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={!consultationNotes.trim() && !diagnosis && treatmentItems.length === 0}
+                className="bg-primary hover:bg-primary/90 h-9 text-sm"
               >
                 Consultation Completed
               </Button>
