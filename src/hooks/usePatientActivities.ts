@@ -78,6 +78,11 @@ export function usePatientActivities(patientId?: string) {
       return () => {
         supabase.removeChannel(channel);
       };
+    } else {
+      // Reset state when no patientId
+      setActivities([]);
+      setMedications([]);
+      setLoading(false);
     }
   }, [patientId]);
 
@@ -137,6 +142,11 @@ export function usePatientActivities(patientId?: string) {
   };
 
   const createActivity = async (activityData: Omit<PatientActivity, 'id' | 'created_at' | 'updated_at' | 'staff_member'>) => {
+    if (!patientId) {
+      console.warn('Cannot create activity without patientId');
+      return null;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('patient_activities')
@@ -164,6 +174,11 @@ export function usePatientActivities(patientId?: string) {
   };
 
   const addMedication = async (medicationData: Omit<PatientMedication, 'id' | 'created_at' | 'updated_at' | 'prescriber'>) => {
+    if (!patientId) {
+      console.warn('Cannot add medication without patientId');
+      return null;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('patient_current_medications')

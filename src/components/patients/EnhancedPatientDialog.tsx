@@ -41,7 +41,10 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
   const [activeTab, setActiveTab] = useState('basic');
   const { toast } = useToast();
   const { addToQueue } = useQueue();
-  const { createActivity } = usePatientActivities(patient?.id);
+  
+  // Only initialize activities hook if we have a patient (for activity logging)
+  const patientActivities = usePatientActivities(patient?.id);
+  const { createActivity } = patientActivities;
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -186,15 +189,17 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
         if (error) throw error;
 
         // Log update activity
-        await createActivity({
-          patient_id: patient.id,
-          activity_type: 'system_note',
-          activity_date: new Date().toISOString(),
-          title: 'Patient Information Updated',
-          content: 'Patient profile information was updated',
-          priority: 'normal',
-          status: 'active'
-        });
+        if (patient?.id && createActivity) {
+          await createActivity({
+            patient_id: patient.id,
+            activity_type: 'system_note',
+            activity_date: new Date().toISOString(),
+            title: 'Patient Information Updated',
+            content: 'Patient profile information was updated',
+            priority: 'normal',
+            status: 'active'
+          });
+        }
 
         toast({
           title: "Success",
@@ -214,19 +219,21 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
         if (error) throw error;
 
         // Log registration activity
-        await createActivity({
-          patient_id: newPatient.id,
-          activity_type: 'system_note',
-          activity_date: new Date().toISOString(),
-          title: 'Patient Registration',
-          content: `New patient registered: ${formData.first_name} ${formData.last_name}`,
-          metadata: {
-            patient_id: patientId,
-            registration_source: 'manual'
-          },
-          priority: 'normal',
-          status: 'active'
-        });
+        if (newPatient?.id && createActivity) {
+          await createActivity({
+            patient_id: newPatient.id,
+            activity_type: 'system_note',
+            activity_date: new Date().toISOString(),
+            title: 'Patient Registration',
+            content: `New patient registered: ${formData.first_name} ${formData.last_name}`,
+            metadata: {
+              patient_id: patientId,
+              registration_source: 'manual'
+            },
+            priority: 'normal',
+            status: 'active'
+          });
+        }
 
         // Auto-add to queue for new patients
         try {
