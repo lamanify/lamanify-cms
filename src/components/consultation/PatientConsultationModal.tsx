@@ -49,6 +49,31 @@ export function PatientConsultationModal({
   const [diagnosis, setDiagnosis] = useState('');
   const [historyTab, setHistoryTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all-time');
+  
+  // Treatment items state
+  const [treatmentItems, setTreatmentItems] = useState<Array<{
+    id: string;
+    item: string;
+    quantity: number;
+    priceTier: string;
+    rate: number;
+    amount: number;
+    dosage: string;
+    instruction: string;
+    frequency: string;
+    duration: string;
+  }>>([]);
+  
+  const [newItem, setNewItem] = useState({
+    item: '',
+    quantity: 1,
+    priceTier: 'Standard',
+    rate: 0,
+    dosage: '',
+    instruction: '',
+    frequency: '',
+    duration: ''
+  });
 
   if (!queueEntry || !queueEntry.patient) return null;
 
@@ -71,6 +96,37 @@ export function PatientConsultationModal({
     const hours = Math.floor(diffMinutes / 60);
     const minutes = diffMinutes % 60;
     return `${hours} hours ${minutes} mins`;
+  };
+
+  const addTreatmentItem = () => {
+    if (!newItem.item.trim()) return;
+    
+    const amount = newItem.quantity * newItem.rate;
+    const item = {
+      id: Date.now().toString(),
+      ...newItem,
+      amount
+    };
+    
+    setTreatmentItems([...treatmentItems, item]);
+    setNewItem({
+      item: '',
+      quantity: 1,
+      priceTier: 'Standard',
+      rate: 0,
+      dosage: '',
+      instruction: '',
+      frequency: '',
+      duration: ''
+    });
+  };
+
+  const removeTreatmentItem = (id: string) => {
+    setTreatmentItems(treatmentItems.filter(item => item.id !== id));
+  };
+
+  const getTotalAmount = () => {
+    return treatmentItems.reduce((total, item) => total + item.amount, 0);
   };
 
   return (
@@ -239,6 +295,78 @@ export function PatientConsultationModal({
                   <h3 className="font-semibold">Insert your medicine, services and documents here</h3>
                 </div>
                 <div className="border border-t-0 rounded-b-lg">
+                  {/* Add Item Form */}
+                  <div className="p-4 border-b bg-muted/20">
+                    <div className="grid grid-cols-10 gap-2 text-xs">
+                      <Input
+                        placeholder="Item name"
+                        value={newItem.item}
+                        onChange={(e) => setNewItem({...newItem, item: e.target.value})}
+                        className="h-8"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Qty"
+                        value={newItem.quantity}
+                        onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
+                        className="h-8"
+                      />
+                      <Select value={newItem.priceTier} onValueChange={(value) => setNewItem({...newItem, priceTier: value})}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Standard">Standard</SelectItem>
+                          <SelectItem value="Premium">Premium</SelectItem>
+                          <SelectItem value="Discounted">Discounted</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Rate"
+                        value={newItem.rate}
+                        onChange={(e) => setNewItem({...newItem, rate: parseFloat(e.target.value) || 0})}
+                        className="h-8"
+                      />
+                      <div className="h-8 flex items-center text-sm font-medium">
+                        RM {(newItem.quantity * newItem.rate).toFixed(2)}
+                      </div>
+                      <Input
+                        placeholder="Dosage"
+                        value={newItem.dosage}
+                        onChange={(e) => setNewItem({...newItem, dosage: e.target.value})}
+                        className="h-8"
+                      />
+                      <Input
+                        placeholder="Instruction"
+                        value={newItem.instruction}
+                        onChange={(e) => setNewItem({...newItem, instruction: e.target.value})}
+                        className="h-8"
+                      />
+                      <Input
+                        placeholder="Frequency"
+                        value={newItem.frequency}
+                        onChange={(e) => setNewItem({...newItem, frequency: e.target.value})}
+                        className="h-8"
+                      />
+                      <Input
+                        placeholder="Duration"
+                        value={newItem.duration}
+                        onChange={(e) => setNewItem({...newItem, duration: e.target.value})}
+                        className="h-8"
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={addTreatmentItem}
+                        disabled={!newItem.item.trim()}
+                        className="h-8"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                  
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="border-b">
@@ -253,21 +381,49 @@ export function PatientConsultationModal({
                           <th className="p-3 text-sm font-medium">INSTRUCTION</th>
                           <th className="p-3 text-sm font-medium">FREQUENCY</th>
                           <th className="p-3 text-sm font-medium">DURATION</th>
+                          <th className="p-3 text-sm font-medium">ACTION</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td className="p-3 text-sm">1</td>
-                          <td className="p-3 text-sm text-muted-foreground" colSpan={9}>
-                            No items added yet
-                          </td>
-                        </tr>
+                        {treatmentItems.length === 0 ? (
+                          <tr>
+                            <td className="p-3 text-sm">1</td>
+                            <td className="p-3 text-sm text-muted-foreground" colSpan={10}>
+                              No items added yet
+                            </td>
+                          </tr>
+                        ) : (
+                          treatmentItems.map((item, index) => (
+                            <tr key={item.id} className="border-b">
+                              <td className="p-3 text-sm">{index + 1}</td>
+                              <td className="p-3 text-sm font-medium">{item.item}</td>
+                              <td className="p-3 text-sm">{item.quantity}</td>
+                              <td className="p-3 text-sm">{item.priceTier}</td>
+                              <td className="p-3 text-sm">RM {item.rate.toFixed(2)}</td>
+                              <td className="p-3 text-sm font-medium">RM {item.amount.toFixed(2)}</td>
+                              <td className="p-3 text-sm">{item.dosage || '-'}</td>
+                              <td className="p-3 text-sm">{item.instruction || '-'}</td>
+                              <td className="p-3 text-sm">{item.frequency || '-'}</td>
+                              <td className="p-3 text-sm">{item.duration || '-'}</td>
+                              <td className="p-3 text-sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => removeTreatmentItem(item.id)}
+                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
                   <div className="flex justify-end p-4 border-t">
                     <div className="text-right">
-                      <p className="text-sm font-semibold">Total RM 0.00</p>
+                      <p className="text-sm font-semibold">Total RM {getTotalAmount().toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
