@@ -382,14 +382,9 @@ export function PatientRegistrationModal({
                         id="nric"
                         value={formData.nric_passport}
                         onChange={(e) => updateFormData('nric_passport', e.target.value)}
-                        placeholder={formData.idType === 'NRIC' ? '930202145867' : 'A1234567'}
+                        placeholder={formData.idType === 'NRIC' ? '930202148832' : 'A1234567'}
                         className="mt-1"
                       />
-                      {formData.idType === 'NRIC' && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Format: YYMMDD + 6 digits (e.g., 930202145867 = Born Feb 2, 1993)
-                        </p>
-                      )}
                     </div>
 
                     {/* Phone */}
