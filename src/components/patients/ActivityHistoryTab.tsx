@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePatientActivities, PatientActivity } from '@/hooks/usePatientActivities';
+import { ConsultationDetailsModal } from '@/components/consultation/ConsultationDetailsModal';
 import { Search, Filter, Download, Eye, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -27,6 +28,8 @@ export function ActivityHistoryTab({ patientId }: ActivityHistoryTabProps) {
 
   const filteredActivities = getFilteredActivities();
   const [expandedActivity, setExpandedActivity] = useState<string | null>(null);
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const handleExportReport = () => {
     // TODO: Implement export functionality
@@ -34,8 +37,8 @@ export function ActivityHistoryTab({ patientId }: ActivityHistoryTabProps) {
   };
 
   const handleViewFullNotes = (activityId: string) => {
-    // TODO: Implement full notes view
-    console.log('Viewing full notes for:', activityId);
+    setSelectedActivityId(activityId);
+    setIsDetailsModalOpen(true);
   };
 
   const handlePrintSummary = (activityId: string) => {
@@ -281,6 +284,14 @@ export function ActivityHistoryTab({ patientId }: ActivityHistoryTabProps) {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Consultation Details Modal */}
+      <ConsultationDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        activityId={selectedActivityId || ''}
+        patientId={patientId}
+      />
     </div>
   );
 }
