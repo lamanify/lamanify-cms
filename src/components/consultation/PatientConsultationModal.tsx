@@ -254,6 +254,9 @@ export function PatientConsultationModal({
                   <TabsTrigger value="treatment" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     Treatment & Billing
                   </TabsTrigger>
+                  <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    Patient History
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="consultation" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
@@ -497,6 +500,154 @@ export function PatientConsultationModal({
                           <p className="text-sm font-semibold">Total RM {getTotalAmount().toFixed(2)}</p>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="history" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
+                  {/* Patient History Header */}
+                  <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
+                    <h3 className="font-medium text-sm">Patient History - Complete Medical Timeline</h3>
+                  </div>
+                  <div className="border border-t-0 rounded-b-lg p-4">
+                    {/* History Sub-tabs */}
+                    <div className="flex items-center justify-between mb-4">
+                      <Tabs value={historyTab} onValueChange={setHistoryTab} className="w-full">
+                        <div className="flex items-center justify-between">
+                          <TabsList className="bg-muted">
+                            <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                            <TabsTrigger value="diagnosis" className="text-xs">Diagnosis</TabsTrigger>
+                            <TabsTrigger value="medication" className="text-xs">Medication</TabsTrigger>
+                            <TabsTrigger value="documents" className="text-xs">Documents</TabsTrigger>
+                          </TabsList>
+                          <div className="flex items-center space-x-2">
+                            <Select value={timeFilter} onValueChange={setTimeFilter}>
+                              <SelectTrigger className="h-8 w-32 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all-time">All time</SelectItem>
+                                <SelectItem value="last-30-days">Last 30 days</SelectItem>
+                                <SelectItem value="last-90-days">Last 90 days</SelectItem>
+                                <SelectItem value="last-year">Last year</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                              <Search className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 space-y-3">
+                          {/* Patient Summary Cards */}
+                          <div className="grid grid-cols-3 gap-4 mb-4">
+                            <Card className="p-3">
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-primary">
+                                  {patient.medical_history ? '5' : '0'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">Total Visits</div>
+                              </div>
+                            </Card>
+                            <Card className="p-3">
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-primary">
+                                  {patient.date_of_birth ? new Date().getFullYear() - new Date(patient.date_of_birth).getFullYear() : 'N/A'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">Age</div>
+                              </div>
+                            </Card>
+                            <Card className="p-3">
+                              <div className="text-center">
+                                <div className="text-lg font-bold text-primary">15 Sep</div>
+                                <div className="text-xs text-muted-foreground">Last Visit</div>
+                              </div>
+                            </Card>
+                          </div>
+
+                          {/* Timeline Content */}
+                          <TabsContent value="all" className="mt-0">
+                            <div className="space-y-3">
+                              {/* Timeline Entry Example */}
+                              <Card className="p-3 hover:bg-muted/50 cursor-pointer">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <Badge variant="outline" className="text-xs">Consultation</Badge>
+                                      <span className="text-xs text-muted-foreground">19 Sep 2023</span>
+                                    </div>
+                                    <h4 className="text-sm font-medium">Regular Check-up</h4>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Diagnosis: {patient.medical_history || 'Routine examination, no issues found'}
+                                    </p>
+                                    <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                                      <span>Dr. Smith</span>
+                                      <span>Duration: 30 mins</span>
+                                    </div>
+                                  </div>
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              </Card>
+
+                              {/* No data message */}
+                              <Card className="p-4 text-center border-dashed">
+                                <p className="text-sm text-muted-foreground">No previous consultation records found</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  This will populate as consultations are completed
+                                </p>
+                              </Card>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="diagnosis" className="mt-0">
+                            <div className="space-y-3">
+                              <Card className="p-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <Badge className="text-xs bg-blue-100 text-blue-800">Primary</Badge>
+                                      <span className="text-xs text-muted-foreground">Current</span>
+                                    </div>
+                                    <h4 className="text-sm font-medium">
+                                      {patient.medical_history || 'No previous diagnosis on record'}
+                                    </h4>
+                                  </div>
+                                </div>
+                              </Card>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="medication" className="mt-0">
+                            <div className="space-y-3">
+                              <Card className="p-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <Badge variant="outline" className="text-xs">Current</Badge>
+                                      <span className="text-xs text-muted-foreground">Active</span>
+                                    </div>
+                                    <h4 className="text-sm font-medium">Current Medications</h4>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {patient.allergies ? `Allergies: ${patient.allergies}` : 'No current medications on record'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </Card>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="documents" className="mt-0">
+                            <div className="space-y-3">
+                              <Card className="p-4 text-center border-dashed">
+                                <p className="text-sm text-muted-foreground">No documents uploaded</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Medical reports, lab results, and images will appear here
+                                </p>
+                              </Card>
+                            </div>
+                          </TabsContent>
+                        </div>
+                      </Tabs>
                     </div>
                   </div>
                 </TabsContent>
