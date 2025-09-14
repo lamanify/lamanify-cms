@@ -1,68 +1,94 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Activity, CheckCircle } from 'lucide-react';
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { user } = useAuth();
+  const [isValidReset, setIsValidReset] = useState(false);
+  const [sessionSet, setSessionSet] = useState(false);
   const { toast } = useToast();
 
-  const token = searchParams.get('token');
-  const type = searchParams.get('type');
-
   useEffect(() => {
-    const handleAuthStateChange = async () => {
+    const handlePasswordReset = async () => {
+      // Check for hash parameters first (this is where Supabase puts the tokens)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
       const type = hashParams.get('type');
 
       if (accessToken && refreshToken && type === 'recovery') {
-        // This is a password reset link, set the session
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        });
+        console.log('Password reset tokens found, setting up session...');
+        
+        try {
+          // Set the session for password reset
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
 
-        if (error) {
-          console.error('Error setting session:', error);
+          if (error) {
+            console.error('Error setting session:', error);
+            toast({
+              title: "Error",
+              description: "Invalid or expired reset link. Please request a new one.",
+              variant: "destructive",
+            });
+            // Redirect to auth page after 3 seconds
+            setTimeout(() => {
+              window.location.href = '/auth';
+            }, 3000);
+            return;
+          }
+
+          console.log('Session set successfully for password reset');
+          setIsValidReset(true);
+          setSessionSet(true);
+          
+          // Clear the hash to clean up the URL
+          window.history.replaceState(null, null, '/reset-password');
+          
+        } catch (error) {
+          console.error('Password reset setup error:', error);
           toast({
             title: "Error",
-            description: "Invalid or expired reset link",
+            description: "An error occurred while setting up password reset.",
             variant: "destructive",
           });
         }
+      } else {
+        console.log('No valid password reset tokens found');
+        // If no valid tokens, redirect to auth page
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 1000);
       }
     };
 
-    handleAuthStateChange();
+    handlePasswordReset();
   }, [toast]);
 
-  // Check if this is a password reset session
-  const hashParams = new URLSearchParams(window.location.hash.substring(1));
-  const accessToken = hashParams.get('access_token');
-  const resetType = hashParams.get('type');
-  const isPasswordReset = accessToken && resetType === 'recovery';
-
-  // If user is already authenticated and not in a password reset flow, redirect to home
-  if (user && !isPasswordReset) {
-    return <Navigate to="/" replace />;
-  }
-
-  // If no reset parameters and no authenticated user, redirect to auth page
-  if (!isPasswordReset && !user) {
-    return <Navigate to="/auth" replace />;
+  // If not a valid reset session, show loading or redirect
+  if (!isValidReset) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p>Verifying reset link...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {

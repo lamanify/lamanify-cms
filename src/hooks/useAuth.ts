@@ -180,6 +180,7 @@ export function useAuth() {
 
   const resetPassword = async (email: string) => {
     try {
+      // Use the exact URL that will handle the password reset
       const redirectUrl = `${window.location.origin}/reset-password`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -197,7 +198,7 @@ export function useAuth() {
 
       toast({
         title: "Password Reset Email Sent",
-        description: "Please check your email for password reset instructions.",
+        description: "Please check your email for password reset instructions. The link will take you to a page where you can set a new password.",
       });
 
       return { error: null };
