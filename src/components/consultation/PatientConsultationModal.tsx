@@ -144,11 +144,18 @@ export function PatientConsultationModal({
                   <User className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">{patient.first_name} {patient.last_name}</h2>
-                  <p className="text-sm text-muted-foreground">ID: {patient.id?.slice(0, 8)}</p>
+                  <h2 className="text-3xl font-bold">{patient.first_name} {patient.last_name}</h2>
+                  {patient.patient_id && (
+                    <p className="text-sm text-muted-foreground font-mono">ID: {patient.patient_id}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {patient.date_of_birth ? `${calculateAge(patient.date_of_birth)} years old` : 'Age unknown'}, {patient.gender || 'Gender unknown'}
                   </p>
+                  <div className="mt-2 p-2 bg-muted rounded-md border">
+                    <p className="text-sm font-medium text-foreground">
+                      <span className="font-bold">{patient.first_name} {patient.last_name}</span> | Queue: {queueEntry.queue_number} | ID: {patient.patient_id || 'N/A'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

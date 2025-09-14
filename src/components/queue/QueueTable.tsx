@@ -135,9 +135,14 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                 className="min-w-0 flex-1 cursor-pointer hover:bg-muted/30 rounded p-2 -m-2 transition-colors"
                 onClick={() => handlePatientClick(entry)}
               >
-                <div className="font-semibold text-lg">
-                  {entry.patient?.first_name} {entry.patient?.last_name?.charAt(0)}.
+                <div className="text-xl font-bold text-foreground">
+                  {entry.patient?.first_name} {entry.patient?.last_name}
                 </div>
+                {entry.patient?.patient_id && (
+                  <div className="text-xs text-muted-foreground font-mono mt-1">
+                    ID: {entry.patient.patient_id}
+                  </div>
+                )}
                 {entry.patient?.phone && (
                   <div className="text-sm text-muted-foreground flex items-center mt-1">
                     <Phone className="h-3 w-3 mr-1" />

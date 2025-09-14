@@ -26,6 +26,7 @@ export interface QueueEntry {
     allergies?: string;
     email?: string;
     medical_history?: string;
+    patient_id?: string;
   };
   // Joined doctor data
   doctor?: {
@@ -89,7 +90,7 @@ export function useQueue() {
       // Fetch patients data
       const { data: patients } = await supabase
         .from('patients')
-        .select('id, first_name, last_name, phone, date_of_birth, gender, allergies, email, medical_history')
+        .select('id, first_name, last_name, phone, date_of_birth, gender, allergies, email, medical_history, patient_id')
         .in('id', patientIds);
 
       // Fetch doctors data  
@@ -116,6 +117,7 @@ export function useQueue() {
             allergies: patient.allergies || undefined,
             email: patient.email || undefined,
             medical_history: patient.medical_history || undefined,
+            patient_id: patient.patient_id || undefined,
           } : undefined,
           doctor: doctor ? {
             first_name: doctor.first_name,

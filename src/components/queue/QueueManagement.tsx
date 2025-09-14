@@ -177,7 +177,8 @@ export function QueueManagement() {
         currentNumber={currentNumber}
         currentPatient={currentPatient ? {
           firstName: currentPatient.patient?.first_name || '',
-          lastName: currentPatient.patient?.last_name || ''
+          lastName: currentPatient.patient?.last_name || '',
+          patientId: currentPatient.patient?.patient_id
         } : null}
         isServing={!!currentPatient}
       />
