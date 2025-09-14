@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueue } from '@/hooks/useQueue';
 import { Patient } from '@/pages/Patients';
+import { generatePatientId } from '@/lib/patientIdGenerator';
 import { Calendar, AlertCircle } from 'lucide-react';
 
 interface PatientDialogProps {
@@ -190,10 +191,13 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
           description: "Patient updated successfully",
         });
       } else {
-        // Create new patient
+        // Generate unique patient ID for new patients
+        const patientId = await generatePatientId();
+        
+        // Create new patient with generated patient_id
         const { data: newPatient, error } = await supabase
           .from('patients')
-          .insert(formData)
+          .insert({ ...formData, patient_id: patientId })
           .select()
           .single();
 

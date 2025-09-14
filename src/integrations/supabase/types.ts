@@ -468,6 +468,7 @@ export type Database = {
           id: string
           last_name: string
           medical_history: string | null
+          patient_id: string | null
           phone: string | null
           preferred_name: string | null
           referral_source: string | null
@@ -490,6 +491,7 @@ export type Database = {
           id?: string
           last_name: string
           medical_history?: string | null
+          patient_id?: string | null
           phone?: string | null
           preferred_name?: string | null
           referral_source?: string | null
@@ -512,6 +514,7 @@ export type Database = {
           id?: string
           last_name?: string
           medical_history?: string | null
+          patient_id?: string | null
           phone?: string | null
           preferred_name?: string | null
           referral_source?: string | null

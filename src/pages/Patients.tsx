@@ -10,6 +10,7 @@ import { Plus, Search, User, Phone, Mail } from 'lucide-react';
 
 export interface Patient {
   id: string;
+  patient_id?: string;
   first_name: string;
   last_name: string;
   preferred_name?: string;
@@ -141,6 +142,11 @@ export default function Patients() {
                   <p className="text-lg font-semibold">
                     {patient.first_name} {patient.last_name}
                   </p>
+                  {patient.patient_id && (
+                    <p className="text-sm text-muted-foreground font-mono">
+                      ID: {patient.patient_id}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     Age: {calculateAge(patient.date_of_birth)} • {patient.gender}
                   </p>
