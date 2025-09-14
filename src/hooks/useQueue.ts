@@ -17,9 +17,15 @@ export interface QueueEntry {
   updated_at: string;
   // Joined patient data
   patient?: {
+    id: string;
     first_name: string;
     last_name: string;
     phone?: string;
+    date_of_birth: string;
+    gender?: string;
+    allergies?: string;
+    email?: string;
+    medical_history?: string;
   };
   // Joined doctor data
   doctor?: {
@@ -80,25 +86,43 @@ export function useQueue() {
       const patientIds = queueData.map(entry => entry.patient_id);
       const doctorIds = queueData.map(entry => entry.assigned_doctor_id).filter(Boolean);
 
-      // Fetch patient data
-      const { data: patientsData } = await supabase
+      // Fetch patients data
+      const { data: patients } = await supabase
         .from('patients')
-        .select('id, first_name, last_name, phone')
+        .select('id, first_name, last_name, phone, date_of_birth, gender, allergies, email, medical_history')
         .in('id', patientIds);
 
-      // Fetch doctor data
-      const { data: doctorsData } = await supabase
+      // Fetch doctors data  
+      const { data: doctors } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
         .in('id', doctorIds);
 
-      // Combine the data
-      const enrichedQueue: QueueEntry[] = queueData.map(entry => ({
-        ...entry,
-        status: entry.status as QueueEntry['status'],
-        patient: patientsData?.find(p => p.id === entry.patient_id),
-        doctor: doctorsData?.find(d => d.id === entry.assigned_doctor_id)
-      }));
+      // Create enriched queue entries
+      const enrichedQueue: QueueEntry[] = queueData.map(entry => {
+        const patient = patients?.find(p => p.id === entry.patient_id);
+        const doctor = doctors?.find(d => d.id === entry.assigned_doctor_id);
+        
+        return {
+          ...entry,
+          status: entry.status as QueueEntry['status'],
+          patient: patient ? {
+            id: patient.id,
+            first_name: patient.first_name,
+            last_name: patient.last_name,
+            phone: patient.phone || undefined,
+            date_of_birth: patient.date_of_birth,
+            gender: patient.gender || undefined,
+            allergies: patient.allergies || undefined,
+            email: patient.email || undefined,
+            medical_history: patient.medical_history || undefined,
+          } : undefined,
+          doctor: doctor ? {
+            first_name: doctor.first_name,
+            last_name: doctor.last_name,
+          } : undefined,
+        };
+      });
       
       setQueue(enrichedQueue);
       

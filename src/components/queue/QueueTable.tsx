@@ -2,6 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, Clock, AlertTriangle, User } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
+import { PatientConsultationModal } from '@/components/consultation/PatientConsultationModal';
+import { useState } from 'react';
 
 interface QueueTableProps {
   queue: QueueEntry[];
@@ -11,6 +13,28 @@ interface QueueTableProps {
 }
 
 export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused }: QueueTableProps) {
+  const [selectedPatient, setSelectedPatient] = useState<QueueEntry | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handlePatientClick = (entry: QueueEntry) => {
+    setSelectedPatient(entry);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedPatient(null);
+  };
+
+  const handleStartConsultation = (queueId: string) => {
+    onStatusChange(queueId, 'in_consultation');
+    setIsModalOpen(false);
+  };
+
+  const handleCallPatient = (queueId: string) => {
+    // Logic for calling patient - could be notification, announcement system, etc.
+    console.log('Calling patient:', queueId);
+  };
   const getWaitTime = (checkedInAt: string) => {
     const now = new Date();
     const checkedIn = new Date(checkedInAt);
@@ -107,7 +131,10 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
               </div>
 
               {/* Patient Info */}
-              <div className="min-w-0 flex-1">
+              <div 
+                className="min-w-0 flex-1 cursor-pointer hover:bg-muted/30 rounded p-2 -m-2 transition-colors"
+                onClick={() => handlePatientClick(entry)}
+              >
                 <div className="font-semibold text-lg">
                   {entry.patient?.first_name} {entry.patient?.last_name?.charAt(0)}.
                 </div>
@@ -172,6 +199,15 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
           </div>
         );
       })}
+      
+      {/* Patient Consultation Modal */}
+      <PatientConsultationModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        queueEntry={selectedPatient}
+        onStartConsultation={handleStartConsultation}
+        onCallPatient={handleCallPatient}
+      />
     </div>
   );
 }
