@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { EnhancedPatientDialog } from '@/components/patients/EnhancedPatientDialog';
+import { PatientRegistrationModal } from '@/components/patients/PatientRegistrationModal';
 import { Plus, Search, User, Phone, Mail } from 'lucide-react';
 
 export interface Patient {
@@ -34,7 +35,8 @@ export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const { toast } = useToast();
 
@@ -65,13 +67,18 @@ export default function Patients() {
 
   const handlePatientSaved = () => {
     fetchPatients();
-    setIsDialogOpen(false);
+    setIsEditDialogOpen(false);
     setSelectedPatient(null);
+  };
+
+  const handlePatientRegistered = () => {
+    fetchPatients();
+    setIsRegistrationModalOpen(false);
   };
 
   const handleEditPatient = (patient: Patient) => {
     setSelectedPatient(patient);
-    setIsDialogOpen(true);
+    setIsEditDialogOpen(true);
   };
 
   const filteredPatients = patients.filter((patient) =>
@@ -104,7 +111,7 @@ export default function Patients() {
           <h1 className="text-3xl font-bold text-foreground">Patient Management</h1>
           <p className="text-muted-foreground">Manage patient records and information</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsRegistrationModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Patient
         </Button>
@@ -192,7 +199,7 @@ export default function Patients() {
               {searchTerm ? 'Try adjusting your search criteria' : 'Start by adding your first patient'}
             </p>
             {!searchTerm && (
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button onClick={() => setIsRegistrationModalOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add First Patient
               </Button>
@@ -202,10 +209,16 @@ export default function Patients() {
       )}
 
       <EnhancedPatientDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
         patient={selectedPatient}
         onSave={handlePatientSaved}
+      />
+
+      <PatientRegistrationModal
+        isOpen={isRegistrationModalOpen}
+        onClose={() => setIsRegistrationModalOpen(false)}
+        onPatientRegistered={handlePatientRegistered}
       />
     </div>
   );
