@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
   Bell, 
@@ -49,6 +50,7 @@ export function PatientConsultationModal({
   const [diagnosis, setDiagnosis] = useState('');
   const [historyTab, setHistoryTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all-time');
+  const { toast } = useToast();
   
   // Treatment items state
   const [treatmentItems, setTreatmentItems] = useState<Array<{
@@ -127,6 +129,49 @@ export function PatientConsultationModal({
 
   const getTotalAmount = () => {
     return treatmentItems.reduce((total, item) => total + item.amount, 0);
+  };
+
+  const saveConsultationNotes = () => {
+    if (!consultationNotes.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter consultation notes",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Here you would typically save to database
+    console.log('Saving consultation notes:', consultationNotes);
+    console.log('Diagnosis:', diagnosis);
+    console.log('Treatment items:', treatmentItems);
+    
+    toast({
+      title: "Success",
+      description: "Consultation notes saved successfully",
+    });
+  };
+
+  const handleAttachPhoto = () => {
+    // Create a file input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    
+    input.onchange = (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        // Here you would typically upload the files
+        console.log('Attaching photos:', files);
+        toast({
+          title: "Success",
+          description: `${files.length} photo(s) attached`,
+        });
+      }
+    };
+    
+    input.click();
   };
 
   return (
@@ -252,11 +297,11 @@ export function PatientConsultationModal({
                       </Button>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={handleAttachPhoto}>
                         <Camera className="h-4 w-4 mr-2" />
                         Attach photo
                       </Button>
-                      <Button size="sm">
+                      <Button size="sm" onClick={saveConsultationNotes}>
                         <Save className="h-4 w-4 mr-2" />
                         Save
                       </Button>
@@ -301,78 +346,6 @@ export function PatientConsultationModal({
                   <h3 className="font-semibold">Insert your medicine, services and documents here</h3>
                 </div>
                 <div className="border border-t-0 rounded-b-lg">
-                  {/* Add Item Form */}
-                  <div className="p-4 border-b bg-muted/20">
-                    <div className="grid grid-cols-10 gap-2 text-xs">
-                      <Input
-                        placeholder="Item name"
-                        value={newItem.item}
-                        onChange={(e) => setNewItem({...newItem, item: e.target.value})}
-                        className="h-8"
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Qty"
-                        value={newItem.quantity}
-                        onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
-                        className="h-8"
-                      />
-                      <Select value={newItem.priceTier} onValueChange={(value) => setNewItem({...newItem, priceTier: value})}>
-                        <SelectTrigger className="h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Standard">Standard</SelectItem>
-                          <SelectItem value="Premium">Premium</SelectItem>
-                          <SelectItem value="Discounted">Discounted</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Rate"
-                        value={newItem.rate}
-                        onChange={(e) => setNewItem({...newItem, rate: parseFloat(e.target.value) || 0})}
-                        className="h-8"
-                      />
-                      <div className="h-8 flex items-center text-sm font-medium">
-                        RM {(newItem.quantity * newItem.rate).toFixed(2)}
-                      </div>
-                      <Input
-                        placeholder="Dosage"
-                        value={newItem.dosage}
-                        onChange={(e) => setNewItem({...newItem, dosage: e.target.value})}
-                        className="h-8"
-                      />
-                      <Input
-                        placeholder="Instruction"
-                        value={newItem.instruction}
-                        onChange={(e) => setNewItem({...newItem, instruction: e.target.value})}
-                        className="h-8"
-                      />
-                      <Input
-                        placeholder="Frequency"
-                        value={newItem.frequency}
-                        onChange={(e) => setNewItem({...newItem, frequency: e.target.value})}
-                        className="h-8"
-                      />
-                      <Input
-                        placeholder="Duration"
-                        value={newItem.duration}
-                        onChange={(e) => setNewItem({...newItem, duration: e.target.value})}
-                        className="h-8"
-                      />
-                      <Button 
-                        size="sm" 
-                        onClick={addTreatmentItem}
-                        disabled={!newItem.item.trim()}
-                        className="h-8"
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                  
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="border-b">
@@ -391,16 +364,105 @@ export function PatientConsultationModal({
                         </tr>
                       </thead>
                       <tbody>
+                        {/* Add Item Row - Always visible at the top */}
+                        <tr className="bg-muted/20 border-b">
+                          <td className="p-2 text-sm font-medium text-muted-foreground">+</td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Item name"
+                              value={newItem.item}
+                              onChange={(e) => setNewItem({...newItem, item: e.target.value})}
+                              className="h-8 border-0 bg-transparent focus:bg-white"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              type="number"
+                              placeholder="1"
+                              value={newItem.quantity}
+                              onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
+                              className="h-8 border-0 bg-transparent focus:bg-white w-16"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Select value={newItem.priceTier} onValueChange={(value) => setNewItem({...newItem, priceTier: value})}>
+                              <SelectTrigger className="h-8 border-0 bg-transparent focus:bg-white">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Standard">Standard</SelectItem>
+                                <SelectItem value="Premium">Premium</SelectItem>
+                                <SelectItem value="Discounted">Discounted</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={newItem.rate}
+                              onChange={(e) => setNewItem({...newItem, rate: parseFloat(e.target.value) || 0})}
+                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
+                            />
+                          </td>
+                          <td className="p-2 text-sm font-medium">
+                            RM {(newItem.quantity * newItem.rate).toFixed(2)}
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Dosage"
+                              value={newItem.dosage}
+                              onChange={(e) => setNewItem({...newItem, dosage: e.target.value})}
+                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Instruction"
+                              value={newItem.instruction}
+                              onChange={(e) => setNewItem({...newItem, instruction: e.target.value})}
+                              className="h-8 border-0 bg-transparent focus:bg-white w-24"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Frequency"
+                              value={newItem.frequency}
+                              onChange={(e) => setNewItem({...newItem, frequency: e.target.value})}
+                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Duration"
+                              value={newItem.duration}
+                              onChange={(e) => setNewItem({...newItem, duration: e.target.value})}
+                              className="h-8 border-0 bg-transparent focus:bg-white w-20"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Button 
+                              size="sm" 
+                              onClick={addTreatmentItem}
+                              disabled={!newItem.item.trim()}
+                              className="h-8 w-16"
+                            >
+                              Add
+                            </Button>
+                          </td>
+                        </tr>
+                        
+                        {/* Treatment Items */}
                         {treatmentItems.length === 0 ? (
                           <tr>
-                            <td className="p-3 text-sm">1</td>
-                            <td className="p-3 text-sm text-muted-foreground" colSpan={10}>
-                              No items added yet
+                            <td className="p-3 text-sm text-muted-foreground text-center" colSpan={11}>
+                              Add items using the form above
                             </td>
                           </tr>
                         ) : (
                           treatmentItems.map((item, index) => (
-                            <tr key={item.id} className="border-b">
+                            <tr key={item.id} className="border-b hover:bg-muted/10">
                               <td className="p-3 text-sm">{index + 1}</td>
                               <td className="p-3 text-sm font-medium">{item.item}</td>
                               <td className="p-3 text-sm">{item.quantity}</td>
