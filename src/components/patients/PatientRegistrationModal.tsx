@@ -33,8 +33,12 @@ interface PatientFormData {
   // Step 1 - Patient Information
   image?: string;
   name: string;
-  idType: 'NRIC' | 'Passport';
+  idType: 'NRIC/MyKad' | 'Birth Certificate' | 'Passport' | 'Other';
   nric_passport: string;
+  countryOfIssue?: string;
+  otherIdDescription?: string;
+  parentGuardianName?: string;
+  parentGuardianNric?: string;
   phone: string;
   countryCode: string;
   email: string;
@@ -73,8 +77,12 @@ export function PatientRegistrationModal({
 
   const [formData, setFormData] = useState<PatientFormData>({
     name: '',
-    idType: 'NRIC',
+    idType: 'NRIC/MyKad',
     nric_passport: '',
+    countryOfIssue: '',
+    otherIdDescription: '',
+    parentGuardianName: '',
+    parentGuardianNric: '',
     phone: '',
     countryCode: '+60',
     email: '',
@@ -131,7 +139,22 @@ export function PatientRegistrationModal({
 
   const handleNext = () => {
     // Validate Step 1
-    if (!formData.name || !formData.nric_passport || !formData.dateOfBirth || !formData.gender || !formData.phone) {
+    const requiredFields = ['name', 'nric_passport', 'dateOfBirth', 'gender', 'phone'];
+    
+    // Add conditional required fields
+    if (formData.idType === 'Birth Certificate') {
+      requiredFields.push('parentGuardianName', 'parentGuardianNric');
+    }
+    if (formData.idType === 'Passport') {
+      requiredFields.push('countryOfIssue');
+    }
+    if (formData.idType === 'Other') {
+      requiredFields.push('otherIdDescription');
+    }
+    
+    const missingFields = requiredFields.filter(field => !formData[field as keyof PatientFormData]);
+    
+    if (missingFields.length > 0) {
       toast({
         title: "Required fields missing",
         description: "Please fill in all required fields",
@@ -157,23 +180,35 @@ export function PatientRegistrationModal({
       // Generate patient ID
       const patientId = await generatePatientId();
 
-      // Create patient record
-      const { data: patient, error: patientError } = await supabase
-        .from('patients')
-        .insert({
-          patient_id: patientId,
-          first_name: firstName,
-          last_name: lastName,
-          date_of_birth: formData.dateOfBirth,
-          gender: formData.gender,
-          phone: formData.countryCode + formData.phone,
-          email: formData.email || null,
-          address: `${formData.addressLine1}${formData.addressLine2 ? ', ' + formData.addressLine2 : ''}, ${formData.postcode} ${formData.city}, ${formData.state}, ${formData.country}`,
-          visit_reason: formData.visitNotes || null,
-          additional_notes: formData.nric_passport ? `NRIC/Passport: ${formData.nric_passport}` : null
-        })
-        .select()
-        .single();
+          // Create additional notes with ID information
+          let additionalNotes = '';
+          if (formData.idType === 'NRIC/MyKad') {
+            additionalNotes = `NRIC: ${formData.nric_passport}`;
+          } else if (formData.idType === 'Birth Certificate') {
+            additionalNotes = `Birth Certificate: ${formData.nric_passport}\nParent/Guardian: ${formData.parentGuardianName} (NRIC: ${formData.parentGuardianNric})`;
+          } else if (formData.idType === 'Passport') {
+            additionalNotes = `Passport: ${formData.nric_passport} (${formData.countryOfIssue})`;
+          } else if (formData.idType === 'Other') {
+            additionalNotes = `${formData.otherIdDescription}: ${formData.nric_passport}`;
+          }
+
+          // Create patient record
+          const { data: patient, error: patientError } = await supabase
+            .from('patients')
+            .insert({
+              patient_id: patientId,
+              first_name: firstName,
+              last_name: lastName,
+              date_of_birth: formData.dateOfBirth,
+              gender: formData.gender,
+              phone: formData.countryCode + formData.phone,
+              email: formData.email || null,
+              address: `${formData.addressLine1}${formData.addressLine2 ? ', ' + formData.addressLine2 : ''}, ${formData.postcode} ${formData.city}, ${formData.state}, ${formData.country}`,
+              visit_reason: formData.visitNotes || null,
+              additional_notes: additionalNotes
+            })
+            .select()
+            .single();
 
       if (patientError) throw patientError;
 
@@ -230,8 +265,12 @@ export function PatientRegistrationModal({
     setCurrentStep(1);
     setFormData({
       name: '',
-      idType: 'NRIC',
+      idType: 'NRIC/MyKad',
       nric_passport: '',
+      countryOfIssue: '',
+      otherIdDescription: '',
+      parentGuardianName: '',
+      parentGuardianNric: '',
       phone: '',
       countryCode: '+60',
       email: '',
@@ -271,17 +310,24 @@ export function PatientRegistrationModal({
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
-      // Auto-parse date of birth from NRIC when NRIC is selected and changed
-      if (field === 'nric_passport' && prev.idType === 'NRIC' && typeof value === 'string') {
+      // Auto-parse date of birth from NRIC when NRIC/MyKad is selected and changed
+      if (field === 'nric_passport' && prev.idType === 'NRIC/MyKad' && typeof value === 'string') {
         const parsedDate = parseNRICDateOfBirth(value);
         if (parsedDate && parsedDate !== '--') {
           newData.dateOfBirth = parsedDate;
         }
       }
       
-      // Clear date of birth when switching to Passport
-      if (field === 'idType' && value === 'Passport') {
-        newData.dateOfBirth = '';
+      // Clear conditional fields when ID type changes
+      if (field === 'idType') {
+        newData.nric_passport = '';
+        newData.countryOfIssue = '';
+        newData.otherIdDescription = '';
+        newData.parentGuardianName = '';
+        newData.parentGuardianNric = '';
+        if (value !== 'NRIC/MyKad') {
+          newData.dateOfBirth = '';
+        }
       }
       
       return newData;
@@ -362,30 +408,94 @@ export function PatientRegistrationModal({
                     {/* ID Type Selection */}
                     <div>
                       <Label className="text-sm font-medium">ID Type *</Label>
-                      <Select value={formData.idType} onValueChange={(value: 'NRIC' | 'Passport') => updateFormData('idType', value)}>
+                      <Select value={formData.idType} onValueChange={(value: 'NRIC/MyKad' | 'Birth Certificate' | 'Passport' | 'Other') => updateFormData('idType', value)}>
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="NRIC">NRIC</SelectItem>
+                          <SelectItem value="NRIC/MyKad">NRIC/MyKad</SelectItem>
+                          <SelectItem value="Birth Certificate">Birth Certificate</SelectItem>
                           <SelectItem value="Passport">Passport</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {/* NRIC / Passport Number */}
+                    {/* ID Number Field - Conditional based on ID Type */}
                     <div>
                       <Label htmlFor="nric" className="text-sm font-medium">
-                        {formData.idType} Number *
+                        {formData.idType === 'NRIC/MyKad' && 'NRIC Number *'}
+                        {formData.idType === 'Birth Certificate' && 'Birth Certificate Number *'}
+                        {formData.idType === 'Passport' && 'Passport Number *'}
+                        {formData.idType === 'Other' && 'ID Number *'}
                       </Label>
                       <Input
                         id="nric"
                         value={formData.nric_passport}
                         onChange={(e) => updateFormData('nric_passport', e.target.value)}
-                        placeholder={formData.idType === 'NRIC' ? '930202148832' : 'A1234567'}
+                        placeholder={
+                          formData.idType === 'NRIC/MyKad' ? '930202148832' :
+                          formData.idType === 'Birth Certificate' ? 'BC123456' :
+                          formData.idType === 'Passport' ? 'A1234567' :
+                          'Enter ID number'
+                        }
                         className="mt-1"
                       />
                     </div>
+
+                    {/* Country of Issue - Only for Passport */}
+                    {formData.idType === 'Passport' && (
+                      <div>
+                        <Label htmlFor="countryOfIssue" className="text-sm font-medium">Country of Issue *</Label>
+                        <Input
+                          id="countryOfIssue"
+                          value={formData.countryOfIssue || ''}
+                          onChange={(e) => updateFormData('countryOfIssue', e.target.value)}
+                          placeholder="Malaysia"
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+
+                    {/* Other ID Description - Only for Other */}
+                    {formData.idType === 'Other' && (
+                      <div>
+                        <Label htmlFor="otherIdDescription" className="text-sm font-medium">ID Description *</Label>
+                        <Input
+                          id="otherIdDescription"
+                          value={formData.otherIdDescription || ''}
+                          onChange={(e) => updateFormData('otherIdDescription', e.target.value)}
+                          placeholder="e.g., Work Permit, Student ID"
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+
+                    {/* Parent/Guardian Fields - Only for Birth Certificate */}
+                    {formData.idType === 'Birth Certificate' && (
+                      <>
+                        <div>
+                          <Label htmlFor="parentGuardianName" className="text-sm font-medium">Parent/Guardian Name *</Label>
+                          <Input
+                            id="parentGuardianName"
+                            value={formData.parentGuardianName || ''}
+                            onChange={(e) => updateFormData('parentGuardianName', e.target.value)}
+                            placeholder="Full name of parent/guardian"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="parentGuardianNric" className="text-sm font-medium">Parent/Guardian NRIC *</Label>
+                          <Input
+                            id="parentGuardianNric"
+                            value={formData.parentGuardianNric || ''}
+                            onChange={(e) => updateFormData('parentGuardianNric', e.target.value)}
+                            placeholder="NRIC of parent/guardian"
+                            className="mt-1"
+                          />
+                        </div>
+                      </>
+                    )}
 
                     {/* Phone */}
                     <div>
@@ -433,9 +543,9 @@ export function PatientRegistrationModal({
                         value={formData.dateOfBirth}
                         onChange={(e) => updateFormData('dateOfBirth', e.target.value)}
                         className="mt-1"
-                        disabled={formData.idType === 'NRIC' && formData.nric_passport.length >= 6}
+                        disabled={formData.idType === 'NRIC/MyKad' && formData.nric_passport.length >= 6}
                       />
-                      {formData.idType === 'NRIC' && formData.nric_passport.length >= 6 && (
+                      {formData.idType === 'NRIC/MyKad' && formData.nric_passport.length >= 6 && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Auto-filled from NRIC
                         </p>
