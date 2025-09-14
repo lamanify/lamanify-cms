@@ -28,14 +28,14 @@ export function CurrentQueueDisplay({ currentNumber, currentPatient, isServing }
             {currentPatient.firstName} {currentPatient.lastName}
           </div>
         )}
+        <div className="text-3xl font-bold mb-2">
+          Queue: {currentNumber || '---'}
+        </div>
         {currentPatient?.patientId && (
-          <div className="text-sm text-primary-foreground/70 font-mono mb-4">
+          <div className="text-sm text-primary-foreground/70 font-mono bg-primary-foreground/10 px-3 py-1 rounded-full inline-block">
             ID: {currentPatient.patientId}
           </div>
         )}
-        <div className="text-4xl font-bold">
-          Queue: {currentNumber || '---'}
-        </div>
         {!currentNumber && (
           <div className="text-lg mt-2 opacity-75">
             No patient currently being served

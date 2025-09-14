@@ -132,25 +132,27 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
               {/* Patient Info */}
               <div 
-                className="min-w-0 flex-1 cursor-pointer hover:bg-muted/30 rounded p-2 -m-2 transition-colors"
+                className="min-w-0 flex-1 cursor-pointer hover:bg-muted/30 rounded p-3 -m-3 transition-colors group"
                 onClick={() => handlePatientClick(entry)}
               >
-                <div className="text-xl font-bold text-foreground">
+                <div className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
                   {entry.patient?.first_name} {entry.patient?.last_name}
                 </div>
-                {entry.patient?.patient_id && (
-                  <div className="text-xs text-muted-foreground font-mono mt-1">
-                    ID: {entry.patient.patient_id}
-                  </div>
-                )}
-                {entry.patient?.phone && (
-                  <div className="text-sm text-muted-foreground flex items-center mt-1">
-                    <Phone className="h-3 w-3 mr-1" />
-                    {entry.patient.phone}
-                  </div>
-                )}
+                <div className="flex items-center space-x-3 mt-1">
+                  {entry.patient?.patient_id && (
+                    <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                      ID: {entry.patient.patient_id}
+                    </span>
+                  )}
+                  {entry.patient?.phone && (
+                    <div className="text-sm text-muted-foreground flex items-center">
+                      <Phone className="h-3 w-3 mr-1" />
+                      {entry.patient.phone}
+                    </div>
+                  )}
+                </div>
                 {entry.doctor && (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground mt-1">
                     Dr. {entry.doctor.first_name} {entry.doctor.last_name}
                   </div>
                 )}
