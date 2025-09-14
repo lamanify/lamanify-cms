@@ -281,7 +281,11 @@ export function useConsultation() {
   };
 
   // Complete consultation
-  const completeConsultation = async (sessionId: string) => {
+  const completeConsultation = async (sessionId: string, consultationData?: { 
+    notes?: string; 
+    diagnosis?: string; 
+    treatmentItems?: any[] 
+  }) => {
     try {
       setLoading(true);
       
@@ -316,12 +320,15 @@ export function useConsultation() {
           .eq('id', session.queue_id);
       }
 
+      // Sync consultation data to patient medical log
+      await syncConsultationToPatientLog(session, consultationData, durationMinutes);
+
       setActiveSession(null);
       await fetchWaitingPatients();
       
       toast({
         title: "Consultation completed",
-        description: "Patient has been moved to dispensary",
+        description: "Patient data synced to medical history",
       });
     } catch (error) {
       console.error('Error completing consultation:', error);
@@ -332,6 +339,102 @@ export function useConsultation() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper function to sync consultation data to patient activities and medications
+  const syncConsultationToPatientLog = async (
+    session: ConsultationSession, 
+    consultationData?: { notes?: string; diagnosis?: string; treatmentItems?: any[] },
+    durationMinutes?: number
+  ) => {
+    try {
+      const patientId = session.patient_id;
+      const doctorId = session.doctor_id;
+      
+      // Create main consultation activity
+      const consultationContent = [
+        consultationData?.diagnosis ? `Diagnosis: ${consultationData.diagnosis}` : '',
+        consultationData?.notes ? `Notes: ${consultationData.notes}` : '',
+        durationMinutes ? `Duration: ${durationMinutes} minutes` : ''
+      ].filter(Boolean).join('\n');
+
+      await supabase.from('patient_activities').insert({
+        patient_id: patientId,
+        activity_type: 'consultation',
+        activity_date: new Date().toISOString(),
+        title: 'Consultation Completed',
+        content: consultationContent || 'Consultation completed successfully',
+        metadata: {
+          session_id: session.id,
+          diagnosis: consultationData?.diagnosis,
+          duration_minutes: durationMinutes,
+          consultation_date: new Date().toISOString().split('T')[0]
+        },
+        staff_member_id: doctorId,
+        priority: 'normal',
+        status: 'completed'
+      });
+
+      // Process treatment items if provided
+      if (consultationData?.treatmentItems && consultationData.treatmentItems.length > 0) {
+        for (const item of consultationData.treatmentItems) {
+          // Add medication to current medications if it's a medication
+          if (item.dosage || item.frequency || item.duration) {
+            await supabase.from('patient_current_medications').insert({
+              patient_id: patientId,
+              medication_name: item.item,
+              dosage: item.dosage,
+              frequency: item.frequency,
+              prescribed_date: new Date().toISOString(),
+              prescribed_by: doctorId,
+              duration_days: item.duration ? parseInt(item.duration) : null,
+              status: 'active',
+              instructions: item.instruction
+            });
+
+            // Create medication activity
+            await supabase.from('patient_activities').insert({
+              patient_id: patientId,
+              activity_type: 'medication',
+              activity_date: new Date().toISOString(),
+              title: `Prescribed ${item.item}`,
+              content: `Dosage: ${item.dosage || 'As directed'}\nFrequency: ${item.frequency || 'As needed'}\nInstructions: ${item.instruction || 'Follow as prescribed'}`,
+              metadata: {
+                medication_name: item.item,
+                dosage: item.dosage,
+                frequency: item.frequency,
+                duration: item.duration,
+                session_id: session.id
+              },
+              staff_member_id: doctorId,
+              priority: 'normal',
+              status: 'active'
+            });
+          } else {
+            // Create service/treatment activity
+            await supabase.from('patient_activities').insert({
+              patient_id: patientId,
+              activity_type: 'treatment',
+              activity_date: new Date().toISOString(),
+              title: `Treatment: ${item.item}`,
+              content: `Service provided: ${item.item}\nQuantity: ${item.quantity}\nAmount: RM ${item.amount}`,
+              metadata: {
+                service_name: item.item,
+                quantity: item.quantity,
+                amount: item.amount,
+                session_id: session.id
+              },
+              staff_member_id: doctorId,
+              priority: 'normal',
+              status: 'completed'
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing consultation to patient log:', error);
+      throw error;
     }
   };
 

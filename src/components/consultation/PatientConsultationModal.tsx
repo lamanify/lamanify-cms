@@ -36,6 +36,7 @@ interface PatientConsultationModalProps {
   queueEntry: QueueEntry | null;
   onStartConsultation: (queueId: string) => void;
   onCallPatient: (queueId: string) => void;
+  onMarkDone?: (consultationData: { notes: string; diagnosis: string; treatmentItems: any[] }) => void;
 }
 
 export function PatientConsultationModal({
@@ -43,7 +44,8 @@ export function PatientConsultationModal({
   onClose,
   queueEntry,
   onStartConsultation,
-  onCallPatient
+  onCallPatient,
+  onMarkDone
 }: PatientConsultationModalProps) {
   const [activeTab, setActiveTab] = useState('consultation');
   const [consultationNotes, setConsultationNotes] = useState('');
@@ -573,6 +575,21 @@ export function PatientConsultationModal({
               className="bg-primary hover:bg-primary/90"
             >
               Start consultation
+            </Button>
+            <Button 
+              onClick={() => {
+                if (onMarkDone) {
+                  onMarkDone({
+                    notes: consultationNotes,
+                    diagnosis: diagnosis,
+                    treatmentItems: treatmentItems
+                  });
+                }
+                onClose();
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Mark Done
             </Button>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Phone, Clock, AlertTriangle, User } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { PatientConsultationModal } from '@/components/consultation/PatientConsultationModal';
+import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { useState } from 'react';
 
 interface QueueTableProps {
@@ -15,6 +16,7 @@ interface QueueTableProps {
 export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused }: QueueTableProps) {
   const [selectedPatient, setSelectedPatient] = useState<QueueEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { completeConsultationWorkflow } = useConsultationWorkflow();
 
   const handlePatientClick = (entry: QueueEntry) => {
     setSelectedPatient(entry);
@@ -34,6 +36,26 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   const handleCallPatient = (queueId: string) => {
     // Logic for calling patient - could be notification, announcement system, etc.
     console.log('Calling patient:', queueId);
+  };
+
+  const handleMarkDone = async (consultationData: { notes: string; diagnosis: string; treatmentItems: any[] }) => {
+    if (selectedPatient && selectedPatient.patient) {
+      try {
+        // Complete consultation workflow with patient activity sync
+        await completeConsultationWorkflow(
+          selectedPatient.patient.id,
+          selectedPatient.id,
+          consultationData
+        );
+        
+        // Mark queue entry as completed
+        onStatusChange(selectedPatient.id, 'completed');
+        
+        setIsModalOpen(false);
+      } catch (error) {
+        console.error('Error marking consultation as done:', error);
+      }
+    }
   };
   const getWaitTime = (checkedInAt: string) => {
     const now = new Date();
@@ -214,6 +236,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         queueEntry={selectedPatient}
         onStartConsultation={handleStartConsultation}
         onCallPatient={handleCallPatient}
+        onMarkDone={handleMarkDone}
       />
     </div>
   );
