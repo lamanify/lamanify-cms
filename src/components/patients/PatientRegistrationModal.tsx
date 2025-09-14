@@ -33,6 +33,7 @@ interface PatientFormData {
   // Step 1 - Patient Information
   image?: string;
   name: string;
+  idType: 'NRIC' | 'Passport';
   nric_passport: string;
   phone: string;
   countryCode: string;
@@ -72,6 +73,7 @@ export function PatientRegistrationModal({
 
   const [formData, setFormData] = useState<PatientFormData>({
     name: '',
+    idType: 'NRIC',
     nric_passport: '',
     phone: '',
     countryCode: '+60',
@@ -129,7 +131,7 @@ export function PatientRegistrationModal({
 
   const handleNext = () => {
     // Validate Step 1
-    if (!formData.name || !formData.dateOfBirth || !formData.gender || !formData.phone) {
+    if (!formData.name || !formData.nric_passport || !formData.dateOfBirth || !formData.gender || !formData.phone) {
       toast({
         title: "Required fields missing",
         description: "Please fill in all required fields",
@@ -228,6 +230,7 @@ export function PatientRegistrationModal({
     setCurrentStep(1);
     setFormData({
       name: '',
+      idType: 'NRIC',
       nric_passport: '',
       phone: '',
       countryCode: '+60',
@@ -248,8 +251,41 @@ export function PatientRegistrationModal({
     onClose();
   };
 
+  // Function to parse date of birth from NRIC
+  const parseNRICDateOfBirth = (nric: string): string => {
+    if (nric.length < 6) return '';
+    
+    const dateStr = nric.substring(0, 6); // First 6 digits: YYMMDD
+    const year = dateStr.substring(0, 2);
+    const month = dateStr.substring(2, 4);
+    const day = dateStr.substring(4, 6);
+    
+    // Convert 2-digit year to 4-digit year
+    // Assuming years 00-30 are 2000s, 31-99 are 1900s
+    const fullYear = parseInt(year) <= 30 ? `20${year}` : `19${year}`;
+    
+    return `${fullYear}-${month}-${day}`;
+  };
+
   const updateFormData = (field: keyof PatientFormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-parse date of birth from NRIC when NRIC is selected and changed
+      if (field === 'nric_passport' && prev.idType === 'NRIC' && typeof value === 'string') {
+        const parsedDate = parseNRICDateOfBirth(value);
+        if (parsedDate && parsedDate !== '--') {
+          newData.dateOfBirth = parsedDate;
+        }
+      }
+      
+      // Clear date of birth when switching to Passport
+      if (field === 'idType' && value === 'Passport') {
+        newData.dateOfBirth = '';
+      }
+      
+      return newData;
+    });
   };
 
   return (
@@ -323,16 +359,37 @@ export function PatientRegistrationModal({
                       />
                     </div>
 
-                    {/* NRIC / Passport */}
+                    {/* ID Type Selection */}
                     <div>
-                      <Label htmlFor="nric" className="text-sm font-medium">NRIC / Passport</Label>
+                      <Label className="text-sm font-medium">ID Type *</Label>
+                      <Select value={formData.idType} onValueChange={(value: 'NRIC' | 'Passport') => updateFormData('idType', value)}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NRIC">NRIC</SelectItem>
+                          <SelectItem value="Passport">Passport</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* NRIC / Passport Number */}
+                    <div>
+                      <Label htmlFor="nric" className="text-sm font-medium">
+                        {formData.idType} Number *
+                      </Label>
                       <Input
                         id="nric"
                         value={formData.nric_passport}
                         onChange={(e) => updateFormData('nric_passport', e.target.value)}
-                        placeholder="123456789"
+                        placeholder={formData.idType === 'NRIC' ? '930202145867' : 'A1234567'}
                         className="mt-1"
                       />
+                      {formData.idType === 'NRIC' && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Format: YYMMDD + 6 digits (e.g., 930202145867 = Born Feb 2, 1993)
+                        </p>
+                      )}
                     </div>
 
                     {/* Phone */}
@@ -381,7 +438,13 @@ export function PatientRegistrationModal({
                         value={formData.dateOfBirth}
                         onChange={(e) => updateFormData('dateOfBirth', e.target.value)}
                         className="mt-1"
+                        disabled={formData.idType === 'NRIC' && formData.nric_passport.length >= 6}
                       />
+                      {formData.idType === 'NRIC' && formData.nric_passport.length >= 6 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Auto-filled from NRIC
+                        </p>
+                      )}
                     </div>
                   </div>
 
