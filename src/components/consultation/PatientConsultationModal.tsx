@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { 
   ArrowLeft, 
   Bell, 
@@ -52,7 +53,19 @@ export function PatientConsultationModal({
   const [diagnosis, setDiagnosis] = useState('');
   const [historyTab, setHistoryTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all-time');
+  const [isDraftSaved, setIsDraftSaved] = useState(false);
   const { toast } = useToast();
+  const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow } = useConsultationWorkflow();
+  
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setIsDraftSaved(false);
+      setConsultationNotes('');
+      setDiagnosis('');
+      setTreatmentItems([]);
+    }
+  }, [isOpen]);
   
   // Treatment items state
   const [treatmentItems, setTreatmentItems] = useState<Array<{
@@ -134,23 +147,21 @@ export function PatientConsultationModal({
   };
 
   const saveConsultationNotes = () => {
-    if (!consultationNotes.trim()) {
+    if (!consultationNotes.trim() && !diagnosis && treatmentItems.length === 0) {
       toast({
         title: "Error",
-        description: "Please enter consultation notes",
+        description: "Please enter consultation notes, diagnosis, or add treatment items",
         variant: "destructive",
       });
       return;
     }
 
-    // Here you would typically save to database
-    console.log('Saving consultation notes:', consultationNotes);
-    console.log('Diagnosis:', diagnosis);
-    console.log('Treatment items:', treatmentItems);
+    // Save as draft - no database operation needed, just local state
+    setIsDraftSaved(true);
     
     toast({
-      title: "Success",
-      description: "Consultation notes saved successfully",
+      title: "Draft Saved",
+      description: "Consultation notes saved as draft",
     });
   };
 
@@ -303,9 +314,13 @@ export function PatientConsultationModal({
                         <Camera className="h-4 w-4 mr-2" />
                         Attach photo
                       </Button>
-                      <Button size="sm" onClick={saveConsultationNotes}>
+                      <Button 
+                        size="sm" 
+                        onClick={saveConsultationNotes}
+                        variant={isDraftSaved ? "secondary" : "default"}
+                      >
                         <Save className="h-4 w-4 mr-2" />
-                        Save
+                        {isDraftSaved ? "Draft Saved" : "Save"}
                       </Button>
                     </div>
                   </div>
@@ -570,27 +585,53 @@ export function PatientConsultationModal({
               <span>Call patient in</span>
               <ChevronDown className="h-4 w-4" />
             </Button>
-            <Button 
-              onClick={() => onStartConsultation(queueEntry.id)}
-              className="bg-primary hover:bg-primary/90"
-            >
-              Start consultation
-            </Button>
-            <Button 
-              onClick={() => {
-                if (onMarkDone) {
-                  onMarkDone({
-                    notes: consultationNotes,
-                    diagnosis: diagnosis,
-                    treatmentItems: treatmentItems
-                  });
-                }
-                onClose();
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              Mark Done
-            </Button>
+            
+            {!activeConsultationSession ? (
+              <Button 
+                onClick={async () => {
+                  try {
+                    await startConsultationWorkflow(patient.id, queueEntry.id);
+                    onStartConsultation(queueEntry.id);
+                    toast({
+                      title: "Consultation Started",
+                      description: "You can now document the consultation",
+                    });
+                  } catch (error) {
+                    console.error('Failed to start consultation:', error);
+                  }
+                }}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Start consultation
+              </Button>
+            ) : (
+              <Button 
+                onClick={async () => {
+                  try {
+                    await completeConsultationWorkflow(patient.id, queueEntry.id, {
+                      notes: consultationNotes,
+                      diagnosis: diagnosis,
+                      treatmentItems: treatmentItems
+                    });
+                    
+                    if (onMarkDone) {
+                      onMarkDone({
+                        notes: consultationNotes,
+                        diagnosis: diagnosis,
+                        treatmentItems: treatmentItems
+                      });
+                    }
+                    onClose();
+                  } catch (error) {
+                    console.error('Failed to complete consultation:', error);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={!consultationNotes.trim() && !diagnosis && treatmentItems.length === 0}
+              >
+                Consultation Completed
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
