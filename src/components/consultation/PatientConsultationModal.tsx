@@ -193,7 +193,7 @@ export function PatientConsultationModal({
         <div className="flex flex-col h-[90vh]">
           {/* Compact Header Section */}
           <div className="flex items-center justify-between p-4 border-b bg-background">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-6">
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -215,9 +215,25 @@ export function PatientConsultationModal({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
                 <span className="text-xs text-muted-foreground">Waiting: {getWaitTime()}</span>
+              </div>
+              
+              {/* Patient Info Cards - Moved from sidebar */}
+              <div className="flex items-center space-x-3">
+                <div className="bg-muted/50 rounded-lg px-3 py-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-medium text-muted-foreground">Allergy:</span>
+                    <span className="text-xs">{patient.allergies || 'None'}</span>
+                  </div>
+                </div>
+                <div className="bg-primary/10 rounded-lg px-3 py-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-medium text-primary">Payment:</span>
+                    <span className="text-xs text-primary">Self-pay</span>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -228,31 +244,6 @@ export function PatientConsultationModal({
 
           {/* Main Content with Tabs */}
           <div className="flex-1 flex overflow-hidden">
-            {/* Compact Left Panel */}
-            <div className="w-48 border-r p-3 space-y-3 bg-muted/20">
-              <Card className="p-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium">Allergy</span>
-                  <Button variant="ghost" size="icon" className="h-4 w-4">
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {patient.allergies || 'No known allergies'}
-                </p>
-              </Card>
-
-              <Card className="bg-primary text-primary-foreground p-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium">Payment</span>
-                  <Button variant="ghost" size="icon" className="h-4 w-4 text-primary-foreground hover:text-primary-foreground/80">
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                </div>
-                <p className="text-xs">Self-pay</p>
-              </Card>
-            </div>
-
             {/* Main Content with Tabs */}
             <div className="flex-1 flex flex-col">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
