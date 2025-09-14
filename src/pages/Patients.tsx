@@ -143,9 +143,9 @@ export default function Patients() {
                     {patient.first_name} {patient.last_name}
                   </p>
                   {patient.patient_id && (
-                    <p className="text-sm text-muted-foreground font-mono">
-                      ID: {patient.patient_id}
-                    </p>
+                     <p className="text-xs text-muted-foreground font-mono">
+                       ID: {patient.patient_id}
+                     </p>
                   )}
                   <p className="text-sm text-muted-foreground">
                     Age: {calculateAge(patient.date_of_birth)} • {patient.gender}

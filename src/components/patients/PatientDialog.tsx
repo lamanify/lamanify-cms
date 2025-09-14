@@ -188,7 +188,7 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
 
         toast({
           title: "Success",
-          description: "Patient updated successfully",
+          description: `Patient updated successfully: **${formData.first_name} ${formData.last_name}**`,
         });
       } else {
         // Generate unique patient ID for new patients
@@ -210,13 +210,13 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
           
           toast({
             title: "Patient Added & Queued",
-            description: `Patient registered and assigned queue number: ${queueResult.queueNumber}`,
+            description: `Patient registered successfully: **${formData.first_name} ${formData.last_name}** (ID: ${patientId}) - Queue number: ${queueResult.queueNumber}`,
           });
         } catch (queueError) {
           console.error('Error adding to queue:', queueError);
           toast({
             title: "Patient Added",
-            description: "Patient registered but could not be added to queue automatically",
+            description: `Patient registered successfully: **${formData.first_name} ${formData.last_name}** (ID: ${patientId})`,
           });
         }
       }
