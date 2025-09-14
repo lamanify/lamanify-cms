@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { PatientDialog } from '@/components/patients/PatientDialog';
+import { EnhancedPatientDialog } from '@/components/patients/EnhancedPatientDialog';
 import { Plus, Search, User, Phone, Mail } from 'lucide-react';
 
 export interface Patient {
@@ -201,7 +201,7 @@ export default function Patients() {
         </Card>
       )}
 
-      <PatientDialog
+      <EnhancedPatientDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         patient={selectedPatient}
