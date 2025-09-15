@@ -66,6 +66,13 @@ export function PatientConsultationModal({
   const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow } = useConsultationWorkflow();
   const { saveDraft, getDraftForPatient, deleteDraft, autoSaveStatus } = useConsultationDrafts();
   
+  // Sync consultation status with queue entry status
+  useEffect(() => {
+    if (queueEntry?.status) {
+      setConsultationStatus(queueEntry.status);
+    }
+  }, [queueEntry?.status]);
+  
   // Auto-save functionality
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const debouncedSave = useCallback(
@@ -262,17 +269,23 @@ export function PatientConsultationModal({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center space-x-3">
                     <h1 className="text-xl font-bold text-foreground">{patient.first_name} {patient.last_name}</h1>
-                    <Badge 
-                      variant={consultationStatus === 'waiting' ? 'secondary' : consultationStatus === 'in_consultation' ? 'default' : 'outline'}
-                      className={`text-xs ${
-                        consultationStatus === 'waiting' ? 'bg-yellow-100 text-yellow-800' : 
-                        consultationStatus === 'in_consultation' ? 'bg-green-100 text-green-800' : ''
-                      }`}
-                    >
-                      {consultationStatus === 'waiting' ? 'Waiting' : 
-                       consultationStatus === 'in_consultation' ? 'Serving' : 
-                       consultationStatus.charAt(0).toUpperCase() + consultationStatus.slice(1)}
-                    </Badge>
+                     <Badge 
+                       variant={
+                         consultationStatus === 'dispensary' ? 'default' :
+                         consultationStatus === 'in_consultation' ? 'secondary' : 
+                         'outline'
+                       }
+                       className={`text-xs ${
+                         consultationStatus === 'dispensary' ? 'bg-orange-500 text-white' :
+                         consultationStatus === 'in_consultation' ? 'bg-green-100 text-green-800' : 
+                         consultationStatus === 'waiting' ? 'bg-yellow-100 text-yellow-800' : ''
+                       }`}
+                     >
+                       {consultationStatus === 'dispensary' ? 'Dispensary' :
+                        consultationStatus === 'waiting' ? 'Waiting' : 
+                        consultationStatus === 'in_consultation' ? 'Serving' : 
+                        consultationStatus.charAt(0).toUpperCase() + consultationStatus.slice(1)}
+                     </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     <div>
@@ -703,6 +716,34 @@ export function PatientConsultationModal({
               >
                 Start consultation
               </Button>
+            ) : consultationStatus === 'dispensary' ? (
+              <Button 
+                onClick={async () => {
+                  try {
+                    await completeConsultationWorkflow(patient.id, queueEntry.id, {
+                      notes: consultationNotes,
+                      diagnosis: diagnosis,
+                      treatmentItems: treatmentItems
+                    });
+                    
+                    toast({
+                      title: "Consultation Updated",
+                      description: "Consultation notes and treatment have been updated.",
+                    });
+                  } catch (error) {
+                    console.error('Failed to update consultation:', error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to update consultation. Please try again.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary/10 h-9 text-sm"
+              >
+                Update Consultation
+              </Button>
             ) : (
               <Button 
                 onClick={async () => {
@@ -720,14 +761,22 @@ export function PatientConsultationModal({
                       treatmentItems: treatmentItems
                     });
                     
+                    // Update local status to dispensary
+                    setConsultationStatus('dispensary');
+                    
                     toast({
                       title: "Consultation Completed",
                       description: "Patient status changed to Dispensary. All data saved to medical history.",
                     });
                     
-                    onClose();
+                    // Don't close the modal - let doctor continue with updates
                   } catch (error) {
                     console.error('Failed to complete consultation:', error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to complete consultation. Please try again.",
+                      variant: "destructive"
+                    });
                   }
                 }}
                 className="bg-primary hover:bg-primary/90 h-9 text-sm"

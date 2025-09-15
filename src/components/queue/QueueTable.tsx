@@ -4,7 +4,7 @@ import { Phone, Clock, AlertTriangle, User } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { PatientConsultationModal } from '@/components/consultation/PatientConsultationModal';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface QueueTableProps {
   queue: QueueEntry[];
@@ -17,6 +17,16 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   const [selectedPatient, setSelectedPatient] = useState<QueueEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { completeConsultationWorkflow } = useConsultationWorkflow();
+
+  // Update selectedPatient when queue data changes (to reflect status updates)
+  useEffect(() => {
+    if (selectedPatient && isModalOpen) {
+      const updatedPatient = queue.find(entry => entry.id === selectedPatient.id);
+      if (updatedPatient) {
+        setSelectedPatient(updatedPatient);
+      }
+    }
+  }, [queue, selectedPatient, isModalOpen]);
 
   const handlePatientClick = (entry: QueueEntry) => {
     setSelectedPatient(entry);
@@ -51,7 +61,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         // Mark queue entry as dispensary (ready for dispensary)
         onStatusChange(selectedPatient.id, 'dispensary');
         
-        setIsModalOpen(false);
+        // Don't close modal - keep it open for updates
+        // Modal will update its status via props/state changes
       } catch (error) {
         console.error('Error marking consultation as done:', error);
       }
