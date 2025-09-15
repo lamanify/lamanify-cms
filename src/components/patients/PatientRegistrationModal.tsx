@@ -94,7 +94,7 @@ export function PatientRegistrationModal({
     city: '',
     state: '',
     country: 'Malaysia',
-    assignedDoctorId: '',
+    assignedDoctorId: 'none',
     visitNotes: '',
     isUrgent: false,
     paymentMethod: 'Self pay'
@@ -220,7 +220,7 @@ export function PatientRegistrationModal({
         .insert({
           patient_id: patient.id,
           queue_number: queueNumber,
-          assigned_doctor_id: formData.assignedDoctorId || null,
+          assigned_doctor_id: formData.assignedDoctorId === "none" ? null : formData.assignedDoctorId || null,
           status: formData.isUrgent ? 'urgent' : 'waiting'
         });
 
@@ -238,7 +238,7 @@ export function PatientRegistrationModal({
             payment_method: formData.paymentMethod,
             visit_notes: formData.visitNotes,
             is_urgent: formData.isUrgent,
-            assigned_doctor: formData.assignedDoctorId
+            assigned_doctor: formData.assignedDoctorId === "none" ? null : formData.assignedDoctorId
           }
         });
 
@@ -282,7 +282,7 @@ export function PatientRegistrationModal({
       city: '',
       state: '',
       country: 'Malaysia',
-      assignedDoctorId: '',
+      assignedDoctorId: 'none',
       visitNotes: '',
       isUrgent: false,
       paymentMethod: 'Self pay'
@@ -707,7 +707,7 @@ export function PatientRegistrationModal({
                           <SelectValue placeholder="Select a doctor" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No specific doctor</SelectItem>
+                          <SelectItem value="none">No specific doctor</SelectItem>
                           {doctors.map((doctor) => (
                             <SelectItem key={doctor.id} value={doctor.id}>
                               Dr {doctor.first_name} {doctor.last_name}
