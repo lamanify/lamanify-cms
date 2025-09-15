@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,6 +76,9 @@ export function PatientRegistrationModal({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cookie key for auto-save
+  const AUTOSAVE_COOKIE_KEY = 'patient_registration_autosave';
+
   const [formData, setFormData] = useState<PatientFormData>({
     name: '',
     idType: 'NRIC/MyKad',
@@ -101,6 +104,107 @@ export function PatientRegistrationModal({
     paymentMethod: 'Self pay',
     paymentMethodNotes: ''
   });
+
+  // Helper functions for cookie operations
+  const saveFormDataToCookies = (data: PatientFormData) => {
+    try {
+      const jsonData = JSON.stringify(data);
+      document.cookie = `${AUTOSAVE_COOKIE_KEY}=${encodeURIComponent(jsonData)}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
+    } catch (error) {
+      console.error('Error saving form data to cookies:', error);
+    }
+  };
+
+  const loadFormDataFromCookies = (): PatientFormData | null => {
+    try {
+      const cookies = document.cookie.split(';');
+      const autosaveCookie = cookies.find(cookie => 
+        cookie.trim().startsWith(`${AUTOSAVE_COOKIE_KEY}=`)
+      );
+      
+      if (autosaveCookie) {
+        const cookieValue = autosaveCookie.split('=')[1];
+        const decodedValue = decodeURIComponent(cookieValue);
+        return JSON.parse(decodedValue);
+      }
+    } catch (error) {
+      console.error('Error loading form data from cookies:', error);
+    }
+    return null;
+  };
+
+  const clearFormDataFromCookies = () => {
+    document.cookie = `${AUTOSAVE_COOKIE_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+  };
+
+  // Load saved form data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const savedData = loadFormDataFromCookies();
+      if (savedData) {
+        setFormData(savedData);
+        toast({
+          title: "Draft restored",
+          description: "Your previous form data has been restored.",
+        });
+      }
+      fetchDoctors();
+    }
+  }, [isOpen]);
+
+  // Auto-save form data to cookies whenever formData changes (debounced)
+  useEffect(() => {
+    if (isOpen) {
+      const timeoutId = setTimeout(() => {
+        // Only save if there's meaningful data (not just default values)
+        if (formData.name || formData.nric_passport || formData.phone || formData.email) {
+          saveFormDataToCookies(formData);
+        }
+      }, 1000); // 1 second debounce
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData, isOpen]);
+
+  // Check if there's saved data
+  const hasSavedData = () => {
+    const savedData = loadFormDataFromCookies();
+    return savedData && (savedData.name || savedData.nric_passport || savedData.phone || savedData.email);
+  };
+
+  // Clear draft function
+  const clearDraft = () => {
+    clearFormDataFromCookies();
+    setFormData({
+      name: '',
+      idType: 'NRIC/MyKad',
+      nric_passport: '',
+      countryOfIssue: '',
+      otherIdDescription: '',
+      parentGuardianName: '',
+      parentGuardianNric: '',
+      phone: '',
+      countryCode: '+60',
+      email: '',
+      dateOfBirth: '',
+      gender: '',
+      addressLine1: '',
+      addressLine2: '',
+      postcode: '',
+      city: '',
+      state: '',
+      country: 'Malaysia',
+      assignedDoctorId: 'none',
+      visitNotes: '',
+      isUrgent: false,
+      paymentMethod: 'Self pay',
+      paymentMethodNotes: ''
+    });
+    toast({
+      title: "Draft cleared",
+      description: "Form has been reset and draft removed.",
+    });
+  };
 
   // Fetch doctors when modal opens
   React.useEffect(() => {
@@ -250,6 +354,9 @@ export function PatientRegistrationModal({
         description: `Patient ${formData.name} has been registered successfully with queue number ${queueNumber}`,
       });
 
+      // Clear auto-saved form data from cookies on successful submission
+      clearFormDataFromCookies();
+
       onPatientRegistered();
       handleClose();
     } catch (error) {
@@ -348,9 +455,21 @@ export function PatientRegistrationModal({
               <DialogTitle className="text-xl font-bold">
                 {currentStep === 1 ? 'Patient Information' : 'Visit Information'}
               </DialogTitle>
-              <Button variant="ghost" size="sm" onClick={handleClose}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center space-x-2">
+                {isOpen && hasSavedData() && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearDraft}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear Draft
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={handleClose}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
             {/* Step Indicator */}
