@@ -670,6 +670,7 @@ export type Database = {
           additional_notes: string | null
           address: string | null
           allergies: string | null
+          assigned_tier_id: string | null
           created_at: string | null
           created_by: string | null
           date_of_birth: string
@@ -686,6 +687,8 @@ export type Database = {
           preferred_name: string | null
           referral_source: string | null
           secondary_phone: string | null
+          tier_assigned_at: string | null
+          tier_assigned_by: string | null
           updated_at: string | null
           visit_reason: string | null
         }
@@ -693,6 +696,7 @@ export type Database = {
           additional_notes?: string | null
           address?: string | null
           allergies?: string | null
+          assigned_tier_id?: string | null
           created_at?: string | null
           created_by?: string | null
           date_of_birth: string
@@ -709,6 +713,8 @@ export type Database = {
           preferred_name?: string | null
           referral_source?: string | null
           secondary_phone?: string | null
+          tier_assigned_at?: string | null
+          tier_assigned_by?: string | null
           updated_at?: string | null
           visit_reason?: string | null
         }
@@ -716,6 +722,7 @@ export type Database = {
           additional_notes?: string | null
           address?: string | null
           allergies?: string | null
+          assigned_tier_id?: string | null
           created_at?: string | null
           created_by?: string | null
           date_of_birth?: string
@@ -732,10 +739,19 @@ export type Database = {
           preferred_name?: string | null
           referral_source?: string | null
           secondary_phone?: string | null
+          tier_assigned_at?: string | null
+          tier_assigned_by?: string | null
           updated_at?: string | null
           visit_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "patients_assigned_tier_id_fkey"
+            columns: ["assigned_tier_id"]
+            isOneToOne: false
+            referencedRelation: "price_tiers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "patients_created_by_fkey"
             columns: ["created_by"]
@@ -885,9 +901,12 @@ export type Database = {
           item_type: string
           medication_id: string | null
           notes: string | null
+          original_price: number | null
           quantity: number | null
           rate: number
           service_id: string | null
+          tier_id_used: string | null
+          tier_price_applied: number | null
           total_amount: number
           updated_at: string
         }
@@ -902,9 +921,12 @@ export type Database = {
           item_type: string
           medication_id?: string | null
           notes?: string | null
+          original_price?: number | null
           quantity?: number | null
           rate: number
           service_id?: string | null
+          tier_id_used?: string | null
+          tier_price_applied?: number | null
           total_amount: number
           updated_at?: string
         }
@@ -919,9 +941,12 @@ export type Database = {
           item_type?: string
           medication_id?: string | null
           notes?: string | null
+          original_price?: number | null
           quantity?: number | null
           rate?: number
           service_id?: string | null
+          tier_id_used?: string | null
+          tier_price_applied?: number | null
           total_amount?: number
           updated_at?: string
         }
@@ -952,6 +977,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "medical_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_items_tier_id_used_fkey"
+            columns: ["tier_id_used"]
+            isOneToOne: false
+            referencedRelation: "price_tiers"
             referencedColumns: ["id"]
           },
         ]

@@ -8,19 +8,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useConsultation, TreatmentItem, Medication, MedicalService } from '@/hooks/useConsultation';
-import { Pill, Stethoscope, Plus, Trash2, Calculator, Package } from 'lucide-react';
+import { useTierPricing } from '@/hooks/useTierPricing';
+import { TierPricingHeader } from './TierPricingHeader';
+import { TreatmentItemsTable } from './TreatmentItemsTable';
+import { Pill, Stethoscope, Plus, Trash2, Calculator, Package, AlertTriangle } from 'lucide-react';
 
 interface TreatmentPlanTabProps {
   sessionId: string;
   treatmentItems?: TreatmentItem[];
   onUpdate?: () => void;
+  patientId?: string;
 }
 
-export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: TreatmentPlanTabProps) {
+export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientId }: TreatmentPlanTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'medications' | 'services'>('medications');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [selectedService, setSelectedService] = useState<MedicalService | null>(null);
+  const [patientTier, setPatientTier] = useState<any>(null);
+  const [tierLoading, setTierLoading] = useState(false);
+  
   const { 
     medications, 
     services, 
@@ -29,6 +36,13 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
     fetchServices, 
     calculateTotalCost 
   } = useConsultation();
+  
+  const {
+    getPatientTier,
+    getServiceWithTierPricing,
+    getMedicationWithTierPricing,
+    formatPriceWithTier
+  } = useTierPricing();
 
   const [treatmentForm, setTreatmentForm] = useState({
     quantity: 1,
@@ -36,7 +50,9 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
     dosage_instructions: '',
     frequency: '',
     duration_days: 7,
-    notes: ''
+    notes: '',
+    tierPrice: 0,
+    hasTierPrice: false
   });
 
   useEffect(() => {
@@ -46,6 +62,26 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
     }
   }, [searchTerm, fetchMedications, fetchServices]);
 
+  // Fetch patient tier on component mount
+  useEffect(() => {
+    if (patientId) {
+      loadPatientTier();
+    }
+  }, [patientId]);
+
+  const loadPatientTier = async () => {
+    if (!patientId) return;
+    setTierLoading(true);
+    try {
+      const patient = await getPatientTier(patientId);
+      setPatientTier(patient);
+    } catch (error) {
+      console.error('Error loading patient tier:', error);
+    } finally {
+      setTierLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setTreatmentForm({
       quantity: 1,
@@ -53,7 +89,9 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
       dosage_instructions: '',
       frequency: '',
       duration_days: 7,
-      notes: ''
+      notes: '',
+      tierPrice: 0,
+      hasTierPrice: false
     });
     setSelectedMedication(null);
     setSelectedService(null);
@@ -61,18 +99,23 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
   };
 
   const handleAddMedication = async () => {
-    if (!selectedMedication) return;
+    if (!selectedMedication || !patientTier?.tier) return;
 
     try {
+      const finalRate = treatmentForm.hasTierPrice ? treatmentForm.tierPrice : treatmentForm.rate;
+      
       await addTreatmentItem(sessionId, {
         item_type: 'medication',
         medication_id: selectedMedication.id,
         quantity: treatmentForm.quantity,
-        rate: treatmentForm.rate || selectedMedication.price_per_unit || 0,
+        rate: finalRate,
         dosage_instructions: treatmentForm.dosage_instructions,
         frequency: treatmentForm.frequency,
         duration_days: treatmentForm.duration_days,
-        notes: treatmentForm.notes
+        notes: treatmentForm.notes,
+        tier_id_used: patientTier.tier.id,
+        tier_price_applied: finalRate,
+        original_price: selectedMedication.price_per_unit || 0
       });
       
       resetForm();
@@ -83,15 +126,20 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
   };
 
   const handleAddService = async () => {
-    if (!selectedService) return;
+    if (!selectedService || !patientTier?.tier) return;
 
     try {
+      const finalRate = treatmentForm.hasTierPrice ? treatmentForm.tierPrice : treatmentForm.rate;
+      
       await addTreatmentItem(sessionId, {
         item_type: 'service',
         service_id: selectedService.id,
         quantity: treatmentForm.quantity,
-        rate: treatmentForm.rate || selectedService.price,
-        notes: treatmentForm.notes
+        rate: finalRate,
+        notes: treatmentForm.notes,
+        tier_id_used: patientTier.tier.id,
+        tier_price_applied: finalRate,
+        original_price: selectedService.price
       });
       
       resetForm();
@@ -102,7 +150,9 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
   };
 
   const calculateItemTotal = () => {
-    const rate = treatmentForm.rate || 
+    const rate = treatmentForm.hasTierPrice ? 
+      treatmentForm.tierPrice :
+      treatmentForm.rate || 
       (selectedMedication?.price_per_unit) || 
       (selectedService?.price) || 0;
     return rate * treatmentForm.quantity;
@@ -127,30 +177,103 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
     service.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleMedicationSelect = async (medication: Medication) => {
+    setSelectedMedication(medication);
+    
+    if (patientTier?.tier) {
+      try {
+        const medicationWithTierPricing = await getMedicationWithTierPricing(
+          medication.id, 
+          patientTier.tier.id
+        );
+        
+        if (medicationWithTierPricing?.hasTierPrice) {
+          setTreatmentForm(prev => ({
+            ...prev,
+            rate: medicationWithTierPricing.tierPrice || 0,
+            tierPrice: medicationWithTierPricing.tierPrice || 0,
+            hasTierPrice: true
+          }));
+        } else {
+          setTreatmentForm(prev => ({
+            ...prev,
+            rate: medication.price_per_unit || 0,
+            tierPrice: 0,
+            hasTierPrice: false
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching tier pricing:', error);
+        setTreatmentForm(prev => ({
+          ...prev,
+          rate: medication.price_per_unit || 0,
+          tierPrice: 0,
+          hasTierPrice: false
+        }));
+      }
+    } else {
+      setTreatmentForm(prev => ({
+        ...prev,
+        rate: medication.price_per_unit || 0,
+        tierPrice: 0,
+        hasTierPrice: false
+      }));
+    }
+  };
+
+  const handleServiceSelect = async (service: MedicalService) => {
+    setSelectedService(service);
+    
+    if (patientTier?.tier) {
+      try {
+        const serviceWithTierPricing = await getServiceWithTierPricing(
+          service.id, 
+          patientTier.tier.id
+        );
+        
+        if (serviceWithTierPricing?.hasTierPrice) {
+          setTreatmentForm(prev => ({
+            ...prev,
+            rate: serviceWithTierPricing.tierPrice || 0,
+            tierPrice: serviceWithTierPricing.tierPrice || 0,
+            hasTierPrice: true
+          }));
+        } else {
+          setTreatmentForm(prev => ({
+            ...prev,
+            rate: service.price,
+            tierPrice: 0,
+            hasTierPrice: false
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching tier pricing:', error);
+        setTreatmentForm(prev => ({
+          ...prev,
+          rate: service.price,
+          tierPrice: 0,
+          hasTierPrice: false
+        }));
+      }
+    } else {
+      setTreatmentForm(prev => ({
+        ...prev,
+        rate: service.price,
+        tierPrice: 0,
+        hasTierPrice: false
+      }));
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Total Cost Display */}
-      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Calculator className="h-6 w-6 text-primary" />
-              <div>
-                <h3 className="text-lg font-semibold">Total Treatment Cost</h3>
-                <p className="text-sm text-muted-foreground">Real-time calculation</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-primary">
-                ${calculateTotalCost().toFixed(2)}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {treatmentItems?.length || 0} items
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tier Pricing Header */}
+      <TierPricingHeader
+        patientTier={patientTier?.tier}
+        patientName={patientTier ? `${patientTier.first_name} ${patientTier.last_name}` : 'Patient'}
+        totalAmount={calculateTotalCost()}
+        itemCount={treatmentItems?.length || 0}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Add Items Section */}
@@ -208,13 +331,7 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                             ? 'border-primary bg-primary/5'
                             : 'hover:bg-muted/50'
                         }`}
-                        onClick={() => {
-                          setSelectedMedication(medication);
-                          setTreatmentForm(prev => ({
-                            ...prev,
-                            rate: medication.price_per_unit || 0
-                          }));
-                        }}
+                        onClick={() => handleMedicationSelect(medication)}
                       >
                         <div className="font-medium">{medication.name}</div>
                         {medication.generic_name && (
@@ -227,9 +344,16 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                             {medication.category}
                           </Badge>
                         )}
-                        {medication.price_per_unit && (
-                          <div className="text-sm font-medium text-primary">
-                            ${medication.price_per_unit.toFixed(2)} per unit
+                        {medication.price_per_unit && patientTier?.tier && (
+                          <div className="text-sm">
+                            <div className="font-medium text-primary">
+                              Base: RM {medication.price_per_unit.toFixed(2)}
+                            </div>
+                            {selectedMedication?.id === medication.id && treatmentForm.hasTierPrice && (
+                              <div className="font-medium text-green-600">
+                                {patientTier.tier.tier_name}: RM {treatmentForm.tierPrice.toFixed(2)}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -255,7 +379,14 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                           />
                         </div>
                         <div>
-                          <Label htmlFor="rate">Rate per Unit ($)</Label>
+                          <Label htmlFor="rate">
+                            Rate per Unit (RM)
+                            {patientTier?.tier && (
+                              <span className="text-sm text-muted-foreground ml-2">
+                                - {patientTier.tier.tier_name} Tier
+                              </span>
+                            )}
+                          </Label>
                           <Input
                             id="rate"
                             type="number"
@@ -264,10 +395,18 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                             onChange={(e) =>
                               setTreatmentForm(prev => ({
                                 ...prev,
-                                rate: parseFloat(e.target.value) || 0
+                                rate: parseFloat(e.target.value) || 0,
+                                hasTierPrice: false // Manual override
                               }))
                             }
+                            className={treatmentForm.hasTierPrice ? 'border-green-300 bg-green-50' : ''}
                           />
+                          {!treatmentForm.hasTierPrice && patientTier?.tier && (
+                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              No tier-specific price found. Using manual rate.
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -329,9 +468,17 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
 
                       <div className="flex justify-between items-center pt-2 border-t">
                         <div className="font-medium">
-                          Total: ${calculateItemTotal().toFixed(2)}
+                          Total: RM {calculateItemTotal().toFixed(2)}
+                          {patientTier?.tier && (
+                            <div className="text-xs text-muted-foreground">
+                              {patientTier.tier.tier_name} Rate
+                            </div>
+                          )}
                         </div>
-                        <Button onClick={handleAddMedication}>
+                        <Button 
+                          onClick={handleAddMedication}
+                          disabled={!patientTier?.tier}
+                        >
                           Add Medication
                         </Button>
                       </div>
@@ -352,13 +499,7 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                             ? 'border-primary bg-primary/5'
                             : 'hover:bg-muted/50'
                         }`}
-                        onClick={() => {
-                          setSelectedService(service);
-                          setTreatmentForm(prev => ({
-                            ...prev,
-                            rate: service.price
-                          }));
-                        }}
+                        onClick={() => handleServiceSelect(service)}
                       >
                         <div className="font-medium">{service.name}</div>
                         <Badge variant="outline" className="text-xs">
@@ -369,9 +510,16 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                             {service.description}
                           </div>
                         )}
-                        <div className="text-sm font-medium text-primary">
-                          ${service.price.toFixed(2)}
-                          {service.duration_minutes && ` (${service.duration_minutes} min)`}
+                        <div className="text-sm">
+                          <div className="font-medium text-primary">
+                            Base: RM {service.price.toFixed(2)}
+                            {service.duration_minutes && ` (${service.duration_minutes} min)`}
+                          </div>
+                          {selectedService?.id === service.id && treatmentForm.hasTierPrice && patientTier?.tier && (
+                            <div className="font-medium text-green-600">
+                              {patientTier.tier.tier_name}: RM {treatmentForm.tierPrice.toFixed(2)}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -396,7 +544,14 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                           />
                         </div>
                         <div>
-                          <Label htmlFor="service-rate">Rate ($)</Label>
+                          <Label htmlFor="service-rate">
+                            Rate (RM)
+                            {patientTier?.tier && (
+                              <span className="text-sm text-muted-foreground ml-2">
+                                - {patientTier.tier.tier_name} Tier
+                              </span>
+                            )}
+                          </Label>
                           <Input
                             id="service-rate"
                             type="number"
@@ -405,10 +560,18 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
                             onChange={(e) =>
                               setTreatmentForm(prev => ({
                                 ...prev,
-                                rate: parseFloat(e.target.value) || 0
+                                rate: parseFloat(e.target.value) || 0,
+                                hasTierPrice: false // Manual override
                               }))
                             }
+                            className={treatmentForm.hasTierPrice ? 'border-green-300 bg-green-50' : ''}
                           />
+                          {!treatmentForm.hasTierPrice && patientTier?.tier && (
+                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              No tier-specific price found. Using manual rate.
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -429,9 +592,17 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate }: Treatm
 
                       <div className="flex justify-between items-center pt-2 border-t">
                         <div className="font-medium">
-                          Total: ${calculateItemTotal().toFixed(2)}
+                          Total: RM {calculateItemTotal().toFixed(2)}
+                          {patientTier?.tier && (
+                            <div className="text-xs text-muted-foreground">
+                              {patientTier.tier.tier_name} Rate
+                            </div>
+                          )}
                         </div>
-                        <Button onClick={handleAddService}>
+                        <Button 
+                          onClick={handleAddService}
+                          disabled={!patientTier?.tier}
+                        >
                           Add Service
                         </Button>
                       </div>

@@ -29,6 +29,7 @@ export interface Patient {
   referral_source?: string;
   visit_reason?: string;
   additional_notes?: string;
+  assigned_tier_id?: string;
   created_at: string;
 }
 
@@ -185,7 +186,7 @@ export default function Patients() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Registered: {new Date(patient.created_at).toLocaleDateString()}
+                Registered: {new Date(patient.created_at || Date.now()).toLocaleDateString()}
               </p>
             </CardContent>
           </Card>

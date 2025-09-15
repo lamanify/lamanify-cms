@@ -133,6 +133,7 @@ export default function ConsultationInterface() {
           <TreatmentPlanTab
             sessionId={activeSession.id}
             treatmentItems={activeSession.treatment_items}
+            patientId={activeSession.patient_id}
           />
         </TabsContent>
 

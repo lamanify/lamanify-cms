@@ -51,6 +51,9 @@ export interface TreatmentItem {
   duration_days?: number;
   frequency?: string;
   notes?: string;
+  tier_id_used?: string;
+  tier_price_applied?: number;
+  original_price?: number;
   medication?: {
     name: string;
     brand_name?: string;

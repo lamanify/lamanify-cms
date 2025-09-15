@@ -19,6 +19,7 @@ import { useQueue } from '@/hooks/useQueue';
 import { usePatientActivities } from '@/hooks/usePatientActivities';
 import { Patient } from '@/pages/Patients';
 import { generatePatientId } from '@/lib/patientIdGenerator';
+import { PatientTierSelector } from './PatientTierSelector';
 import { Calendar, AlertCircle, User, Activity, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -321,8 +322,14 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
                           Patient ID: {patient.patient_id}
                         </Badge>
                       )}
+                      <PatientTierSelector
+                        patientId={patient.id}
+                        currentTierId={patient.assigned_tier_id}
+                        patientName={`${patient.first_name} ${patient.last_name}`}
+                        onTierAssigned={onSave}
+                      />
                       <span className="text-sm text-muted-foreground">
-                        Registered: {format(new Date(patient.created_at), 'MMM dd, yyyy')}
+                        Registered: {format(new Date(patient.created_at || Date.now()), 'MMM dd, yyyy')}
                       </span>
                     </div>
                   )}
