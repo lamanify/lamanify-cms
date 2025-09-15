@@ -87,7 +87,7 @@ export function PatientRegistrationModal({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Draft management hook
-  const { saveDraft, autoSaveStatus } = usePatientDrafts();
+  const { saveDraft, deleteDraft, autoSaveStatus } = usePatientDrafts();
 
   // Cookie key for auto-save (keeping for backward compatibility)
   const AUTOSAVE_COOKIE_KEY = 'patient_registration_autosave';
@@ -229,14 +229,12 @@ export function PatientRegistrationModal({
   };
 
   // Clear draft function
-  const clearDraft = () => {
+  const clearDraft = async () => {
     clearFormDataFromCookies();
     
     // Also clear from drafts if in draft mode
     if (currentDraftId) {
-      const drafts = JSON.parse(localStorage.getItem('patient_drafts') || '[]');
-      const updatedDrafts = drafts.filter((d: any) => d.id !== currentDraftId);
-      localStorage.setItem('patient_drafts', JSON.stringify(updatedDrafts));
+      await deleteDraft(currentDraftId);
       setCurrentDraftId(null);
       setIsDraftMode(false);
     }
@@ -422,9 +420,7 @@ export function PatientRegistrationModal({
 
     // Also clear from drafts on successful registration
     if (currentDraftId) {
-      const drafts = JSON.parse(localStorage.getItem('patient_drafts') || '[]');
-      const updatedDrafts = drafts.filter((d: any) => d.id !== currentDraftId);
-      localStorage.setItem('patient_drafts', JSON.stringify(updatedDrafts));
+      await deleteDraft(currentDraftId);
     }
     
     // Clear auto-saved form data from cookies on successful submission
