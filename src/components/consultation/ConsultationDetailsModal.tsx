@@ -403,7 +403,14 @@ export function ConsultationDetailsModal({
                       <div className="space-y-4">
                         <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
                           <span className="font-medium">Payment Method</span>
-                          <span>{consultationDetails.metadata?.payment_method || 'Self-pay'}</span>
+                          <div className="text-right">
+                            <div className="font-medium">{consultationDetails.metadata?.payment_method || 'Self-pay'}</div>
+                            {consultationDetails.metadata?.payment_method_notes && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {consultationDetails.metadata.payment_method_notes}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         
                         <Separator />

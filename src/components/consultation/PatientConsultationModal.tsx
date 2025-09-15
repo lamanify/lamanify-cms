@@ -231,7 +231,14 @@ export function PatientConsultationModal({
                 <div className="bg-primary/10 rounded-lg px-3 py-2">
                   <div className="flex items-center space-x-2">
                     <span className="text-xs font-medium text-primary">Payment:</span>
-                    <span className="text-xs text-primary">Self-pay</span>
+                    <div className="text-xs text-primary">
+                      <div>{queueEntry.payment_method || 'Self-pay'}</div>
+                      {queueEntry.payment_method_notes && (
+                        <div className="text-xs text-muted-foreground opacity-75">
+                          {queueEntry.payment_method_notes}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

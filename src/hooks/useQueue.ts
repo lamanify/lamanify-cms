@@ -15,6 +15,8 @@ export interface QueueEntry {
   consultation_completed_at?: string;
   created_at: string;
   updated_at: string;
+  payment_method?: string;
+  payment_method_notes?: string;
   // Joined patient data
   patient?: {
     id: string;
@@ -99,14 +101,26 @@ export function useQueue() {
         .select('id, first_name, last_name')
         .in('id', doctorIds);
 
+      // Fetch payment information from patient activities (registration activities)
+      const { data: activities } = await supabase
+        .from('patient_activities')
+        .select('patient_id, metadata')
+        .in('patient_id', patientIds)
+        .eq('activity_type', 'registration')
+        .order('created_at', { ascending: false });
+
       // Create enriched queue entries
       const enrichedQueue: QueueEntry[] = queueData.map(entry => {
         const patient = patients?.find(p => p.id === entry.patient_id);
         const doctor = doctors?.find(d => d.id === entry.assigned_doctor_id);
+        const activity = activities?.find(a => a.patient_id === entry.patient_id);
+        const metadata = activity?.metadata as any;
         
         return {
           ...entry,
           status: entry.status as QueueEntry['status'],
+          payment_method: metadata?.payment_method,
+          payment_method_notes: metadata?.payment_method_notes,
           patient: patient ? {
             id: patient.id,
             first_name: patient.first_name,

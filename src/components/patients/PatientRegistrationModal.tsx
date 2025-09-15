@@ -56,6 +56,7 @@ interface PatientFormData {
   visitNotes: string;
   isUrgent: boolean;
   paymentMethod: string;
+  paymentMethodNotes: string;
 }
 
 interface Doctor {
@@ -97,7 +98,8 @@ export function PatientRegistrationModal({
     assignedDoctorId: 'none',
     visitNotes: '',
     isUrgent: false,
-    paymentMethod: 'Self pay'
+    paymentMethod: 'Self pay',
+    paymentMethodNotes: ''
   });
 
   // Fetch doctors when modal opens
@@ -236,6 +238,7 @@ export function PatientRegistrationModal({
           content: `New patient registered - ${formData.name}`,
           metadata: {
             payment_method: formData.paymentMethod,
+            payment_method_notes: formData.paymentMethodNotes,
             visit_notes: formData.visitNotes,
             is_urgent: formData.isUrgent,
             assigned_doctor: formData.assignedDoctorId === "none" ? null : formData.assignedDoctorId
@@ -285,7 +288,8 @@ export function PatientRegistrationModal({
       assignedDoctorId: 'none',
       visitNotes: '',
       isUrgent: false,
-      paymentMethod: 'Self pay'
+      paymentMethod: 'Self pay',
+      paymentMethodNotes: ''
     });
     onClose();
   };
@@ -749,19 +753,43 @@ export function PatientRegistrationModal({
                     <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
                       <h4 className="font-medium">Choose Payment method here</h4>
                     </div>
-                    <div className="border border-t-0 p-4 rounded-b-lg">
-                      <Label className="text-sm font-medium">Payment method</Label>
-                      <Select value={formData.paymentMethod} onValueChange={(value) => updateFormData('paymentMethod', value)}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Self pay">Self pay</SelectItem>
-                          <SelectItem value="Insurance">Insurance</SelectItem>
-                          <SelectItem value="Company">Company</SelectItem>
-                          <SelectItem value="Government">Government</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="border border-t-0 p-4 rounded-b-lg space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium">Payment method</Label>
+                        <Select value={formData.paymentMethod} onValueChange={(value) => updateFormData('paymentMethod', value)}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Self pay">Self pay</SelectItem>
+                            <SelectItem value="Insurance">Insurance</SelectItem>
+                            <SelectItem value="Company">Company</SelectItem>
+                            <SelectItem value="Government">Government</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Conditional Payment Method Notes */}
+                      {(formData.paymentMethod === 'Insurance' || formData.paymentMethod === 'Company' || formData.paymentMethod === 'Self pay') && (
+                        <div>
+                          <Label htmlFor="paymentNotes" className="text-sm font-medium text-muted-foreground">
+                            {formData.paymentMethod === 'Insurance' && 'Insurance details'}
+                            {formData.paymentMethod === 'Company' && 'Company details'}
+                            {formData.paymentMethod === 'Self pay' && 'Payment notes'}
+                          </Label>
+                          <Input
+                            id="paymentNotes"
+                            value={formData.paymentMethodNotes}
+                            onChange={(e) => updateFormData('paymentMethodNotes', e.target.value)}
+                            placeholder={
+                              formData.paymentMethod === 'Insurance' ? 'e.g., Great Eastern, policy #12345' :
+                              formData.paymentMethod === 'Company' ? 'e.g., ABC Corporation' :
+                              'e.g., Budget limit: RM500'
+                            }
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

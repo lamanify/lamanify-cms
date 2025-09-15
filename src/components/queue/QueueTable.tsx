@@ -172,6 +172,12 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                       {entry.patient.phone}
                     </div>
                   )}
+                  {entry.payment_method && entry.payment_method !== 'Self pay' && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                      {entry.payment_method}
+                      {entry.payment_method_notes && ` • ${entry.payment_method_notes}`}
+                    </span>
+                  )}
                 </div>
                 {entry.doctor && (
                   <div className="text-sm text-muted-foreground mt-1">
