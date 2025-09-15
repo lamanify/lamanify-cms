@@ -691,7 +691,7 @@ export function PatientConsultationModal({
               <ChevronDown className="h-4 w-4" />
             </Button>
             
-            {!activeConsultationSession ? (
+            {consultationStatus === 'waiting' ? (
               <Button 
                 onClick={async () => {
                   try {
