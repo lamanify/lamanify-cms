@@ -347,7 +347,7 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
                   </TabsTrigger>
                   <TabsTrigger value="activity" className="flex items-center space-x-2" disabled={!patient}>
                     <Activity className="h-4 w-4" />
-                    <span>Activity History</span>
+                    <span>Visiting History</span>
                   </TabsTrigger>
                   <TabsTrigger value="medical" className="flex items-center space-x-2" disabled={!patient}>
                     <FileText className="h-4 w-4" />
