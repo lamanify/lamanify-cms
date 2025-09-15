@@ -683,14 +683,20 @@ export function PatientConsultationModal({
                 onClick={async () => {
                   try {
                     await startConsultationWorkflow(patient.id, queueEntry.id);
+                    // Update status via parent handler but don't close modal
                     onStartConsultation(queueEntry.id);
                     setConsultationStatus('in_consultation');
                     toast({
                       title: "Consultation Started",
-                      description: "Patient status updated to Serving",
+                      description: "Patient status updated to Serving. You can continue with the consultation.",
                     });
                   } catch (error) {
                     console.error('Failed to start consultation:', error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to start consultation. Please try again.",
+                      variant: "destructive"
+                    });
                   }
                 }}
                 className="bg-primary hover:bg-primary/90 h-9 text-sm"

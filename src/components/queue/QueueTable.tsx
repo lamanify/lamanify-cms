@@ -30,7 +30,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
   const handleStartConsultation = (queueId: string) => {
     onStatusChange(queueId, 'in_consultation');
-    setIsModalOpen(false);
+    // Don't close modal - let it stay open for the doctor to continue
   };
 
   const handleCallPatient = (queueId: string) => {
