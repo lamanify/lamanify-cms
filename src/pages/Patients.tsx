@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { EnhancedPatientDialog } from '@/components/patients/EnhancedPatientDialog';
 import { PatientRegistrationModal } from '@/components/patients/PatientRegistrationModal';
+import { DraftNotificationCard } from '@/components/patients/DraftNotificationCard';
 import { Plus, Search, User, Phone, Mail } from 'lucide-react';
 
 export interface Patient {
@@ -116,6 +117,9 @@ export default function Patients() {
           Add Patient
         </Button>
       </div>
+
+      {/* Draft Notification */}
+      <DraftNotificationCard onPatientRegistered={handlePatientRegistered} />
 
       {/* Search */}
       <Card>

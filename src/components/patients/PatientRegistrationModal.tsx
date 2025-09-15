@@ -20,13 +20,19 @@ import {
   MapPin,
   Stethoscope,
   CreditCard,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  Clock,
+  Trash2
 } from 'lucide-react';
+import { usePatientDrafts } from '@/hooks/usePatientDrafts';
+import { Badge } from '@/components/ui/badge';
 
 interface PatientRegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPatientRegistered: () => void;
+  draftId?: string | null;
 }
 
 interface PatientFormData {
@@ -68,15 +74,22 @@ interface Doctor {
 export function PatientRegistrationModal({
   isOpen,
   onClose,
-  onPatientRegistered
+  onPatientRegistered,
+  draftId
 }: PatientRegistrationModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [isDraftMode, setIsDraftMode] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // Draft management hook
+  const { saveDraft, autoSaveStatus } = usePatientDrafts();
 
-  // Cookie key for auto-save
+  // Cookie key for auto-save (keeping for backward compatibility)
   const AUTOSAVE_COOKIE_KEY = 'patient_registration_autosave';
 
   const [formData, setFormData] = useState<PatientFormData>({
@@ -137,30 +150,73 @@ export function PatientRegistrationModal({
     document.cookie = `${AUTOSAVE_COOKIE_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
   };
 
-  // Load saved form data when modal opens
+  // Load draft data or saved form data when modal opens
   useEffect(() => {
     if (isOpen) {
-      const savedData = loadFormDataFromCookies();
-      if (savedData) {
-        setFormData(savedData);
-        toast({
-          title: "Draft restored",
-          description: "Your previous form data has been restored.",
-        });
+      if (draftId) {
+        // Load specific draft
+        const drafts = JSON.parse(localStorage.getItem('patient_drafts') || '[]');
+        const draft = drafts.find((d: any) => d.id === draftId);
+        if (draft) {
+          setFormData(draft.draft_data);
+          setIsDraftMode(true);
+          setCurrentDraftId(draftId);
+          toast({
+            title: "Draft loaded",
+            description: "Your draft has been loaded for editing.",
+          });
+        }
+      } else {
+        // Load from cookies (backward compatibility)
+        const savedData = loadFormDataFromCookies();
+        if (savedData) {
+          setFormData(savedData);
+          toast({
+            title: "Draft restored",
+            description: "Your previous form data has been restored.",
+          });
+        }
       }
       fetchDoctors();
     }
-  }, [isOpen]);
+  }, [isOpen, draftId]);
 
-  // Auto-save form data to cookies whenever formData changes (debounced)
+  // Auto-save functionality with debouncing
   useEffect(() => {
-    if (isOpen) {
-      const timeoutId = setTimeout(() => {
-        // Only save if there's meaningful data (not just default values)
-        if (formData.name || formData.nric_passport || formData.phone || formData.email) {
-          saveFormDataToCookies(formData);
+    if (isOpen && (formData.name || formData.nric_passport || formData.phone || formData.email)) {
+      // Clear existing timeout
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      
+      // Set new timeout for auto-save (30 seconds as requested)
+      autoSaveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const newDraftId = await saveDraft(formData, currentDraftId);
+          if (newDraftId && !currentDraftId) {
+            setCurrentDraftId(newDraftId);
+            setIsDraftMode(true);
+          }
+        } catch (error) {
+          console.error('Auto-save failed:', error);
         }
-      }, 1000); // 1 second debounce
+      }, 30000); // 30 seconds
+
+      return () => {
+        if (autoSaveTimeoutRef.current) {
+          clearTimeout(autoSaveTimeoutRef.current);
+        }
+      };
+    }
+  }, [formData, isOpen, currentDraftId, saveDraft]);
+
+  // Save draft when form changes (debounced to 500ms for responsiveness)
+  useEffect(() => {
+    if (isOpen && (formData.name || formData.nric_passport || formData.phone || formData.email)) {
+      // Also save to cookies for backward compatibility
+      const timeoutId = setTimeout(() => {
+        saveFormDataToCookies(formData);
+      }, 1000);
 
       return () => clearTimeout(timeoutId);
     }
@@ -175,6 +231,16 @@ export function PatientRegistrationModal({
   // Clear draft function
   const clearDraft = () => {
     clearFormDataFromCookies();
+    
+    // Also clear from drafts if in draft mode
+    if (currentDraftId) {
+      const drafts = JSON.parse(localStorage.getItem('patient_drafts') || '[]');
+      const updatedDrafts = drafts.filter((d: any) => d.id !== currentDraftId);
+      localStorage.setItem('patient_drafts', JSON.stringify(updatedDrafts));
+      setCurrentDraftId(null);
+      setIsDraftMode(false);
+    }
+    
     setFormData({
       name: '',
       idType: 'NRIC/MyKad',
@@ -354,8 +420,15 @@ export function PatientRegistrationModal({
         description: `Patient ${formData.name} has been registered successfully with queue number ${queueNumber}`,
       });
 
-      // Clear auto-saved form data from cookies on successful submission
-      clearFormDataFromCookies();
+    // Also clear from drafts on successful registration
+    if (currentDraftId) {
+      const drafts = JSON.parse(localStorage.getItem('patient_drafts') || '[]');
+      const updatedDrafts = drafts.filter((d: any) => d.id !== currentDraftId);
+      localStorage.setItem('patient_drafts', JSON.stringify(updatedDrafts));
+    }
+    
+    // Clear auto-saved form data from cookies on successful submission
+    clearFormDataFromCookies();
 
       onPatientRegistered();
       handleClose();
@@ -452,18 +525,27 @@ export function PatientRegistrationModal({
           {/* Header */}
           <DialogHeader className="p-6 pb-4 border-b">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-bold">
-                {currentStep === 1 ? 'Patient Information' : 'Visit Information'}
-              </DialogTitle>
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-xl font-bold">
+                  {currentStep === 1 ? 'Patient Information' : 'Visit Information'}
+                </DialogTitle>
+                {isDraftMode && (
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    <FileText className="h-3 w-3 mr-1" />
+                    Draft Mode
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center space-x-2">
                 {isOpen && hasSavedData() && (
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={clearDraft}
-                    className="text-xs text-muted-foreground hover:text-foreground"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
-                    Clear Draft
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Discard Draft
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" onClick={handleClose}>
@@ -471,6 +553,14 @@ export function PatientRegistrationModal({
                 </Button>
               </div>
             </div>
+            
+            {/* Auto-save status */}
+            {autoSaveStatus && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {autoSaveStatus}
+              </div>
+            )}
             
             {/* Step Indicator */}
             <div className="flex items-center mt-4">
@@ -933,7 +1023,7 @@ export function PatientRegistrationModal({
                   Back
                 </Button>
                 <Button onClick={handleSubmit} disabled={loading}>
-                  {loading ? 'Registering...' : 'Register Patient'}
+                  {loading ? 'Registering...' : isDraftMode ? 'Complete Registration' : 'Register Patient'}
                 </Button>
               </>
             )}
