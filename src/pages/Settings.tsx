@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings as SettingsIcon, User, Shield, Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Settings() {
   return (
@@ -56,6 +57,7 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* Clinic Configuration Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -67,7 +69,9 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground">
               Configure clinic-wide settings and preferences
             </p>
-            <Button variant="outline">Clinic Configuration</Button>
+            <Button variant="outline" asChild>
+              <Link to="/settings/clinic">Clinic Configuration</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

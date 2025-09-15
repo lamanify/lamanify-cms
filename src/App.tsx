@@ -14,6 +14,7 @@ import ConsultationWaitingList from "@/pages/ConsultationWaitingList";
 import ConsultationInterface from "@/pages/ConsultationInterface";
 import Billing from "@/pages/Billing";
 import Settings from "@/pages/Settings";
+import ClinicSettings from '@/pages/ClinicSettings';
 import AuthPage from "@/components/auth/AuthPage";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/consultation/:sessionId" element={<AppLayout><ConsultationInterface /></AppLayout>} />
           <Route path="/billing" element={<AppLayout><Billing /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+          <Route path="/settings/clinic" element={<AppLayout><ClinicSettings /></AppLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

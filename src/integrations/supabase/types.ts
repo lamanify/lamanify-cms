@@ -151,6 +151,51 @@ export type Database = {
           },
         ]
       }
+      clinic_settings: {
+        Row: {
+          created_at: string
+          data_type: string
+          description: string | null
+          id: string
+          is_encrypted: boolean | null
+          is_required: boolean | null
+          setting_category: string
+          setting_key: string
+          setting_value: string | null
+          updated_at: string
+          updated_by: string | null
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          data_type?: string
+          description?: string | null
+          id?: string
+          is_encrypted?: boolean | null
+          is_required?: boolean | null
+          setting_category: string
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          data_type?: string
+          description?: string | null
+          id?: string
+          is_encrypted?: boolean | null
+          is_required?: boolean | null
+          setting_category?: string
+          setting_key?: string
+          setting_value?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
       consultation_files: {
         Row: {
           consultation_note_id: string | null
