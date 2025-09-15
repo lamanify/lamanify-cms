@@ -18,9 +18,11 @@ import { SystemSettings } from './SystemSettings';
 import { PaymentSettings } from './PaymentSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { PriceTierManagement } from './PriceTierManagement';
+import { ServiceManagement } from './ServiceManagement';
+import { MedicationManagement } from './MedicationManagement';
 import { useAuth } from '@/hooks/useAuth';
 
-type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers';
+type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications';
 
 const settingCategories = [
   {
@@ -57,6 +59,13 @@ const settingCategories = [
     description: 'Manage different pricing structures for services and medications',
     icon: Package,
     color: 'bg-indigo-500',
+  },
+  {
+    id: 'inventory_services' as const,
+    title: 'Inventory & Services',
+    description: 'Manage medical services and medications with multi-tier pricing',
+    icon: Package,
+    color: 'bg-teal-500',
   },
   {
     id: 'notifications' as const,
@@ -102,12 +111,69 @@ export function ClinicConfigurationDashboard() {
         return <PaymentSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'price_tiers':
         return <PriceTierManagement />;
+      case 'inventory_services':
+        return renderInventoryServicesSubmenu();
+      case 'services':
+        return <ServiceManagement />;
+      case 'medications':
+        return <MedicationManagement />;
       case 'notifications':
         return <NotificationSettings onBack={() => setActiveCategory('dashboard')} />;
       default:
         return null;
     }
   };
+
+  const renderInventoryServicesSubmenu = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">Inventory & Services</h2>
+        <p className="text-muted-foreground">
+          Manage medical services and medications with multi-tier pricing
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveCategory('services')}>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="p-2 rounded-lg bg-blue-500 text-white">
+                <Package className="h-5 w-5" />
+              </div>
+            </div>
+            <CardTitle className="text-lg">Medical Services</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Manage consultations, procedures, diagnostics, and other medical services with tier-based pricing
+            </p>
+            <Button variant="outline" className="w-full">
+              Manage Services
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveCategory('medications')}>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="p-2 rounded-lg bg-green-500 text-white">
+                <Package className="h-5 w-5" />
+              </div>
+            </div>
+            <CardTitle className="text-lg">Medications</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Manage medication inventory with tier-based pricing for different payment methods
+            </p>
+            <Button variant="outline" className="w-full">
+              Manage Medications
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 
   if (activeCategory !== 'dashboard') {
     return (
