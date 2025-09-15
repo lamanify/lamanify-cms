@@ -88,7 +88,7 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="h-[90vh] w-3/5 max-w-none m-0 rounded-none translate-x-2/5 translate-y-[5vh] top-0 right-0 data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right flex flex-col overflow-hidden"
+        className="h-[90vh] w-[600px] max-w-[90vw] m-0 rounded-none translate-x-0 translate-y-[5vh] top-0 right-0 data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right flex flex-col overflow-hidden"
         style={{ 
           position: 'fixed',
           animation: isOpen ? 'slideInRight 0.3s ease-out' : 'slideOutRight 0.3s ease-out'
