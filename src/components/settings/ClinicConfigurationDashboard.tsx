@@ -60,10 +60,10 @@ const settingCategories = [
 
 export function ClinicConfigurationDashboard() {
   const [activeCategory, setActiveCategory] = useState<SettingCategory>('dashboard');
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   // Check if user is admin
-  const isAdmin = user?.user_metadata?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
 
   if (!isAdmin) {
     return (
