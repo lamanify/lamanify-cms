@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, Users, UserCheck, CheckCircle } from 'lucide-react';
+import { Clock, Users, UserCheck, CheckCircle, Pill } from 'lucide-react';
 
 interface QueueStatsProps {
   stats: {
@@ -7,6 +7,7 @@ interface QueueStatsProps {
     waiting: number;
     inConsultation: number;
     completed: number;
+    dispensary?: number;
     averageWaitTime: number;
     longestWaitTime: number;
   };
@@ -21,7 +22,7 @@ export function QueueStats({ stats }: QueueStatsProps) {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
       <Card>
         <CardContent className="flex items-center justify-center p-6">
           <div className="text-center">
@@ -48,6 +49,16 @@ export function QueueStats({ stats }: QueueStatsProps) {
             <UserCheck className="h-8 w-8 mx-auto mb-2 text-info" />
             <div className="text-2xl font-bold">{stats.inConsultation}</div>
             <div className="text-sm text-muted-foreground">In Consultation</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex items-center justify-center p-6">
+          <div className="text-center">
+            <Pill className="h-8 w-8 mx-auto mb-2 text-orange-500" />
+            <div className="text-2xl font-bold">{stats.dispensary || 0}</div>
+            <div className="text-sm text-muted-foreground">Dispensary</div>
           </div>
         </CardContent>
       </Card>

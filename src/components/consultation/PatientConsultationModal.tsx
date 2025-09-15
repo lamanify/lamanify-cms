@@ -707,9 +707,16 @@ export function PatientConsultationModal({
                       treatmentItems: treatmentItems
                     });
                     
+                    // Call onMarkDone to trigger status change to dispensary
+                    await onMarkDone({
+                      notes: consultationNotes,
+                      diagnosis: diagnosis,
+                      treatmentItems: treatmentItems
+                    });
+                    
                     toast({
                       title: "Consultation Completed",
-                      description: "All consultation data has been saved to patient's medical history",
+                      description: "Patient status changed to Dispensary. All data saved to medical history.",
                     });
                     
                     onClose();

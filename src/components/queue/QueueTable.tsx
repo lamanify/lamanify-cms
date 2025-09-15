@@ -48,8 +48,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
           consultationData
         );
         
-        // Mark queue entry as completed
-        onStatusChange(selectedPatient.id, 'completed');
+        // Mark queue entry as dispensary (ready for dispensary)
+        onStatusChange(selectedPatient.id, 'dispensary');
         
         setIsModalOpen(false);
       } catch (error) {
@@ -67,6 +67,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   const getStatusColor = (status: string, waitTime: number, isPriority = false) => {
     if (isPriority) return 'bg-queue-priority text-queue-priority-foreground';
     if (status === 'completed') return 'bg-success text-success-foreground';
+    if (status === 'dispensary') return 'bg-orange-500 text-white';
     if (status === 'in_consultation') return 'bg-info text-info-foreground';
     if (status === 'cancelled') return 'bg-destructive text-destructive-foreground';
     
@@ -97,6 +98,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         return 'Serving';
       case 'completed':
         return 'Completed';
+      case 'dispensary':
+        return 'Dispensary';
       case 'cancelled':
         return 'Cancelled';
       default:
@@ -253,9 +256,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onStatusChange(entry.id, 'completed')}
+                  onClick={() => onStatusChange(entry.id, 'dispensary')}
                 >
-                  Mark Complete
+                  Consultation Completed
                 </Button>
               )}
 

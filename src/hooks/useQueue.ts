@@ -7,7 +7,7 @@ export interface QueueEntry {
   patient_id: string;
   queue_number: string;
   queue_date: string;
-  status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | 'urgent';
+  status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | 'urgent' | 'dispensary';
   assigned_doctor_id?: string;
   estimated_consultation_duration: number;
   checked_in_at: string;
@@ -152,7 +152,7 @@ export function useQueue() {
       } else if (firstWaiting) {
         setCurrentNumber(firstWaiting.queue_number);
       } else {
-        const lastCompleted = enrichedQueue?.filter(entry => entry.status === 'completed').pop();
+        const lastCompleted = enrichedQueue?.filter(entry => entry.status === 'completed' || entry.status === 'dispensary').pop();
         setCurrentNumber(lastCompleted?.queue_number || null);
       }
     } catch (error) {
@@ -212,7 +212,7 @@ export function useQueue() {
       if (status === 'in_consultation') {
         updates.consultation_started_at = new Date().toISOString();
         if (doctorId) updates.assigned_doctor_id = doctorId;
-      } else if (status === 'completed') {
+      } else if (status === 'completed' || status === 'dispensary') {
         updates.consultation_completed_at = new Date().toISOString();
       }
 
@@ -274,9 +274,10 @@ export function useQueue() {
     const total = queue.length;
     const waiting = queue.filter(q => q.status === 'waiting').length;
     const inConsultation = queue.filter(q => q.status === 'in_consultation').length;
-    const completed = queue.filter(q => q.status === 'completed').length;
+    const completed = queue.filter(q => q.status === 'completed' || q.status === 'dispensary').length;
+    const dispensary = queue.filter(q => q.status === 'dispensary').length;
     
-    return { total, waiting, inConsultation, completed };
+    return { total, waiting, inConsultation, completed, dispensary };
   };
 
   return {

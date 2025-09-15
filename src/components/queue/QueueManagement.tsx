@@ -150,6 +150,7 @@ export function QueueManagement() {
             <p>Total Patients: ${stats.total}</p>
             <p>Waiting: ${stats.waiting}</p>
             <p>In Consultation: ${stats.inConsultation}</p>
+            <p>At Dispensary: ${stats.dispensary || 0}</p>
             <p>Completed: ${stats.completed}</p>
           </body>
         </html>
