@@ -143,12 +143,13 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         return (
           <div
             key={entry.id}
-            className={`flex items-center justify-between p-4 rounded-lg border transition-all ${
+            onClick={() => handlePatientClick(entry)}
+            className={`flex items-center justify-between p-4 rounded-lg border transition-all cursor-pointer hover:border-accent hover:bg-accent/5 ${
               entry.status === 'in_consultation' 
                 ? 'border-info bg-info/5 shadow-sm' 
                 : isPriority
                 ? 'border-queue-priority bg-queue-priority/5 shadow-sm'
-                : 'border-border hover:bg-muted/50'
+                : 'border-border'
             }`}
           >
             <div className="flex items-center space-x-6">
@@ -168,12 +169,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
               {/* Patient Info */}
               <div 
-                className="min-w-0 flex-1 cursor-pointer hover:bg-muted/30 rounded p-3 -m-3 transition-colors group"
-                onClick={() => handlePatientClick(entry)}
+                className="min-w-0 flex-1"
               >
-                <div className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
-                  {entry.patient?.first_name} {entry.patient?.last_name}
-                </div>
+                <div className="text-xl font-bold text-foreground hover:text-primary transition-colors">{entry.patient?.first_name} {entry.patient?.last_name}</div>
                 <div className="flex items-center space-x-3 mt-1">
                   {entry.patient?.patient_id && (
                     <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
