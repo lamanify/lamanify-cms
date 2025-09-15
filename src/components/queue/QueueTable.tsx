@@ -94,7 +94,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
       case 'waiting':
         return 'Waiting';
       case 'in_consultation':
-        return 'In Consultation';
+        return 'Serving';
       case 'completed':
         return 'Completed';
       case 'cancelled':
