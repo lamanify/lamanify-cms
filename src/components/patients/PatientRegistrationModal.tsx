@@ -372,7 +372,7 @@ export function PatientRegistrationModal({
               first_name: firstName,
               last_name: lastName,
               date_of_birth: formData.dateOfBirth,
-              gender: formData.gender,
+              gender: formData.gender.toLowerCase(),
               phone: formData.countryCode + formData.phone,
               email: formData.email || null,
               address: `${formData.addressLine1}${formData.addressLine2 ? ', ' + formData.addressLine2 : ''}, ${formData.postcode} ${formData.city}, ${formData.state}, ${formData.country}`,
