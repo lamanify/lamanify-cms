@@ -262,16 +262,6 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                   Start Consultation
                 </Button>
               )}
-              
-              {entry.status === 'in_consultation' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onStatusChange(entry.id, 'dispensary')}
-                >
-                  Consultation Completed
-                </Button>
-              )}
 
               <Button
                 size="sm"
