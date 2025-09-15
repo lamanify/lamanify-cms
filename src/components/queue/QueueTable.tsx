@@ -144,7 +144,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
           <div
             key={entry.id}
             onClick={() => handlePatientClick(entry)}
-            className={`flex items-center justify-between p-4 rounded-lg border transition-all cursor-pointer hover:border-accent hover:bg-accent/5 ${
+            className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
               entry.status === 'in_consultation' 
                 ? 'border-info bg-info/5 shadow-sm' 
                 : isPriority
