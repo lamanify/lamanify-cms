@@ -203,27 +203,26 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
             />
           </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="instruction">Instructions</Label>
-              <Textarea
-                id="instruction"
-                value={formData.instruction}
-                onChange={(e) => setFormData(prev => ({ ...prev, instruction: e.target.value }))}
-                placeholder="Additional instructions for patient"
-                rows={2}
-                className="resize-none"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="instruction">Instructions</Label>
+            <Textarea
+              id="instruction"
+              value={formData.instruction}
+              onChange={(e) => setFormData(prev => ({ ...prev, instruction: e.target.value }))}
+              placeholder="Additional instructions for patient"
+              rows={2}
+              className="resize-none"
+            />
           </div>
+        </div>
 
-          <div className="flex justify-end gap-3 border-t pt-4 mt-6 flex-shrink-0">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={!formData.item.trim()}>
-              {editItem ? 'Update' : 'Add'} Item
-            </Button>
-          </div>
+        <div className="flex justify-end gap-3 border-t pt-4 px-6 pb-4 flex-shrink-0 bg-background">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!formData.item.trim()}>
+            {editItem ? 'Update' : 'Add'} Item
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
