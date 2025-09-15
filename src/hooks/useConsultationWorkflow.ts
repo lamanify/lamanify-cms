@@ -65,24 +65,52 @@ export function useConsultationWorkflow() {
     try {
       const doctorId = (await supabase.auth.getUser()).data.user?.id;
       
-      // Create main consultation activity
-      const consultationContent = [
-        consultationData.diagnosis ? `Diagnosis: ${consultationData.diagnosis}` : '',
-        consultationData.notes ? `Notes: ${consultationData.notes}` : '',
-        consultationData.treatmentItems.length ? `Prescribed ${consultationData.treatmentItems.length} items` : ''
-      ].filter(Boolean).join('\n');
+      // Create main consultation activity with detailed consultation notes
+      const consultationTitle = 'Consultation Completed';
+      const consultationContent = [];
+      
+      // Add consultation notes as the primary content
+      if (consultationData.notes) {
+        consultationContent.push(`Consultation Notes:\n${consultationData.notes}`);
+      }
+      
+      // Add diagnosis if present
+      if (consultationData.diagnosis) {
+        consultationContent.push(`Diagnosis: ${consultationData.diagnosis}`);
+      }
+      
+      // Add treatment summary
+      if (consultationData.treatmentItems.length > 0) {
+        consultationContent.push(`Treatment Items Prescribed: ${consultationData.treatmentItems.length}`);
+        
+        // Add detailed treatment list
+        const treatmentDetails = consultationData.treatmentItems.map(item => {
+          if (item.dosage || item.frequency || item.duration) {
+            return `• ${item.item} - ${item.dosage || 'As directed'}, ${item.frequency || 'As needed'}${item.duration ? `, for ${item.duration}` : ''}`;
+          } else {
+            return `• ${item.item} (Service) - Qty: ${item.quantity}`;
+          }
+        }).join('\n');
+        
+        consultationContent.push(`\nPrescribed Items:\n${treatmentDetails}`);
+      }
+
+      const finalContent = consultationContent.length > 0 
+        ? consultationContent.join('\n\n') 
+        : 'Consultation completed successfully';
 
       await supabase.from('patient_activities').insert({
         patient_id: patientId,
         activity_type: 'consultation',
         activity_date: new Date().toISOString(),
-        title: 'Consultation Completed',
-        content: consultationContent || 'Consultation completed successfully',
+        title: consultationTitle,
+        content: finalContent,
         metadata: {
           queue_id: queueId,
           diagnosis: consultationData.diagnosis,
           consultation_date: new Date().toISOString().split('T')[0],
-          total_items: consultationData.treatmentItems.length
+          total_items: consultationData.treatmentItems.length,
+          consultation_notes: consultationData.notes // Store notes separately in metadata
         },
         staff_member_id: doctorId,
         priority: 'normal',
@@ -106,18 +134,20 @@ export function useConsultationWorkflow() {
               instructions: item.instruction || 'Follow as prescribed'
             });
 
-            // Create medication activity
+            // Create medication activity with enhanced details
             await supabase.from('patient_activities').insert({
               patient_id: patientId,
               activity_type: 'medication',
               activity_date: new Date().toISOString(),
-              title: `Prescribed ${item.item}`,
-              content: `Dosage: ${item.dosage || 'As directed'}\nFrequency: ${item.frequency || 'As needed'}\nInstructions: ${item.instruction || 'Follow as prescribed'}`,
+              title: `Medication Prescribed: ${item.item}`,
+              content: `Medication Details:\n• Medication: ${item.item}\n• Dosage: ${item.dosage || 'As directed'}\n• Frequency: ${item.frequency || 'As needed'}\n• Duration: ${item.duration || 'As prescribed'}\n• Instructions: ${item.instruction || 'Follow as prescribed'}${item.rate > 0 ? `\n• Cost: RM ${item.amount.toFixed(2)}` : ''}`,
               metadata: {
                 medication_name: item.item,
                 dosage: item.dosage,
                 frequency: item.frequency,
                 duration: item.duration,
+                instructions: item.instruction,
+                amount: item.amount,
                 queue_id: queueId
               },
               staff_member_id: doctorId,
