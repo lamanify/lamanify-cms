@@ -181,7 +181,7 @@ export function PatientRegistrationModal({
     }
   }, [isOpen, draftId]);
 
-  // Auto-save functionality with debouncing
+  // Auto-save functionality with faster feedback (5 seconds instead of 30)
   useEffect(() => {
     if (isOpen && (formData.name || formData.nric_passport || formData.phone || formData.email)) {
       // Clear existing timeout
@@ -189,7 +189,7 @@ export function PatientRegistrationModal({
         clearTimeout(autoSaveTimeoutRef.current);
       }
       
-      // Set new timeout for auto-save (30 seconds as requested)
+      // Set new timeout for auto-save (5 seconds for faster demo)
       autoSaveTimeoutRef.current = setTimeout(async () => {
         try {
           const newDraftId = await saveDraft(formData, currentDraftId);
@@ -200,7 +200,7 @@ export function PatientRegistrationModal({
         } catch (error) {
           console.error('Auto-save failed:', error);
         }
-      }, 30000); // 30 seconds
+      }, 5000); // 5 seconds for demo
 
       return () => {
         if (autoSaveTimeoutRef.current) {
@@ -535,9 +535,15 @@ export function PatientRegistrationModal({
                     Draft Mode
                   </Badge>
                 )}
+                {/* Always show draft status for visibility */}
+                <Badge variant="outline" className="text-xs">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Auto-save: {autoSaveStatus || 'Ready'}
+                </Badge>
               </div>
               <div className="flex items-center space-x-2">
-                {isOpen && hasSavedData() && (
+                {/* Show clear button when form has data */}
+                {isOpen && (formData.name || formData.nric_passport || formData.phone || formData.email || hasSavedData()) && (
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -545,7 +551,7 @@ export function PatientRegistrationModal({
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Discard Draft
+                    Clear Draft
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" onClick={handleClose}>
