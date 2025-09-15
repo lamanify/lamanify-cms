@@ -88,7 +88,7 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="h-screen w-1/2 max-w-none m-0 rounded-none translate-x-1/2 translate-y-0 top-0 right-0 data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right"
+        className="h-screen w-3/5 max-w-none m-0 rounded-none translate-x-2/5 translate-y-0 top-0 right-0 data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right flex flex-col"
         style={{ 
           position: 'fixed',
           animation: isOpen ? 'slideInRight 0.3s ease-out' : 'slideOutRight 0.3s ease-out'
@@ -101,7 +101,7 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
           </Button>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="item">Item *</Label>
@@ -215,7 +215,7 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t pt-4">
+        <div className="flex justify-end gap-2 border-t pt-4 mt-auto flex-shrink-0">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
