@@ -66,6 +66,39 @@ export function VisitDetailsModal({
     console.log('Download functionality to be implemented');
   };
 
+  const getConsultationNotes = () => {
+    if (!visit) return '';
+    
+    const consultationActivity = visit.activities.find(a => a.activity_type === 'consultation');
+    if (!consultationActivity || !consultationActivity.content) return '';
+    
+    // Extract consultation notes from structured content
+    const consultationNotesMatch = consultationActivity.content.match(/Consultation Notes:\s*([^]*?)(?:\n\n|$)/);
+    if (consultationNotesMatch) {
+      return consultationNotesMatch[1].trim();
+    }
+    
+    // Try to extract notes from legacy format
+    const notesMatch = consultationActivity.content.match(/Notes:\s*([^]*?)(?:\nPrescribed|$)/);
+    if (notesMatch) {
+      return notesMatch[1].trim();
+    }
+    
+    // Check metadata for consultation notes
+    if (consultationActivity.metadata?.consultation_notes) {
+      return consultationActivity.metadata.consultation_notes;
+    }
+    
+    // If no structured format found, extract meaningful consultation info
+    if (consultationActivity.content.includes('Diagnosis:') || consultationActivity.content.includes('Notes:')) {
+      // Extract everything before "Prescribed" or return processed content
+      const beforePrescribed = consultationActivity.content.split(/(?:Prescribed \d+ items|Treatment Items Prescribed:)/)[0];
+      return beforePrescribed.replace(/^(Diagnosis:[^\n]*\n?)/g, '').trim();
+    }
+    
+    return consultationActivity.content;
+  };
+
   const getMedicationDetails = () => {
     return visit.activities
       .filter(activity => activity.activity_type === 'medication')
@@ -229,9 +262,9 @@ export function VisitDetailsModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {visit.consultationNotes ? (
+                  {getConsultationNotes() ? (
                     <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {visit.consultationNotes}
+                      {getConsultationNotes()}
                     </div>
                   ) : (
                     <div className="text-muted-foreground text-sm">

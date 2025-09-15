@@ -36,6 +36,32 @@ export function ActivityHistoryTab({ patientId }: VisitingHistoryTabProps) {
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // Helper function to extract consultation notes from structured content
+  const extractConsultationNotes = (content: string) => {
+    if (!content) return '';
+    
+    // Try to extract consultation notes from structured content
+    const consultationNotesMatch = content.match(/Consultation Notes:\s*([^]*?)(?:\n\n|$)/);
+    if (consultationNotesMatch) {
+      return consultationNotesMatch[1].trim();
+    }
+    
+    // Try to extract notes from legacy format
+    const notesMatch = content.match(/Notes:\s*([^]*?)(?:\nPrescribed|$)/);
+    if (notesMatch) {
+      return notesMatch[1].trim();
+    }
+    
+    // If no structured format found, check if content contains meaningful consultation info
+    if (content.includes('Diagnosis:') || content.includes('Notes:') || content.includes('Prescribed')) {
+      // Extract everything before "Prescribed" or return full content if no "Prescribed" found
+      const beforePrescribed = content.split(/(?:Prescribed \d+ items|Treatment Items Prescribed:)/)[0];
+      return beforePrescribed.replace(/^(Diagnosis:[^\n]*\n?)/g, '').trim();
+    }
+    
+    return content;
+  };
+
   // Group activities into visits based on consultation date
   const visits = useMemo(() => {
     const visitMap = new Map<string, Visit>();
@@ -49,7 +75,10 @@ export function ActivityHistoryTab({ patientId }: VisitingHistoryTabProps) {
         
         // Update visit details based on activity type
         if (activity.activity_type === 'consultation') {
-          existingVisit.consultationNotes = activity.content || '';
+          const consultationNotes = extractConsultationNotes(activity.content || '');
+          if (consultationNotes && consultationNotes.length > existingVisit.consultationNotes.length) {
+            existingVisit.consultationNotes = consultationNotes;
+          }
           if (activity.metadata?.diagnosis) {
             const diagnosis = Array.isArray(activity.metadata.diagnosis) 
               ? activity.metadata.diagnosis 
@@ -67,7 +96,7 @@ export function ActivityHistoryTab({ patientId }: VisitingHistoryTabProps) {
           id: visitDate + '_' + activity.id,
           date: visitDate,
           time: format(new Date(activity.activity_date), 'h:mm a'),
-          consultationNotes: activity.activity_type === 'consultation' ? (activity.content || '') : '',
+          consultationNotes: activity.activity_type === 'consultation' ? extractConsultationNotes(activity.content || '') : '',
           medications: activity.activity_type === 'medication' 
             ? [activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '')] 
             : [],
