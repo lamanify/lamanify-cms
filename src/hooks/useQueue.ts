@@ -7,7 +7,7 @@ export interface QueueEntry {
   patient_id: string;
   queue_number: string;
   queue_date: string;
-  status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled';
+  status: 'waiting' | 'in_consultation' | 'completed' | 'cancelled' | 'urgent';
   assigned_doctor_id?: string;
   estimated_consultation_duration: number;
   checked_in_at: string;
@@ -29,6 +29,7 @@ export interface QueueEntry {
     email?: string;
     medical_history?: string;
     patient_id?: string;
+    visit_reason?: string;
   };
   // Joined doctor data
   doctor?: {
@@ -92,7 +93,7 @@ export function useQueue() {
       // Fetch patients data
       const { data: patients } = await supabase
         .from('patients')
-        .select('id, first_name, last_name, phone, date_of_birth, gender, allergies, email, medical_history, patient_id')
+        .select('id, first_name, last_name, phone, date_of_birth, gender, allergies, email, medical_history, patient_id, visit_reason')
         .in('id', patientIds);
 
       // Fetch doctors data  

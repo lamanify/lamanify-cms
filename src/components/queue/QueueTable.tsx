@@ -166,19 +166,55 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                       ID: {entry.patient.patient_id}
                     </span>
                   )}
-                  {entry.patient?.phone && (
-                    <div className="text-sm text-muted-foreground flex items-center">
-                      <Phone className="h-3 w-3 mr-1" />
-                      {entry.patient.phone}
-                    </div>
+                  {entry.patient?.date_of_birth && (
+                    <span className="text-sm text-muted-foreground">
+                      {(() => {
+                        const birthDate = new Date(entry.patient.date_of_birth);
+                        const today = new Date();
+                        const age = today.getFullYear() - birthDate.getFullYear();
+                        const monthDiff = today.getMonth() - birthDate.getMonth();
+                        const finalAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+                        return `${finalAge} years old`;
+                      })()}
+                      {' • '}
+                      {entry.patient.gender ? 
+                        entry.patient.gender.charAt(0).toUpperCase() + entry.patient.gender.slice(1).toLowerCase() 
+                        : 'Unknown'}
+                    </span>
                   )}
-                  {entry.payment_method && entry.payment_method !== 'Self pay' && (
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                      {entry.payment_method}
-                      {entry.payment_method_notes && ` • ${entry.payment_method_notes}`}
+                  {/* Urgency indicator */}
+                  {entry.status === 'urgent' || entry.status.includes('urgent') ? (
+                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full border border-orange-200">
+                      Urgent
+                    </span>
+                  ) : (
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">
+                      Non-urgent
                     </span>
                   )}
                 </div>
+                
+                {/* Visit Notes */}
+                {entry.patient?.visit_reason && (
+                  <div className="text-sm text-muted-foreground mt-2 bg-muted/30 px-2 py-1 rounded">
+                    Visit notes: {entry.patient.visit_reason}
+                  </div>
+                )}
+                
+                {/* Payment Method */}
+                {entry.payment_method && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded border border-blue-200">
+                      Payment: {entry.payment_method}
+                    </span>
+                    {entry.payment_method_notes && (
+                      <span className="text-xs text-muted-foreground">
+                        {entry.payment_method_notes}
+                      </span>
+                    )}
+                  </div>
+                )}
+                
                 {entry.doctor && (
                   <div className="text-sm text-muted-foreground mt-1">
                     Dr. {entry.doctor.first_name} {entry.doctor.last_name}
