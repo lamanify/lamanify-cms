@@ -100,16 +100,79 @@ export function VisitDetailsModal({
   };
 
   const getMedicationDetails = () => {
-    return visit.activities
+    if (!visit) return [];
+    
+    const medicationMap = new Map();
+    
+    // Process medication activities
+    visit.activities
       .filter(activity => activity.activity_type === 'medication')
-      .map(activity => ({
-        name: activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', ''),
-        dosage: activity.metadata?.dosage || 'As directed',
-        frequency: activity.metadata?.frequency || 'As needed',
-        duration: activity.metadata?.duration || 'As prescribed',
-        instructions: activity.metadata?.instructions || 'Follow as prescribed',
-        cost: activity.metadata?.amount ? `RM ${activity.metadata.amount.toFixed(2)}` : 'N/A'
-      }));
+      .forEach(activity => {
+        const name = activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '').replace('Prescribed ', '');
+        const cleanName = name.trim();
+        
+        if (!medicationMap.has(cleanName)) {
+          medicationMap.set(cleanName, {
+            name: cleanName,
+            dosage: activity.metadata?.dosage || 'As directed',
+            frequency: activity.metadata?.frequency || 'As needed',
+            duration: activity.metadata?.duration || 'As prescribed',
+            instructions: activity.metadata?.instructions || 'Follow as prescribed',
+            cost: activity.metadata?.amount ? `RM ${activity.metadata.amount.toFixed(2)}` : 'N/A'
+          });
+        }
+      });
+    
+    // Process treatment activities that are medications (exclude pure services)
+    visit.activities
+      .filter(activity => 
+        activity.activity_type === 'treatment' && 
+        activity.metadata?.service_name &&
+        // Check if this treatment represents a medication by looking for dosage info or common medication patterns
+        (activity.title.toLowerCase().includes('paracetamol') || 
+         activity.title.toLowerCase().includes('medication') ||
+         activity.title.toLowerCase().includes('tablet') ||
+         activity.title.toLowerCase().includes('capsule') ||
+         activity.title.toLowerCase().includes('syrup'))
+      )
+      .forEach(activity => {
+        const serviceName = activity.metadata?.service_name || activity.title.replace('Treatment: ', '');
+        const cleanName = serviceName.trim();
+        
+        // Only add if not already present from medication activities
+        if (!medicationMap.has(cleanName)) {
+          // Try to find corresponding medication activity for this treatment
+          const correspondingMedActivity = visit.activities.find(medActivity => 
+            medActivity.activity_type === 'medication' && 
+            (medActivity.metadata?.medication_name?.toLowerCase().includes(serviceName.toLowerCase()) ||
+             serviceName.toLowerCase().includes(medActivity.metadata?.medication_name?.toLowerCase() || ''))
+          );
+          
+          if (correspondingMedActivity) {
+            // Use details from the medication activity
+            medicationMap.set(cleanName, {
+              name: cleanName,
+              dosage: correspondingMedActivity.metadata?.dosage || 'As directed',
+              frequency: correspondingMedActivity.metadata?.frequency || 'As needed',
+              duration: correspondingMedActivity.metadata?.duration || 'As prescribed',
+              instructions: correspondingMedActivity.metadata?.instructions || 'Follow as prescribed',
+              cost: activity.metadata?.amount ? `RM ${activity.metadata.amount.toFixed(2)}` : 'N/A'
+            });
+          } else {
+            // Fallback for treatment-only entries
+            medicationMap.set(cleanName, {
+              name: cleanName,
+              dosage: 'As directed',
+              frequency: 'As needed',
+              duration: 'As prescribed',
+              instructions: 'Follow as prescribed',
+              cost: activity.metadata?.amount ? `RM ${activity.metadata.amount.toFixed(2)}` : 'N/A'
+            });
+          }
+        }
+      });
+    
+    return Array.from(medicationMap.values());
   };
 
   const getStaffMember = () => {
