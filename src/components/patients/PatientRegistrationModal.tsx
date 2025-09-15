@@ -374,7 +374,7 @@ export function PatientRegistrationModal({
               phone: formData.countryCode + formData.phone,
               email: formData.email || null,
               address: `${formData.addressLine1}${formData.addressLine2 ? ', ' + formData.addressLine2 : ''}, ${formData.postcode} ${formData.city}, ${formData.state}, ${formData.country}`,
-              visit_reason: formData.visitNotes || null,
+              visit_reason: 'consultation',
               additional_notes: additionalNotes
             })
             .select()
