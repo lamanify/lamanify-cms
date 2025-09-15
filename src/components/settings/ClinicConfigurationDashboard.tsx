@@ -17,7 +17,7 @@ import { StaffSettings } from './StaffSettings';
 import { SystemSettings } from './SystemSettings';
 import { PaymentSettings } from './PaymentSettings';
 import { NotificationSettings } from './NotificationSettings';
-import { PriceTierManagement } from './PriceTierManagement';
+import { EnhancedPriceTierManagement } from './EnhancedPriceTierManagement';
 import { ServiceManagement } from './ServiceManagement';
 import { MedicationManagement } from './MedicationManagement';
 import { useAuth } from '@/hooks/useAuth';
@@ -110,7 +110,7 @@ export function ClinicConfigurationDashboard() {
       case 'payment':
         return <PaymentSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'price_tiers':
-        return <PriceTierManagement />;
+        return <EnhancedPriceTierManagement />;
       case 'inventory_services':
         return renderInventoryServicesSubmenu();
       case 'services':

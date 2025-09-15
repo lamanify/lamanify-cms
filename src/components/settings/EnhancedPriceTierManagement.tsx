@@ -8,8 +8,7 @@ import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { PriceTierModal } from './PriceTierModal';
 
-
-export function PriceTierManagement() {
+export function EnhancedPriceTierManagement() {
   const { priceTiers, loading, createPriceTier, updatePriceTier, deletePriceTier } = usePriceTiers();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<PriceTier | null>(null);
@@ -19,17 +18,32 @@ export function PriceTierManagement() {
   const handleSubmit = async (data: { tier_name: string; description?: string; payment_methods: string[] }) => {
     let success = false;
     
+    // For the modal functionality, we'll store payment methods in the description for now
+    const enhancedData = {
+      tier_name: data.tier_name,
+      description: data.description ? `${data.description}\nPayment Methods: ${data.payment_methods.join(', ')}` : `Payment Methods: ${data.payment_methods.join(', ')}`,
+      payment_methods: data.payment_methods
+    };
+    
     if (editingTier) {
-      success = await updatePriceTier(editingTier.id, data);
+      success = await updatePriceTier(editingTier.id, enhancedData);
     } else {
-      success = await createPriceTier(data);
+      success = await createPriceTier(enhancedData);
     }
 
     return success;
   };
 
   const handleEdit = (tier: PriceTier) => {
-    setEditingTier(tier);
+    // Extract payment methods from description if stored there
+    const description = tier.description || '';
+    const paymentMethodsMatch = description.match(/Payment Methods: (.+)/);
+    const extractedMethods = paymentMethodsMatch ? paymentMethodsMatch[1].split(', ').filter(method => method.trim()) : [];
+    
+    setEditingTier({
+      ...tier,
+      payment_methods: extractedMethods
+    });
     setIsModalOpen(true);
   };
 
@@ -54,7 +68,7 @@ export function PriceTierManagement() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Price Tier Management</h1>
           <p className="text-muted-foreground mt-1">
-            Manage different pricing structures for services and medications
+            Create comprehensive pricing groups by mapping tiers to multiple payment methods and panels
           </p>
         </div>
         <Button 
@@ -80,7 +94,7 @@ export function PriceTierManagement() {
         <CardHeader>
           <CardTitle>Price Tiers</CardTitle>
           <CardDescription>
-            Manage your clinic's pricing structure for different patient categories
+            Manage your clinic's pricing structure with comprehensive payment method groupings
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -95,54 +109,64 @@ export function PriceTierManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Tier Name</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>Payment Methods</TableHead>
                   <TableHead>Created Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {priceTiers.map((tier) => (
-                  <TableRow key={tier.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div>{tier.tier_name}</div>
-                        {tier.description && (
+                {priceTiers.map((tier) => {
+                  // Extract payment methods from description
+                  const description = tier.description || '';
+                  const paymentMethodsMatch = description.match(/Payment Methods: (.+)/);
+                  const paymentMethods = paymentMethodsMatch ? paymentMethodsMatch[1] : 'No payment methods';
+                  const cleanDescription = description.replace(/\nPayment Methods: .+/, '').replace(/Payment Methods: .+/, '');
+                  
+                  return (
+                    <TableRow key={tier.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div>{tier.tier_name}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {cleanDescription && (
                           <div className="text-sm text-muted-foreground">
-                            {tier.description}
+                            {cleanDescription}
                           </div>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {tier.payment_methods && tier.payment_methods.length > 0 
-                        ? tier.payment_methods.join(', ') 
-                        : 'No payment methods'
-                      }
-                    </TableCell>
-                    <TableCell>{format(new Date(tier.created_at), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(tier)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setTierToDelete(tier.id);
-                            setDeleteConfirmOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {paymentMethods}
+                        </div>
+                      </TableCell>
+                      <TableCell>{format(new Date(tier.created_at), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(tier)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setTierToDelete(tier.id);
+                              setDeleteConfirmOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

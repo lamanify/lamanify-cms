@@ -6,10 +6,18 @@ export interface PriceTier {
   id: string;
   tier_name: string;
   description?: string;
-  payment_method: 'Self-Pay' | 'Insurance' | 'Corporate' | 'Government Panel';
   created_at: string;
   updated_at: string;
   created_by?: string;
+  payment_methods?: string[];
+}
+
+export interface TierPaymentMethod {
+  id: string;
+  tier_id: string;
+  payment_method_type: string;
+  payment_method_value: string;
+  created_at: string;
 }
 
 export function usePriceTiers() {
@@ -20,13 +28,20 @@ export function usePriceTiers() {
   const fetchPriceTiers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data: tiers, error: tiersError } = await supabase
         .from('price_tiers')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPriceTiers(data || []);
+      if (tiersError) throw tiersError;
+
+      // For now, set payment_methods as empty array since we're not using the junction table yet
+      const tiersWithMethods = (tiers || []).map(tier => ({
+        ...tier,
+        payment_methods: [] as string[]
+      }));
+
+      setPriceTiers(tiersWithMethods);
     } catch (error) {
       console.error('Error fetching price tiers:', error);
       toast({
@@ -42,21 +57,29 @@ export function usePriceTiers() {
   const createPriceTier = async (tierData: {
     tier_name: string;
     description?: string;
-    payment_method: 'Self-Pay' | 'Insurance' | 'Corporate' | 'Government Panel';
+    payment_methods: string[];
   }) => {
     try {
-      const { data, error } = await supabase
+      // For now, we'll use a simplified approach with the existing structure
+      // Create the tier with a default payment method (using the first method or 'general')
+      const defaultPaymentMethod = tierData.payment_methods.length > 0 ? tierData.payment_methods[0] : 'Self-Pay';
+      
+      const { data: tier, error: tierError } = await supabase
         .from('price_tiers')
         .insert([{
-          ...tierData,
+          tier_name: tierData.tier_name,
+          description: tierData.description,
+          payment_method: defaultPaymentMethod as 'Self-Pay' | 'Insurance' | 'Corporate' | 'Government Panel',
           created_by: (await supabase.auth.getUser()).data.user?.id
         }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (tierError) throw tierError;
       
-      setPriceTiers(prev => [data, ...prev]);
+      // Refresh the list
+      await fetchPriceTiers();
+      
       toast({
         title: "Success",
         description: "Price tier created successfully"
@@ -76,19 +99,23 @@ export function usePriceTiers() {
   const updatePriceTier = async (id: string, tierData: {
     tier_name?: string;
     description?: string;
-    payment_method?: 'Self-Pay' | 'Insurance' | 'Corporate' | 'Government Panel';
+    payment_methods?: string[];
   }) => {
     try {
-      const { data, error } = await supabase
+      // Update the tier
+      const { error: tierError } = await supabase
         .from('price_tiers')
-        .update(tierData)
-        .eq('id', id)
-        .select()
-        .single();
+        .update({
+          tier_name: tierData.tier_name,
+          description: tierData.description
+        })
+        .eq('id', id);
 
-      if (error) throw error;
+      if (tierError) throw tierError;
       
-      setPriceTiers(prev => prev.map(tier => tier.id === id ? data : tier));
+      // Refresh the list
+      await fetchPriceTiers();
+      
       toast({
         title: "Success",
         description: "Price tier updated successfully"
@@ -107,12 +134,13 @@ export function usePriceTiers() {
 
   const deletePriceTier = async (id: string) => {
     try {
-      const { error } = await supabase
+      // Delete the tier
+      const { error: tierError } = await supabase
         .from('price_tiers')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (tierError) throw tierError;
       
       setPriceTiers(prev => prev.filter(tier => tier.id !== id));
       toast({

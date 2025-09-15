@@ -42,7 +42,9 @@ export function TierPricingHeader({
                   {patientTier.tier_name} Tier
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  ({patientTier.payment_method})
+                  ({patientTier.payment_methods && patientTier.payment_methods.length > 0 
+                    ? patientTier.payment_methods.join(', ') 
+                    : 'No payment methods'})
                 </span>
               </div>
             </div>

@@ -75,7 +75,9 @@ export function PatientTierSelector({
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{tier.tier_name}</span>
                         <Badge variant="outline" className="text-xs">
-                          {tier.payment_method}
+                          {tier.payment_methods && tier.payment_methods.length > 0 
+                            ? tier.payment_methods[0] 
+                            : 'No methods'}
                         </Badge>
                       </div>
                     </SelectItem>
