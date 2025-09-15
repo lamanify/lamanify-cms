@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { PrescriptionModal } from './PrescriptionModal';
+import { useConsultationDrafts } from '@/hooks/useConsultationDrafts';
 import { 
   ArrowLeft, 
   Bell, 
@@ -29,7 +30,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   X,
-  Plus
+  Plus,
+  FileText
 } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 
@@ -58,19 +60,31 @@ export function PatientConsultationModal({
   const [isDraftSaved, setIsDraftSaved] = useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const { toast } = useToast();
   const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow } = useConsultationWorkflow();
+  const { saveDraft, getDraftForPatient, deleteDraft, autoSaveStatus } = useConsultationDrafts();
   
-  // Reset form when modal opens/closes
-  useEffect(() => {
-    if (isOpen) {
-      setIsDraftSaved(false);
-      setConsultationNotes('');
-      setDiagnosis('');
-      setTreatmentItems([]);
-    }
-  }, [isOpen]);
-  
+  // Auto-save functionality
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const debouncedSave = useCallback(
+    (formData: any, patientId: string) => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      saveTimeoutRef.current = setTimeout(async () => {
+        if (patientId) {
+          const draftId = await saveDraft(formData, patientId, currentDraftId);
+          if (draftId && !currentDraftId) {
+            setCurrentDraftId(draftId);
+          }
+        }
+      }, 2000); // Auto-save after 2 seconds of inactivity
+    },
+    [saveDraft, currentDraftId]
+  );
+
   // Treatment items state
   const [treatmentItems, setTreatmentItems] = useState<Array<{
     id: string;
@@ -84,6 +98,45 @@ export function PatientConsultationModal({
     frequency: string;
     duration: string;
   }>>([]);
+  
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen && queueEntry?.patient?.id) {
+      // Load existing draft if available
+      const existingDraft = getDraftForPatient(queueEntry.patient.id);
+      if (existingDraft) {
+        setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
+        setDiagnosis(existingDraft.draft_data.diagnosis || '');
+        setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
+        setCurrentDraftId(existingDraft.id);
+        setIsDraftSaved(true);
+      } else {
+        setIsDraftSaved(false);
+        setConsultationNotes('');
+        setDiagnosis('');
+        setTreatmentItems([]);
+        setCurrentDraftId(null);
+      }
+    } else if (!isOpen) {
+      // Clean up timeout when modal closes
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    }
+  }, [isOpen, queueEntry?.patient?.id, getDraftForPatient]);
+
+  // Auto-save when form data changes
+  useEffect(() => {
+    if (isOpen && queueEntry?.patient?.id) {
+      const formData = {
+        consultationNotes,
+        diagnosis,
+        treatmentItems
+      };
+      
+      debouncedSave(formData, queueEntry.patient.id);
+    }
+  }, [consultationNotes, diagnosis, treatmentItems, isOpen, queueEntry?.patient?.id, debouncedSave]);
 
   if (!queueEntry || !queueEntry.patient) return null;
 
@@ -111,17 +164,26 @@ export function PatientConsultationModal({
   const addTreatmentItem = (item: any) => {
     const newTreatmentItem = {
       ...item,
-      amount: item.quantity * item.rate
+      amount: item.quantity * item.rate,
+      id: item.id || `item-${Date.now()}`
     };
     
-    if (item.id && treatmentItems.find(t => t.id === item.id)) {
-      // Update existing item
-      setTreatmentItems(prev => prev.map(t => t.id === item.id ? newTreatmentItem : t));
-      setEditingItem(null);
-    } else {
-      // Add new item
-      setTreatmentItems(prev => [...prev, newTreatmentItem]);
-    }
+    setTreatmentItems(prev => {
+      if (item.id && prev.find(t => t.id === item.id)) {
+        // Update existing item
+        return prev.map(t => t.id === item.id ? newTreatmentItem : t);
+      } else {
+        // Add new item
+        return [...prev, newTreatmentItem];
+      }
+    });
+    
+    setEditingItem(null);
+    
+    toast({
+      title: "Success",
+      description: item.id ? "Treatment item updated successfully" : "Treatment item added successfully",
+    });
   };
 
   const editTreatmentItem = (item: any) => {
@@ -130,7 +192,11 @@ export function PatientConsultationModal({
   };
 
   const removeTreatmentItem = (id: string) => {
-    setTreatmentItems(treatmentItems.filter(item => item.id !== id));
+    setTreatmentItems(prev => prev.filter(item => item.id !== id));
+    toast({
+      title: "Success",
+      description: "Treatment item removed successfully",
+    });
   };
 
   const getTotalAmount = () => {
@@ -235,9 +301,31 @@ export function PatientConsultationModal({
               </div>
             </div>
             
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            {/* Right side - Actions and Draft Status */}
+            <div className="flex items-center space-x-3">
+              {/* Draft Status Indicator */}
+              {autoSaveStatus && (
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{autoSaveStatus}</span>
+                </div>
+              )}
+              {currentDraftId && (
+                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                  Draft
+                </Badge>
+              )}
+              
+              {/* Action Buttons */}
+              <Button variant="outline" size="sm" onClick={saveConsultationNotes}>
+                <Save className="h-4 w-4 mr-1" />
+                Save Draft
+              </Button>
+              
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Main Content with Tabs */}
