@@ -9,16 +9,18 @@ import {
   CreditCard, 
   Bell,
   ArrowLeft,
-  Shield
+  Shield,
+  Package
 } from 'lucide-react';
 import { BasicInfoSettings } from './BasicInfoSettings';
 import { StaffSettings } from './StaffSettings';
 import { SystemSettings } from './SystemSettings';
 import { PaymentSettings } from './PaymentSettings';
 import { NotificationSettings } from './NotificationSettings';
+import { PriceTierManagement } from './PriceTierManagement';
 import { useAuth } from '@/hooks/useAuth';
 
-type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications';
+type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers';
 
 const settingCategories = [
   {
@@ -48,6 +50,13 @@ const settingCategories = [
     description: 'Currency, tax rates, payment methods, and billing preferences',
     icon: CreditCard,
     color: 'bg-orange-500',
+  },
+  {
+    id: 'price_tiers' as const,
+    title: 'Price Tier Management',
+    description: 'Manage different pricing structures for services and medications',
+    icon: Package,
+    color: 'bg-indigo-500',
   },
   {
     id: 'notifications' as const,
@@ -91,6 +100,8 @@ export function ClinicConfigurationDashboard() {
         return <SystemSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'payment':
         return <PaymentSettings onBack={() => setActiveCategory('dashboard')} />;
+      case 'price_tiers':
+        return <PriceTierManagement />;
       case 'notifications':
         return <NotificationSettings onBack={() => setActiveCategory('dashboard')} />;
       default:

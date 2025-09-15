@@ -703,6 +703,36 @@ export type Database = {
           },
         ]
       }
+      price_tiers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          payment_method: Database["public"]["Enums"]["payment_method_type"]
+          tier_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          payment_method: Database["public"]["Enums"]["payment_method_type"]
+          tier_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method_type"]
+          tier_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -861,6 +891,11 @@ export type Database = {
       }
     }
     Enums: {
+      payment_method_type:
+        | "Self-Pay"
+        | "Insurance"
+        | "Corporate"
+        | "Government Panel"
       user_role: "admin" | "doctor" | "nurse" | "receptionist"
     }
     CompositeTypes: {
@@ -989,6 +1024,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      payment_method_type: [
+        "Self-Pay",
+        "Insurance",
+        "Corporate",
+        "Government Panel",
+      ],
       user_role: ["admin", "doctor", "nurse", "receptionist"],
     },
   },
