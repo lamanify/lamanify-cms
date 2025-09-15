@@ -61,6 +61,7 @@ export function PatientConsultationModal({
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [consultationStatus, setConsultationStatus] = useState<string>(queueEntry?.status || 'waiting');
   const { toast } = useToast();
   const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow } = useConsultationWorkflow();
   const { saveDraft, getDraftForPatient, deleteDraft, autoSaveStatus } = useConsultationDrafts();
@@ -259,15 +260,28 @@ export function PatientConsultationModal({
                   <User className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-foreground">{patient.first_name} {patient.last_name}</h1>
-                  <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                    <span>
-                      {patient.date_of_birth ? `${calculateAge(patient.date_of_birth)} years old` : 'Age unknown'}, {patient.gender || 'Gender unknown'}
-                    </span>
+                  <div className="flex items-center space-x-3">
+                    <h1 className="text-xl font-bold text-foreground">{patient.first_name} {patient.last_name}</h1>
+                    <Badge 
+                      variant={consultationStatus === 'waiting' ? 'secondary' : consultationStatus === 'in_consultation' ? 'default' : 'outline'}
+                      className={`text-xs ${
+                        consultationStatus === 'waiting' ? 'bg-yellow-100 text-yellow-800' : 
+                        consultationStatus === 'in_consultation' ? 'bg-green-100 text-green-800' : ''
+                      }`}
+                    >
+                      {consultationStatus === 'waiting' ? 'Waiting' : 
+                       consultationStatus === 'in_consultation' ? 'Serving' : 
+                       consultationStatus.charAt(0).toUpperCase() + consultationStatus.slice(1)}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <div>
+                      {patient.date_of_birth ? `${calculateAge(patient.date_of_birth)}` : 'Age unknown'},{patient.gender || 'Gender unknown'}
+                    </div>
                     {patient.patient_id && (
-                      <span className="font-mono bg-muted px-1 py-0.5 rounded text-xs">
+                      <div className="font-mono bg-muted px-1 py-0.5 rounded text-xs mt-1 inline-block">
                         ID: {patient.patient_id}
-                      </span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -679,9 +693,10 @@ export function PatientConsultationModal({
                   try {
                     await startConsultationWorkflow(patient.id, queueEntry.id);
                     onStartConsultation(queueEntry.id);
+                    setConsultationStatus('in_consultation');
                     toast({
                       title: "Consultation Started",
-                      description: "You can now document the consultation",
+                      description: "Patient status updated to Serving",
                     });
                   } catch (error) {
                     console.error('Failed to start consultation:', error);
