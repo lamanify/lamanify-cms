@@ -255,11 +255,11 @@ export function PatientConsultationModal({
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
                 <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center space-x-3">
                     <h1 className="text-xl font-bold text-foreground">{patient.first_name} {patient.last_name}</h1>
                     <Badge 
@@ -279,37 +279,33 @@ export function PatientConsultationModal({
                       {patient.date_of_birth ? `${calculateAge(patient.date_of_birth)}` : 'Age unknown'},{patient.gender || 'Gender unknown'}
                     </div>
                     {patient.patient_id && (
-                      <div className="font-mono bg-muted px-1 py-0.5 rounded text-xs mt-1 inline-block">
+                      <div className="font-mono text-[10px] text-muted-foreground mt-1">
                         ID: {patient.patient_id}
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
-                <span className="text-xs text-muted-foreground">Waiting: {getWaitTime()}</span>
-              </div>
               
-              {/* Patient Info Cards - Moved from sidebar */}
+              {/* Patient Info Cards - Vertical Layout */}
               <div className="flex items-center space-x-3">
-                <div className="bg-muted/50 rounded-lg px-3 py-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-medium text-muted-foreground">Allergy:</span>
-                    <span className="text-xs">{patient.allergies || 'None'}</span>
-                  </div>
+                <div className="bg-muted/50 rounded-lg px-3 py-2 text-center">
+                  <div className="text-xs font-medium text-muted-foreground">Waiting</div>
+                  <div className="text-xs">{getWaitTime()}</div>
                 </div>
-                <div className="bg-primary/10 rounded-lg px-3 py-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-medium text-primary">Payment:</span>
-                    <div className="text-xs text-primary">
-                      <div>{queueEntry.payment_method || 'Self-pay'}</div>
-                      {queueEntry.payment_method_notes && (
-                        <div className="text-xs text-muted-foreground opacity-75">
-                          {queueEntry.payment_method_notes}
-                        </div>
-                      )}
-                    </div>
+                <div className="bg-muted/50 rounded-lg px-3 py-2 text-center">
+                  <div className="text-xs font-medium text-muted-foreground">Allergy:</div>
+                  <div className="text-xs">{patient.allergies || 'None'}</div>
+                </div>
+                <div className="bg-primary/10 rounded-lg px-3 py-2 text-center">
+                  <div className="text-xs font-medium text-primary">Payment:</div>
+                  <div className="text-xs text-primary">
+                    <div>{queueEntry.payment_method || 'Self-pay'}</div>
+                    {queueEntry.payment_method_notes && (
+                      <div className="text-xs text-muted-foreground opacity-75">
+                        {queueEntry.payment_method_notes}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -331,11 +327,6 @@ export function PatientConsultationModal({
               )}
               
               {/* Action Buttons */}
-              <Button variant="outline" size="sm" onClick={saveConsultationNotes}>
-                <Save className="h-4 w-4 mr-1" />
-                Save Draft
-              </Button>
-              
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
