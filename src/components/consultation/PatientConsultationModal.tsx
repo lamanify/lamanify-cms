@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
+import { PrescriptionModal } from './PrescriptionModal';
 import { 
   ArrowLeft, 
   Bell, 
@@ -27,7 +28,8 @@ import {
   ChevronDown, 
   ChevronLeft, 
   ChevronRight,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 
@@ -54,6 +56,8 @@ export function PatientConsultationModal({
   const [historyTab, setHistoryTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all-time');
   const [isDraftSaved, setIsDraftSaved] = useState(false);
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const { toast } = useToast();
   const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow } = useConsultationWorkflow();
   
@@ -80,17 +84,6 @@ export function PatientConsultationModal({
     frequency: string;
     duration: string;
   }>>([]);
-  
-  const [newItem, setNewItem] = useState({
-    item: '',
-    quantity: 1,
-    priceTier: 'Standard',
-    rate: 0,
-    dosage: '',
-    instruction: '',
-    frequency: '',
-    duration: ''
-  });
 
   if (!queueEntry || !queueEntry.patient) return null;
 
@@ -115,27 +108,25 @@ export function PatientConsultationModal({
     return `${hours} hours ${minutes} mins`;
   };
 
-  const addTreatmentItem = () => {
-    if (!newItem.item.trim()) return;
-    
-    const amount = newItem.quantity * newItem.rate;
-    const item = {
-      id: Date.now().toString(),
-      ...newItem,
-      amount
+  const addTreatmentItem = (item: any) => {
+    const newTreatmentItem = {
+      ...item,
+      amount: item.quantity * item.rate
     };
     
-    setTreatmentItems([...treatmentItems, item]);
-    setNewItem({
-      item: '',
-      quantity: 1,
-      priceTier: 'Standard',
-      rate: 0,
-      dosage: '',
-      instruction: '',
-      frequency: '',
-      duration: ''
-    });
+    if (item.id && treatmentItems.find(t => t.id === item.id)) {
+      // Update existing item
+      setTreatmentItems(prev => prev.map(t => t.id === item.id ? newTreatmentItem : t));
+      setEditingItem(null);
+    } else {
+      // Add new item
+      setTreatmentItems(prev => [...prev, newTreatmentItem]);
+    }
+  };
+
+  const editTreatmentItem = (item: any) => {
+    setEditingItem(item);
+    setIsPrescriptionModalOpen(true);
   };
 
   const removeTreatmentItem = (id: string) => {
@@ -353,160 +344,81 @@ export function PatientConsultationModal({
                 </TabsContent>
 
                 <TabsContent value="treatment" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
-                  {/* Medicine/Services Table */}
+                  {/* Medicine/Services Header */}
                   <div>
-                    <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
+                    <div className="bg-primary text-primary-foreground p-3 rounded-t-lg flex items-center justify-between">
                       <h3 className="font-medium text-sm">Insert your medicine, services and documents here</h3>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="bg-white text-accent-foreground hover:bg-white/90"
+                        onClick={() => {
+                          setEditingItem(null);
+                          setIsPrescriptionModalOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Item
+                      </Button>
                     </div>
-                    <div className="border border-t-0 rounded-b-lg">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead className="border-b">
-                            <tr className="text-left">
-                              <th className="p-2 text-xs font-medium">#</th>
-                              <th className="p-2 text-xs font-medium">ITEM</th>
-                              <th className="p-2 text-xs font-medium">QTY</th>
-                              <th className="p-2 text-xs font-medium">PRICE TIER</th>
-                              <th className="p-2 text-xs font-medium">RATE</th>
-                              <th className="p-2 text-xs font-medium">AMOUNT</th>
-                              <th className="p-2 text-xs font-medium">DOSAGE</th>
-                              <th className="p-2 text-xs font-medium">INSTRUCTION</th>
-                              <th className="p-2 text-xs font-medium">FREQUENCY</th>
-                              <th className="p-2 text-xs font-medium">DURATION</th>
-                              <th className="p-2 text-xs font-medium">ACTION</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {/* Add Item Row - Always visible at the top */}
-                            <tr className="bg-muted/20 border-b">
-                              <td className="p-1 text-xs font-medium text-muted-foreground">+</td>
-                              <td className="p-1">
-                                <Input
-                                  placeholder="Item name"
-                                  value={newItem.item}
-                                  onChange={(e) => setNewItem({...newItem, item: e.target.value})}
-                                  className="h-7 border-0 bg-transparent focus:bg-white text-xs"
-                                />
-                              </td>
-                              <td className="p-1">
-                                <Input
-                                  type="number"
-                                  placeholder="1"
-                                  value={newItem.quantity}
-                                  onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
-                                  className="h-7 border-0 bg-transparent focus:bg-white w-12 text-xs"
-                                />
-                              </td>
-                              <td className="p-1">
-                                <Select value={newItem.priceTier} onValueChange={(value) => setNewItem({...newItem, priceTier: value})}>
-                                  <SelectTrigger className="h-7 border-0 bg-transparent focus:bg-white text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Standard">Standard</SelectItem>
-                                    <SelectItem value="Premium">Premium</SelectItem>
-                                    <SelectItem value="Discounted">Discounted</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </td>
-                              <td className="p-1">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  placeholder="0.00"
-                                  value={newItem.rate}
-                                  onChange={(e) => setNewItem({...newItem, rate: parseFloat(e.target.value) || 0})}
-                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
-                                />
-                              </td>
-                              <td className="p-1 text-xs font-medium">
-                                RM {(newItem.quantity * newItem.rate).toFixed(2)}
-                              </td>
-                              <td className="p-1">
-                                <Input
-                                  placeholder="Dosage"
-                                  value={newItem.dosage}
-                                  onChange={(e) => setNewItem({...newItem, dosage: e.target.value})}
-                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
-                                />
-                              </td>
-                              <td className="p-1">
-                                <Input
-                                  placeholder="Instruction"
-                                  value={newItem.instruction}
-                                  onChange={(e) => setNewItem({...newItem, instruction: e.target.value})}
-                                  className="h-7 border-0 bg-transparent focus:bg-white w-20 text-xs"
-                                />
-                              </td>
-                              <td className="p-1">
-                                <Input
-                                  placeholder="Frequency"
-                                  value={newItem.frequency}
-                                  onChange={(e) => setNewItem({...newItem, frequency: e.target.value})}
-                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
-                                />
-                              </td>
-                              <td className="p-1">
-                                <Input
-                                  placeholder="Duration"
-                                  value={newItem.duration}
-                                  onChange={(e) => setNewItem({...newItem, duration: e.target.value})}
-                                  className="h-7 border-0 bg-transparent focus:bg-white w-16 text-xs"
-                                />
-                              </td>
-                              <td className="p-1">
-                                <Button 
-                                  size="sm" 
-                                  onClick={addTreatmentItem}
-                                  disabled={!newItem.item.trim()}
-                                  className="h-7 w-12 text-xs"
-                                >
-                                  Add
-                                </Button>
-                              </td>
-                            </tr>
-                            
-                            {/* Treatment Items */}
-                            {treatmentItems.length === 0 ? (
-                              <tr>
-                                <td className="p-2 text-xs text-muted-foreground text-center" colSpan={11}>
-                                  Add items using the form above
-                                </td>
-                              </tr>
-                            ) : (
-                              treatmentItems.map((item, index) => (
-                                <tr key={item.id} className="border-b hover:bg-muted/10">
-                                  <td className="p-2 text-xs">{index + 1}</td>
-                                  <td className="p-2 text-xs font-medium">{item.item}</td>
-                                  <td className="p-2 text-xs">{item.quantity}</td>
-                                  <td className="p-2 text-xs">{item.priceTier}</td>
-                                  <td className="p-2 text-xs">RM {item.rate.toFixed(2)}</td>
-                                  <td className="p-2 text-xs font-medium">RM {item.amount.toFixed(2)}</td>
-                                  <td className="p-2 text-xs">{item.dosage || '-'}</td>
-                                  <td className="p-2 text-xs">{item.instruction || '-'}</td>
-                                  <td className="p-2 text-xs">{item.frequency || '-'}</td>
-                                  <td className="p-2 text-xs">{item.duration || '-'}</td>
-                                  <td className="p-2 text-xs">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => removeTreatmentItem(item.id)}
-                                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="flex justify-end p-3 border-t">
-                        <div className="text-right">
-                          <p className="text-sm font-semibold">Total RM {getTotalAmount().toFixed(2)}</p>
+                    <div className="border border-t-0 rounded-b-lg p-4">
+                      {/* Treatment Items List */}
+                      {treatmentItems.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p className="text-sm">No items added yet</p>
+                          <p className="text-xs mt-1">Click "Add Item" to get started</p>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {treatmentItems.map((item, index) => (
+                            <Card key={item.id} className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="font-medium text-sm">{item.item}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Qty: {item.quantity} × RM {item.rate.toFixed(2)} = RM {item.amount.toFixed(2)}
+                                    </p>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground space-y-1">
+                                    {item.dosage && <p><span className="font-medium">Dosage:</span> {item.dosage}</p>}
+                                    {item.frequency && <p><span className="font-medium">Frequency:</span> {item.frequency}</p>}
+                                    {item.duration && <p><span className="font-medium">Duration:</span> {item.duration}</p>}
+                                    {item.instruction && <p><span className="font-medium">Instructions:</span> {item.instruction}</p>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => editTreatmentItem(item)}
+                                    className="h-8 w-12 text-xs"
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeTreatmentItem(item.id)}
+                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Total */}
+                      {treatmentItems.length > 0 && (
+                        <div className="flex justify-end pt-4 border-t mt-4">
+                          <div className="text-right">
+                            <p className="text-sm font-semibold">Total: RM {getTotalAmount().toFixed(2)}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </TabsContent>
@@ -718,7 +630,17 @@ export function PatientConsultationModal({
             )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
-  );
+        </DialogContent>
+
+        <PrescriptionModal
+          isOpen={isPrescriptionModalOpen}
+          onClose={() => {
+            setIsPrescriptionModalOpen(false);
+            setEditingItem(null);
+          }}
+          onAdd={addTreatmentItem}
+          editItem={editingItem}
+        />
+      </Dialog>
+    );
 }
