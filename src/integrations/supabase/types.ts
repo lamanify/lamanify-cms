@@ -474,6 +474,7 @@ export type Database = {
         Row: {
           created_at: string
           dosage: string | null
+          duration_days: number | null
           frequency: string | null
           id: string
           medication_name: string
@@ -488,6 +489,7 @@ export type Database = {
         Insert: {
           created_at?: string
           dosage?: string | null
+          duration_days?: number | null
           frequency?: string | null
           id?: string
           medication_name: string
@@ -502,6 +504,7 @@ export type Database = {
         Update: {
           created_at?: string
           dosage?: string | null
+          duration_days?: number | null
           frequency?: string | null
           id?: string
           medication_name?: string
