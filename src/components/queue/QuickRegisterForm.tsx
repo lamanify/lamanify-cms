@@ -96,6 +96,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
+  const [generalError, setGeneralError] = useState<string>('');
   const [idType, setIdType] = useState<string>('');
   const [showIdField, setShowIdField] = useState(false);
   const [showAddressSection, setShowAddressSection] = useState(false);
@@ -274,11 +275,18 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
     }
 
     setErrors(newErrors);
+    
+    // Clear general error if validation passes
+    if (Object.keys(newErrors).length === 0) {
+      setGeneralError('');
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) {
+      setGeneralError("Please fill in all required fields correctly");
       toast({
         title: "Validation Error",
         description: "Please fix the errors in the form",
@@ -288,6 +296,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
     }
 
     setLoading(true);
+    setGeneralError(''); // Clear any previous errors
     try {
       // Split name
       const nameParts = formData.fullName.trim().split(' ');
@@ -307,6 +316,13 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
       ].filter(Boolean).join(', ');
 
       // Create patient record
+      console.log('Submitting patient data:', {
+        visit_reason: formData.visitReason,
+        visit_reason_length: formData.visitReason.length,
+        visit_reason_trimmed: formData.visitReason.trim(),
+        other_fields: { ...formData, visitReason: '[logged above]' }
+      });
+      
       const { data: patient, error: patientError } = await supabase
         .from('patients')
         .insert({
@@ -322,7 +338,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
           emergency_contact_phone: formData.emergencyContactPhone || null,
           allergies: formData.allergies || null,
           medical_history: formData.medicalConditions || null,
-          visit_reason: formData.visitReason,
+          visit_reason: formData.visitReason.trim() || null, // Ensure empty strings become null
           additional_notes: formData.nricId ? `${idType?.toUpperCase()}: ${formData.nricId}` : null,
           created_by: profile?.id
         })
@@ -390,13 +406,26 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
       setShowAddressSection(false);
       setShowContactSection(false);
       setErrors({});
+      setGeneralError(''); // Clear general error
       onClose();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registering patient:', error);
+      
+      // Handle specific database constraint errors
+      let errorMessage = "Failed to register patient. Please try again.";
+      
+      if (error?.message?.includes('patients_visit_reason_check')) {
+        errorMessage = "Visit reason cannot be empty. Please provide a reason for the visit.";
+        setErrors(prev => ({ ...prev, visitReason: 'Visit reason is required and cannot be empty' }));
+      } else if (error?.code === '23514') {
+        errorMessage = "Please check all required fields are filled correctly.";
+      }
+      
+      setGeneralError(errorMessage);
       toast({
         title: "Registration Error",
-        description: "Failed to register patient. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -916,33 +945,43 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3">
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="secondary" 
-              onClick={() => toast({ title: "Draft saved", description: "Form data has been saved as draft" })}
-            >
-              Save as Draft
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              disabled={loading || completedRequiredFields < totalRequiredFields}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {loading ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Registering...
-                </>
-              ) : (
-                'Register & Add to Queue'
-              )}
-            </Button>
+          <div className="space-y-3">
+            {/* General Error Display */}
+            {generalError && (
+              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                <p className="text-sm text-destructive">{generalError}</p>
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-3">
+              <Button 
+                variant="outline" 
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => toast({ title: "Draft saved", description: "Form data has been saved as draft" })}
+              >
+                Save as Draft
+              </Button>
+              <Button 
+                onClick={handleSubmit}
+                disabled={loading || completedRequiredFields < totalRequiredFields || Object.keys(errors).length > 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {loading ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Registering...
+                  </>
+                ) : (
+                  'Register & Add to Queue'
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
