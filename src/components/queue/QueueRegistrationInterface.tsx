@@ -72,35 +72,85 @@ export function QueueRegistrationInterface() {
   };
 
   const handleAddExistingToQueue = async () => {
-    if (!selectedPatient) return;
+    if (!selectedPatient) {
+      toast({
+        title: "No Patient Selected",
+        description: "Please select a patient first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!visitData.reason.trim()) {
+      toast({
+        title: "Visit Reason Required",
+        description: "Please provide a reason for the visit",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setLoading(true);
     try {
-      // Add to queue
-      await addToQueue(selectedPatient.id, visitData.assignedDoctorId === "none" ? undefined : visitData.assignedDoctorId);
+      console.log('Adding existing patient to queue:', {
+        patientId: selectedPatient.id,
+        visitData,
+        assignedDoctor: visitData.assignedDoctorId
+      });
+
+      // Add to queue first
+      const queueResult = await addToQueue(
+        selectedPatient.id, 
+        visitData.assignedDoctorId === "none" || !visitData.assignedDoctorId ? undefined : visitData.assignedDoctorId
+      );
+      
+      console.log('Queue addition result:', queueResult);
+
+      // Update patient's visit reason if provided
+      if (visitData.reason.trim()) {
+        const { error: updateError } = await supabase
+          .from('patients')
+          .update({ 
+            visit_reason: visitData.reason.toLowerCase().includes('consultation') ? 'consultation' :
+                         visitData.reason.toLowerCase().includes('follow') ? 'follow-up' :
+                         visitData.reason.toLowerCase().includes('emergency') ? 'emergency' : 'others'
+          })
+          .eq('id', selectedPatient.id);
+
+        if (updateError) {
+          console.warn('Failed to update patient visit reason:', updateError);
+        }
+      }
       
       // Create patient activity for visit
-      await supabase
+      const { error: activityError } = await supabase
         .from('patient_activities')
         .insert({
           patient_id: selectedPatient.id,
           activity_type: 'visit',
           title: 'Added to Queue',
-          content: `Patient added to queue for ${visitData.reason || 'consultation'}`,
+          content: `Patient added to queue for ${visitData.reason || 'consultation'}${visitData.visitNotes ? `\nNotes: ${visitData.visitNotes}` : ''}`,
           staff_member_id: profile?.id,
           metadata: {
+            queue_id: queueResult?.entry?.id,
             visit_reason: visitData.reason,
             payment_method: visitData.paymentMethod,
             payment_notes: visitData.paymentNotes,
             is_urgent: visitData.isUrgent,
-            assigned_doctor: visitData.assignedDoctorId,
-            visit_notes: visitData.visitNotes
+            assigned_doctor: visitData.assignedDoctorId === "none" ? null : visitData.assignedDoctorId,
+            visit_notes: visitData.visitNotes,
+            queue_number: queueResult?.queueNumber
           }
         });
 
+      if (activityError) {
+        console.warn('Failed to create patient activity:', activityError);
+        // Don't fail the whole operation for this
+      }
+
       toast({
         title: "Patient added to queue",
-        description: `${selectedPatient.first_name} ${selectedPatient.last_name} has been added to the queue`,
+        description: `${selectedPatient.first_name} ${selectedPatient.last_name} has been added to the queue${queueResult?.queueNumber ? ` (${queueResult.queueNumber})` : ''}`,
       });
 
       // Reset form
@@ -113,11 +163,17 @@ export function QueueRegistrationInterface() {
         assignedDoctorId: '',
         visitNotes: ''
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding patient to queue:', error);
+      
+      let errorMessage = "Failed to add patient to queue";
+      if (error?.message) {
+        errorMessage += `: ${error.message}`;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to add patient to queue",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -188,13 +244,17 @@ export function QueueRegistrationInterface() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="reason">Visit Reason</Label>
+                    <Label htmlFor="reason">Visit Reason *</Label>
                     <Input
                       id="reason"
                       value={visitData.reason}
                       onChange={(e) => setVisitData(prev => ({ ...prev, reason: e.target.value }))}
                       placeholder="e.g., General consultation, Follow-up"
+                      className={!visitData.reason.trim() ? 'border-destructive' : ''}
                     />
+                    {!visitData.reason.trim() && (
+                      <p className="text-xs text-destructive mt-1">Visit reason is required</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="payment">Payment Method</Label>
@@ -238,14 +298,14 @@ export function QueueRegistrationInterface() {
                   </Select>
                 </div>
 
-                <Button 
-                  onClick={handleAddExistingToQueue}
-                  disabled={loading}
-                  size="lg"
-                  className="w-full"
-                >
-                  {loading ? 'Adding to Queue...' : 'Add to Queue'}
-                </Button>
+                 <Button 
+                   onClick={handleAddExistingToQueue}
+                   disabled={loading || !visitData.reason.trim()}
+                   size="lg"
+                   className="w-full"
+                 >
+                   {loading ? 'Adding to Queue...' : 'Add to Queue'}
+                 </Button>
               </div>
             </CardContent>
           </Card>
