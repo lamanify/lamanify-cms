@@ -9,6 +9,7 @@ import { QueueStats } from './QueueStats';
 import { CurrentQueueDisplay } from './CurrentQueueDisplay';
 import { QueueTable } from './QueueTable';
 import { FloatingActions } from './FloatingActions';
+import { QueueRegistrationInterface } from './QueueRegistrationInterface';
 
 export function QueueManagement() {
   const { queue, loading, currentNumber, callNextPatient, updateQueueStatus, getTodayStats, refetch } = useQueue();
@@ -173,6 +174,9 @@ export function QueueManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Registration Interface */}
+      <QueueRegistrationInterface />
+
       {/* Current Queue Display */}
       <CurrentQueueDisplay 
         currentNumber={currentNumber}

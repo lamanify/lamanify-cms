@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Clock, AlertTriangle, User } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, User, MapPin, CreditCard } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { PatientConsultationModal } from '@/components/consultation/PatientConsultationModal';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
@@ -68,6 +68,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
       }
     }
   };
+
   const getWaitTime = (checkedInAt: string) => {
     const now = new Date();
     const checkedIn = new Date(checkedInAt);
@@ -113,8 +114,25 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         return 'Dispensary';
       case 'cancelled':
         return 'Cancelled';
+      case 'urgent':
+        return 'Urgent';
       default:
         return status;
+    }
+  };
+
+  const getPaymentMethodDisplay = (method: string) => {
+    switch (method) {
+      case 'self_pay':
+        return 'Self Pay';
+      case 'insurance':
+        return 'Insurance';
+      case 'company':
+        return 'Company';
+      case 'government':
+        return 'Government';
+      default:
+        return method;
     }
   };
 
@@ -138,7 +156,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
       
       {queue.map((entry) => {
         const waitTime = getWaitTime(entry.checked_in_at);
-        const isPriority = entry.status.includes('priority');
+        const isPriority = entry.status === 'urgent' || entry.status.includes('urgent');
         
         return (
           <div
@@ -152,7 +170,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                 : 'border-border'
             }`}
           >
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-6 flex-1">
               {/* Queue Number and Status */}
               <div className="flex items-center space-x-3">
                 <div className="text-center">
@@ -168,16 +186,18 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
               </div>
 
               {/* Patient Info */}
-              <div 
-                className="min-w-0 flex-1"
-              >
-                <div className="text-xl font-bold text-foreground hover:text-primary transition-colors">{entry.patient?.first_name} {entry.patient?.last_name}</div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xl font-bold text-foreground hover:text-primary transition-colors">
+                  {entry.patient?.first_name} {entry.patient?.last_name}
+                </div>
+                
                 <div className="flex items-center space-x-3 mt-1">
                   {entry.patient?.patient_id && (
                     <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
                       ID: {entry.patient.patient_id}
                     </span>
                   )}
+                  
                   {entry.patient?.date_of_birth && (
                     <span className="text-sm text-muted-foreground">
                       {(() => {
@@ -194,68 +214,81 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         : 'Unknown'}
                     </span>
                   )}
-                  {/* Urgency indicator */}
-                  {entry.status === 'urgent' || entry.status.includes('urgent') ? (
-                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full border border-orange-200">
-                      Urgent
+                </div>
+                
+                {/* Visit Context and Additional Info */}
+                <div className="flex items-center flex-wrap gap-2 mt-2 text-sm text-muted-foreground">
+                  {entry.patient?.visit_reason && (
+                    <span className="bg-secondary/50 px-2 py-1 rounded-md">
+                      {entry.patient.visit_reason}
                     </span>
-                  ) : (
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full border border-green-200">
-                      Non-urgent
+                  )}
+                  
+                  {entry.patient?.phone && (
+                    <div className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {entry.patient.phone}
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {new Date(entry.checked_in_at).toLocaleTimeString('en-US', { 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: true 
+                    })}
+                  </div>
+                </div>
+                
+                {/* Payment Method and Doctor Assignment */}
+                <div className="flex items-center flex-wrap gap-2 mt-2">
+                  {entry.payment_method && (
+                    <div className="flex items-center gap-1">
+                      <CreditCard className="h-3 w-3 text-blue-500" />
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded border border-blue-200">
+                        {getPaymentMethodDisplay(entry.payment_method)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {entry.assigned_doctor_id && entry.doctor && (
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded border border-purple-200">
+                      Dr. {entry.doctor.first_name} {entry.doctor.last_name}
                     </span>
                   )}
                 </div>
                 
                 {/* Visit Notes */}
-                {entry.patient?.visit_reason && (
-                  <div className="text-sm text-muted-foreground mt-2 bg-muted/30 px-2 py-1 rounded">
-                    Visit notes: {entry.patient.visit_reason}
-                  </div>
-                )}
-                
-                {/* Payment Method */}
-                {entry.payment_method && (
-                  <div className="flex items-center space-x-2 mt-2">
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded border border-blue-200">
-                      Payment: {entry.payment_method}
-                    </span>
-                    {entry.payment_method_notes && (
-                      <span className="text-xs text-muted-foreground">
-                        {entry.payment_method_notes}
-                      </span>
-                    )}
-                  </div>
-                )}
-                
-                {entry.doctor && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Dr. {entry.doctor.first_name} {entry.doctor.last_name}
+                {entry.patient?.medical_history && (
+                  <div className="text-sm text-muted-foreground mt-2 bg-muted/30 px-2 py-1 rounded max-w-md truncate">
+                    Notes: {entry.patient.medical_history}
                   </div>
                 )}
               </div>
 
-              {/* Check-in Time and Wait Time */}
+              {/* Wait Time Display */}
               <div className="text-right">
-                <div className="text-sm text-muted-foreground">
-                  Check-in: {new Date(entry.checked_in_at).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                <div className={`text-lg font-medium flex items-center ${getWaitTimeAlert(waitTime)}`}>
+                  <Clock className="h-4 w-4 mr-1" />
+                  {formatWaitTime(waitTime)}
+                  {waitTime >= 45 && <AlertTriangle className="h-4 w-4 ml-1" />}
                 </div>
-                <div className={`text-sm font-medium flex items-center ${getWaitTimeAlert(waitTime)}`}>
-                  <Clock className="h-3 w-3 mr-1" />
-                  Wait: {formatWaitTime(waitTime)}
-                  {waitTime >= 45 && <AlertTriangle className="h-3 w-3 ml-1" />}
+                <div className="text-xs text-muted-foreground">
+                  Wait time
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 ml-4">
               {entry.status === 'waiting' && (
                 <Button
                   size="sm"
-                  onClick={() => onStatusChange(entry.id, 'in_consultation')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(entry.id, 'in_consultation');
+                  }}
                 >
                   Start Consultation
                 </Button>
@@ -264,7 +297,10 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => onRemoveFromQueue(entry.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveFromQueue(entry.id);
+                }}
               >
                 Remove
               </Button>
