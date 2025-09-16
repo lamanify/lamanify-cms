@@ -316,11 +316,20 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
           dosage_template: undefined
         };
 
-        // Map tier pricing
+        // Map tier pricing - handle various price column formats
         priceTiers.forEach(tier => {
-          const priceColumn = `${tier.tier_name} Price`;
-          if (row[priceColumn]) {
-            medicationData.pricing[tier.id] = Number(row[priceColumn]) || 0;
+          // Try different possible column name formats
+          const possibleColumns = [
+            `${tier.tier_name} Price`,
+            `${tier.tier_name} Price (RM)`,
+            tier.tier_name === 'Self-Pay' ? 'Self-Pay Price (RM)' : null
+          ].filter(Boolean);
+          
+          for (const priceColumn of possibleColumns) {
+            if (row[priceColumn]) {
+              medicationData.pricing[tier.id] = Number(row[priceColumn]) || 0;
+              break;
+            }
           }
         });
 

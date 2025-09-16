@@ -60,8 +60,7 @@ export function useMedications() {
           medication_pricing(
             tier_id,
             price
-          ),
-          medication_dosage_templates(*)
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -73,15 +72,13 @@ export function useMedications() {
           pricing[mp.tier_id] = mp.price;
         });
 
-        const dosage_template = medication.medication_dosage_templates?.[0] as unknown as DosageTemplate || undefined;
-        
         // Remove the nested arrays from the medication object
-        const { medication_pricing, medication_dosage_templates, ...cleanMedication } = medication;
+        const { medication_pricing, ...cleanMedication } = medication;
         
         return {
           ...cleanMedication,
           pricing,
-          dosage_template
+          dosage_template: undefined
         } as MedicationWithPricing;
       }) || [];
 
