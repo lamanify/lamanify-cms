@@ -11,7 +11,7 @@ interface PatientSearchProps {
   placeholder?: string;
 }
 
-export function PatientSearch({ onPatientSelect, placeholder = "Search existing patients by name or phone..." }: PatientSearchProps) {
+export function PatientSearch({ onPatientSelect, placeholder = "Search patients by name, ID, or phone number..." }: PatientSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -41,7 +41,7 @@ export function PatientSearch({ onPatientSelect, placeholder = "Search existing 
         const { data, error } = await supabase
           .from('patients')
           .select('*')
-          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,patient_id.ilike.%${searchTerm}%`)
           .limit(5);
 
         if (error) throw error;
@@ -115,6 +115,11 @@ export function PatientSearch({ onPatientSelect, placeholder = "Search existing 
                     )}
                   </p>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    {patient.patient_id && (
+                      <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                        ID: {patient.patient_id}
+                      </span>
+                    )}
                     {patient.phone && (
                       <div className="flex items-center gap-1">
                         <Phone className="h-3 w-3" />
