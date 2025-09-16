@@ -91,6 +91,7 @@ const MALAYSIAN_STATES = [
 ];
 
 export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
+  console.log('QuickRegisterForm rendered with isOpen:', isOpen);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [priceTiers, setPriceTiers] = useState<PriceTier[]>([]);
   const [loading, setLoading] = useState(false);

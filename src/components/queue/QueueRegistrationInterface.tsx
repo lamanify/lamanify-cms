@@ -126,7 +126,8 @@ export function QueueRegistrationInterface() {
   };
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5" />
@@ -147,7 +148,12 @@ export function QueueRegistrationInterface() {
           <Button
             variant={mode === 'register' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setQuickRegisterOpen(true)}
+            onClick={() => {
+              console.log('Quick Register button clicked');
+              console.log('Current quickRegisterOpen state:', quickRegisterOpen);
+              setQuickRegisterOpen(true);
+              console.log('Set quickRegisterOpen to true');
+            }}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <UserPlus className="h-4 w-4 mr-2" />
@@ -254,14 +260,18 @@ export function QueueRegistrationInterface() {
                 </CardContent>
               </Card>
             )}
-          </div>
-        ) : (
-      <QuickRegisterForm 
-        isOpen={quickRegisterOpen} 
-        onClose={() => setQuickRegisterOpen(false)} 
-      />
-        )}
+           </div>
+        ) : null}
       </CardContent>
     </Card>
+
+    <QuickRegisterForm
+      isOpen={quickRegisterOpen} 
+      onClose={() => {
+        console.log('Closing QuickRegisterForm modal');
+        setQuickRegisterOpen(false);
+      }} 
+    />
+    </>
   );
 }
