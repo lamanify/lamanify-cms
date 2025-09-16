@@ -50,6 +50,7 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [validRows, setValidRows] = useState<ImportData[]>([]);
   const [importing, setImporting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { createMedication, updateMedication } = useMedications();
@@ -127,11 +128,8 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
     });
   };
 
-  // File upload handler
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  // File processing function (shared between file input and drag & drop)
+  const processFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -193,6 +191,54 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
     };
 
     reader.readAsBinaryString(file);
+  };
+
+  // File upload handler
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      
+      // Check file type
+      if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a CSV or XLSX file.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      processFile(file);
+    }
   };
 
   // Validate data
@@ -344,7 +390,17 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
           {importStep === 1 && (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-8 transition-colors ${
+                    isDragging 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-muted-foreground/25'
+                  }`}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
                   <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">Upload Medication File</h3>
                   <p className="text-muted-foreground mb-4">
