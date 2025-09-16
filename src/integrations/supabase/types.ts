@@ -368,6 +368,7 @@ export type Database = {
       medical_services: {
         Row: {
           category: string
+          cost_price: number | null
           created_at: string
           description: string | null
           duration_minutes: number | null
@@ -376,10 +377,13 @@ export type Database = {
           preparation_notes: string | null
           price: number
           requires_equipment: boolean | null
+          service_type: string | null
+          status: string | null
           updated_at: string
         }
         Insert: {
           category: string
+          cost_price?: number | null
           created_at?: string
           description?: string | null
           duration_minutes?: number | null
@@ -388,10 +392,13 @@ export type Database = {
           preparation_notes?: string | null
           price: number
           requires_equipment?: boolean | null
+          service_type?: string | null
+          status?: string | null
           updated_at?: string
         }
         Update: {
           category?: string
+          cost_price?: number | null
           created_at?: string
           description?: string | null
           duration_minutes?: number | null
@@ -400,6 +407,8 @@ export type Database = {
           preparation_notes?: string | null
           price?: number
           requires_equipment?: boolean | null
+          service_type?: string | null
+          status?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -7,11 +7,14 @@ export interface Service {
   id: string;
   name: string;
   category: string;
+  service_type: string;
   description?: string;
   duration_minutes?: number;
   price: number;
+  cost_price?: number;
   requires_equipment?: boolean;
   preparation_notes?: string;
+  status?: string;
   created_at: string;
   updated_at: string;
 }
@@ -70,10 +73,13 @@ export function useServices() {
   const createService = async (serviceData: {
     name: string;
     category: string;
+    service_type: string;
     description?: string;
     duration_minutes?: number;
+    cost_price?: number;
     requires_equipment?: boolean;
     preparation_notes?: string;
+    status?: string;
     pricing: { [tierId: string]: number };
   }) => {
     try {
@@ -92,11 +98,14 @@ export function useServices() {
         .insert([{
           name: serviceData.name,
           category: serviceData.category,
+          service_type: serviceData.service_type,
           description: serviceData.description,
           duration_minutes: serviceData.duration_minutes,
           price: Object.values(serviceData.pricing)[0] || 0, // Keep the main price field for backwards compatibility
+          cost_price: serviceData.cost_price,
           requires_equipment: serviceData.requires_equipment,
-          preparation_notes: serviceData.preparation_notes
+          preparation_notes: serviceData.preparation_notes,
+          status: serviceData.status || 'Active'
         }])
         .select()
         .single();
@@ -136,10 +145,13 @@ export function useServices() {
   const updateService = async (id: string, serviceData: {
     name?: string;
     category?: string;
+    service_type?: string;
     description?: string;
     duration_minutes?: number;
+    cost_price?: number;
     requires_equipment?: boolean;
     preparation_notes?: string;
+    status?: string;
     pricing?: { [tierId: string]: number };
   }) => {
     try {
@@ -149,11 +161,14 @@ export function useServices() {
         .update({
           name: serviceData.name,
           category: serviceData.category,
+          service_type: serviceData.service_type,
           description: serviceData.description,
           duration_minutes: serviceData.duration_minutes,
           price: serviceData.pricing ? Object.values(serviceData.pricing)[0] || 0 : undefined,
+          cost_price: serviceData.cost_price,
           requires_equipment: serviceData.requires_equipment,
-          preparation_notes: serviceData.preparation_notes
+          preparation_notes: serviceData.preparation_notes,
+          status: serviceData.status
         })
         .eq('id', id);
 

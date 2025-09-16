@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 interface ServiceFormData {
   name: string;
   category: string;
+  service_type: string;
   description: string;
   duration_minutes: number;
   requires_equipment: boolean;
@@ -34,6 +35,7 @@ export function ServiceManagement() {
     defaultValues: {
       name: '',
       category: '',
+      service_type: 'Service',
       description: '',
       duration_minutes: 30,
       requires_equipment: false,
@@ -49,6 +51,7 @@ export function ServiceManagement() {
     reset({
       name: '',
       category: '',
+      service_type: 'Service',
       description: '',
       duration_minutes: 30,
       requires_equipment: false,
@@ -63,6 +66,7 @@ export function ServiceManagement() {
     reset({
       name: service.name,
       category: service.category,
+      service_type: service.service_type || 'Service',
       description: service.description || '',
       duration_minutes: service.duration_minutes || 30,
       requires_equipment: service.requires_equipment || false,
@@ -74,8 +78,14 @@ export function ServiceManagement() {
 
   const onSubmit = async (data: ServiceFormData) => {
     const success = editingService 
-      ? await updateService(editingService.id, data)
-      : await createService(data);
+      ? await updateService(editingService.id, {
+          ...data,
+          category: data.service_type // Keep compatibility
+        })
+      : await createService({
+          ...data,
+          category: data.service_type // Keep compatibility
+        });
     
     if (success) {
       setIsDialogOpen(false);

@@ -18,7 +18,7 @@ import { SystemSettings } from './SystemSettings';
 import { PaymentSettings } from './PaymentSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { EnhancedPriceTierManagement } from './EnhancedPriceTierManagement';
-import { ServiceManagement } from './ServiceManagement';
+import { EnhancedServiceManagement } from './EnhancedServiceManagement';
 import { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -114,7 +114,7 @@ export function ClinicConfigurationDashboard() {
       case 'inventory_services':
         return renderInventoryServicesSubmenu();
       case 'services':
-        return <ServiceManagement />;
+        return <EnhancedServiceManagement />;
       case 'medications':
         return <EnhancedMedicationManagement />;
       case 'notifications':

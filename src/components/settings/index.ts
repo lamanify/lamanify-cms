@@ -5,6 +5,7 @@ export { SystemSettings } from './SystemSettings';
 export { PaymentSettings } from './PaymentSettings';
 export { NotificationSettings } from './NotificationSettings';
 export { PriceTierManagement } from './PriceTierManagement';
+export { EnhancedServiceManagement } from './EnhancedServiceManagement';
 export { ServiceManagement } from './ServiceManagement';
 export { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 export { MedicationManagement } from './MedicationManagement';
