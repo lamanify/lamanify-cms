@@ -324,7 +324,7 @@ export function QuickRegisterForm() {
       if (patientError) throw patientError;
 
       // Add to queue
-      await addToQueue(patient.id, formData.preferredDoctorId || undefined);
+      await addToQueue(patient.id, formData.preferredDoctorId === "none" ? undefined : formData.preferredDoctorId);
 
       // Create registration activity
       await supabase
@@ -594,7 +594,7 @@ export function QuickRegisterForm() {
                   <SelectValue placeholder="Select doctor (optional)" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border shadow-lg z-50">
-                  <SelectItem value="">No preference</SelectItem>
+                  <SelectItem value="none">No preference</SelectItem>
                   {doctors.map((doctor) => (
                     <SelectItem key={doctor.id} value={doctor.id}>
                       Dr. {doctor.first_name} {doctor.last_name}

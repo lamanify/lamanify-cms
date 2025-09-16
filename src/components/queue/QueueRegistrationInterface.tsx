@@ -76,7 +76,7 @@ export function QueueRegistrationInterface() {
     setLoading(true);
     try {
       // Add to queue
-      await addToQueue(selectedPatient.id, visitData.assignedDoctorId || undefined);
+      await addToQueue(selectedPatient.id, visitData.assignedDoctorId === "none" ? undefined : visitData.assignedDoctorId);
       
       // Create patient activity for visit
       await supabase
@@ -228,7 +228,7 @@ export function QueueRegistrationInterface() {
                           <SelectValue placeholder="Select doctor (optional)" />
                         </SelectTrigger>
                         <SelectContent className="bg-background border shadow-lg z-50">
-                          <SelectItem value="">No specific doctor</SelectItem>
+                          <SelectItem value="none">No specific doctor</SelectItem>
                           {doctors.map((doctor) => (
                             <SelectItem key={doctor.id} value={doctor.id}>
                               Dr. {doctor.first_name} {doctor.last_name}
