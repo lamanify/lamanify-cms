@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Pencil, Trash2, Pill, Search, Eye, HelpCircle } from 'lucide-react';
+import { MedicationImportExport } from './MedicationImportExport';
 import { useMedications, MedicationWithPricing, DosageTemplate } from '@/hooks/useMedications';
 import { usePriceTiers } from '@/hooks/usePriceTiers';
 import { useForm } from 'react-hook-form';
@@ -188,13 +189,15 @@ export function EnhancedMedicationManagement() {
           <h2 className="text-2xl font-bold text-foreground">Medication Management</h2>
           <p className="text-muted-foreground">Manage medications with comprehensive pricing and dosage settings</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="gap-2 bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4" />
-              Add new
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <MedicationImportExport medications={medications} />
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog} className="gap-2 bg-primary hover:bg-primary/90">
+                <Plus className="h-4 w-4" />
+                Add new
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -507,7 +510,8 @@ export function EnhancedMedicationManagement() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search Bar */}
