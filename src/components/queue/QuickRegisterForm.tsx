@@ -509,7 +509,10 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
 
   const getRequiredFieldsCount = () => {
     const requiredFields = ['fullName', 'phone', 'dateOfBirth', 'gender', 'visitReason', 'paymentMethod'];
-    return requiredFields.filter(field => formData[field as keyof QuickRegisterData]).length;
+    return requiredFields.filter(field => {
+      const value = formData[field as keyof QuickRegisterData];
+      return value && value.toString().trim() !== '';
+    }).length;
   };
 
   const totalRequiredFields = 6;
@@ -1125,7 +1128,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
               </Button>
               <Button 
                 onClick={handleSubmit}
-                disabled={loading || completedRequiredFields < totalRequiredFields || Object.keys(errors).length > 0}
+                disabled={loading}
                 className="bg-green-600 hover:bg-green-700"
               >
                 {loading ? (
