@@ -174,7 +174,7 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
           
           return {
             fileColumn: col,
-            systemField: systemField?.value || ''
+            systemField: systemField?.value || 'skip'
           };
         });
 
@@ -252,7 +252,7 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
 
       // Map columns according to user mapping
       columnMapping.forEach(mapping => {
-        if (mapping.systemField) {
+        if (mapping.systemField && mapping.systemField !== 'skip') {
           mappedRow[mapping.systemField] = row[mapping.fileColumn];
         }
       });
@@ -469,7 +469,7 @@ export function MedicationImportExport({ medications }: { medications: Medicatio
                           <SelectValue placeholder="Skip this column" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Skip this column</SelectItem>
+                          <SelectItem value="skip">Skip this column</SelectItem>
                           {SYSTEM_FIELDS.map(field => (
                             <SelectItem key={field.value} value={field.value}>
                               {field.label}
