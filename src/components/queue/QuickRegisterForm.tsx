@@ -479,54 +479,6 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
                 </div>
               </div>
 
-              {/* Row 2: Date of Birth and Gender */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth" className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Date of Birth <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                    className={errors.dateOfBirth ? 'border-destructive' : ''}
-                  />
-                  {errors.dateOfBirth && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {errors.dateOfBirth}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="gender" className="flex items-center gap-1">
-                    Gender <span className="text-destructive">*</span>
-                  </Label>
-                  <Select 
-                    value={formData.gender} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
-                  >
-                    <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.gender && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      {errors.gender}
-                    </p>
-                  )}
-                </div>
-              </div>
-
               {/* ID Type Selection */}
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -582,6 +534,54 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Row 2: Date of Birth and Gender */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth" className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    Date of Birth <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                    className={errors.dateOfBirth ? 'border-destructive' : ''}
+                  />
+                  {errors.dateOfBirth && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.dateOfBirth}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gender" className="flex items-center gap-1">
+                    Gender <span className="text-destructive">*</span>
+                  </Label>
+                  <Select 
+                    value={formData.gender} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+                  >
+                    <SelectTrigger className={errors.gender ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.gender && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.gender}
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
