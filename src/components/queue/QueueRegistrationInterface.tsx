@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,11 +65,6 @@ export function QueueRegistrationInterface() {
     nric: ''
   });
 
-  // Fetch doctors on mount
-  useState(() => {
-    fetchDoctors();
-  });
-
   const fetchDoctors = async () => {
     try {
       const { data, error } = await supabase
@@ -84,6 +79,11 @@ export function QueueRegistrationInterface() {
       console.error('Error fetching doctors:', error);
     }
   };
+
+  // Fetch doctors on mount
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
 
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
