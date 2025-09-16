@@ -9,18 +9,38 @@ export interface Medication {
   generic_name?: string;
   brand_name?: string;
   category?: string;
+  groups?: string[]; // medicine groups/tags
   strength_options?: string[];
   dosage_forms?: string[];
   side_effects?: string[];
   contraindications?: string[];
   interactions?: string[];
   price_per_unit?: number;
+  cost_price?: number;
+  stock_level?: number;
+  remarks?: string;
+  enable_dosage_settings?: boolean;
   created_at: string;
   updated_at: string;
 }
 
+export interface DosageTemplate {
+  id?: string;
+  medication_id: string;
+  dosage_amount?: number;
+  dosage_unit?: string;
+  instruction?: string;
+  precaution?: string;
+  frequency?: string;
+  duration_value?: number;
+  duration_unit?: string;
+  indication?: string;
+  dispense_quantity?: number;
+}
+
 export interface MedicationWithPricing extends Medication {
   pricing: { [tierId: string]: number };
+  dosage_template?: DosageTemplate;
 }
 
 export function useMedications() {
@@ -39,7 +59,8 @@ export function useMedications() {
           medication_pricing(
             tier_id,
             price
-          )
+          ),
+          medication_dosage_templates(*)
         `)
         .order('created_at', { ascending: false });
 
@@ -50,11 +71,17 @@ export function useMedications() {
         medication.medication_pricing?.forEach((mp: any) => {
           pricing[mp.tier_id] = mp.price;
         });
+
+        const dosage_template = medication.medication_dosage_templates?.[0] as unknown as DosageTemplate || undefined;
+        
+        // Remove the nested arrays from the medication object
+        const { medication_pricing, medication_dosage_templates, ...cleanMedication } = medication;
         
         return {
-          ...medication,
-          pricing
-        };
+          ...cleanMedication,
+          pricing,
+          dosage_template
+        } as MedicationWithPricing;
       }) || [];
 
       setMedications(medicationsWithPricing);
@@ -75,12 +102,18 @@ export function useMedications() {
     generic_name?: string;
     brand_name?: string;
     category?: string;
+    groups?: string[];
     strength_options?: string[];
     dosage_forms?: string[];
     side_effects?: string[];
     contraindications?: string[];
     interactions?: string[];
+    cost_price?: number;
+    stock_level?: number;
+    remarks?: string;
+    enable_dosage_settings?: boolean;
     pricing: { [tierId: string]: number };
+    dosage_template?: DosageTemplate;
   }) => {
     try {
       if (priceTiers.length === 0) {
@@ -100,11 +133,16 @@ export function useMedications() {
           generic_name: medicationData.generic_name,
           brand_name: medicationData.brand_name,
           category: medicationData.category,
+          groups: medicationData.groups,
           strength_options: medicationData.strength_options,
           dosage_forms: medicationData.dosage_forms,
           side_effects: medicationData.side_effects,
           contraindications: medicationData.contraindications,
           interactions: medicationData.interactions,
+          cost_price: medicationData.cost_price,
+          stock_level: medicationData.stock_level,
+          remarks: medicationData.remarks,
+          enable_dosage_settings: medicationData.enable_dosage_settings,
           price_per_unit: Object.values(medicationData.pricing)[0] || 0 // Keep for backwards compatibility
         }])
         .select()
@@ -124,6 +162,18 @@ export function useMedications() {
         .insert(pricingEntries);
 
       if (pricingError) throw pricingError;
+
+      // Create dosage template if enabled and provided
+      if (medicationData.enable_dosage_settings && medicationData.dosage_template) {
+        const { error: dosageError } = await supabase
+          .from('medication_dosage_templates')
+          .insert([{
+            medication_id: medication.id,
+            ...medicationData.dosage_template
+          }]);
+
+        if (dosageError) throw dosageError;
+      }
 
       await fetchMedications();
       toast({
@@ -147,12 +197,18 @@ export function useMedications() {
     generic_name?: string;
     brand_name?: string;
     category?: string;
+    groups?: string[];
     strength_options?: string[];
     dosage_forms?: string[];
     side_effects?: string[];
     contraindications?: string[];
     interactions?: string[];
+    cost_price?: number;
+    stock_level?: number;
+    remarks?: string;
+    enable_dosage_settings?: boolean;
     pricing?: { [tierId: string]: number };
+    dosage_template?: DosageTemplate;
   }) => {
     try {
       // Update the medication
@@ -163,11 +219,16 @@ export function useMedications() {
           generic_name: medicationData.generic_name,
           brand_name: medicationData.brand_name,
           category: medicationData.category,
+          groups: medicationData.groups,
           strength_options: medicationData.strength_options,
           dosage_forms: medicationData.dosage_forms,
           side_effects: medicationData.side_effects,
           contraindications: medicationData.contraindications,
           interactions: medicationData.interactions,
+          cost_price: medicationData.cost_price,
+          stock_level: medicationData.stock_level,
+          remarks: medicationData.remarks,
+          enable_dosage_settings: medicationData.enable_dosage_settings,
           price_per_unit: medicationData.pricing ? Object.values(medicationData.pricing)[0] || 0 : undefined
         })
         .eq('id', id);
@@ -194,6 +255,27 @@ export function useMedications() {
           .insert(pricingEntries);
 
         if (pricingError) throw pricingError;
+      }
+
+      // Update dosage template if provided
+      if (medicationData.enable_dosage_settings !== undefined) {
+        // Delete existing dosage template
+        await supabase
+          .from('medication_dosage_templates')
+          .delete()
+          .eq('medication_id', id);
+
+        // Create new dosage template if enabled and provided
+        if (medicationData.enable_dosage_settings && medicationData.dosage_template) {
+          const { error: dosageError } = await supabase
+            .from('medication_dosage_templates')
+            .insert([{
+              medication_id: id,
+              ...medicationData.dosage_template
+            }]);
+
+          if (dosageError) throw dosageError;
+        }
       }
 
       await fetchMedications();

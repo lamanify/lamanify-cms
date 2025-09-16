@@ -19,7 +19,7 @@ import { PaymentSettings } from './PaymentSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { EnhancedPriceTierManagement } from './EnhancedPriceTierManagement';
 import { ServiceManagement } from './ServiceManagement';
-import { MedicationManagement } from './MedicationManagement';
+import { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 import { useAuth } from '@/hooks/useAuth';
 
 type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications';
@@ -116,7 +116,7 @@ export function ClinicConfigurationDashboard() {
       case 'services':
         return <ServiceManagement />;
       case 'medications':
-        return <MedicationManagement />;
+        return <EnhancedMedicationManagement />;
       case 'notifications':
         return <NotificationSettings onBack={() => setActiveCategory('dashboard')} />;
       default:

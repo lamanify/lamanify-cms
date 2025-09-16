@@ -404,6 +404,54 @@ export type Database = {
         }
         Relationships: []
       }
+      medication_dosage_templates: {
+        Row: {
+          created_at: string | null
+          dispense_quantity: number | null
+          dosage_amount: number | null
+          dosage_unit: string | null
+          duration_unit: string | null
+          duration_value: number | null
+          frequency: string | null
+          id: string
+          indication: string | null
+          instruction: string | null
+          medication_id: string
+          precaution: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dispense_quantity?: number | null
+          dosage_amount?: number | null
+          dosage_unit?: string | null
+          duration_unit?: string | null
+          duration_value?: number | null
+          frequency?: string | null
+          id?: string
+          indication?: string | null
+          instruction?: string | null
+          medication_id: string
+          precaution?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dispense_quantity?: number | null
+          dosage_amount?: number | null
+          dosage_unit?: string | null
+          duration_unit?: string | null
+          duration_value?: number | null
+          frequency?: string | null
+          id?: string
+          indication?: string | null
+          instruction?: string | null
+          medication_id?: string
+          precaution?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       medication_pricing: {
         Row: {
           created_at: string
@@ -451,14 +499,19 @@ export type Database = {
           brand_name: string | null
           category: string | null
           contraindications: string[] | null
+          cost_price: number | null
           created_at: string
           dosage_forms: string[] | null
+          enable_dosage_settings: boolean | null
           generic_name: string | null
+          groups: string[] | null
           id: string
           interactions: string[] | null
           name: string
           price_per_unit: number | null
+          remarks: string | null
           side_effects: string[] | null
+          stock_level: number | null
           strength_options: string[] | null
           updated_at: string
         }
@@ -466,14 +519,19 @@ export type Database = {
           brand_name?: string | null
           category?: string | null
           contraindications?: string[] | null
+          cost_price?: number | null
           created_at?: string
           dosage_forms?: string[] | null
+          enable_dosage_settings?: boolean | null
           generic_name?: string | null
+          groups?: string[] | null
           id?: string
           interactions?: string[] | null
           name: string
           price_per_unit?: number | null
+          remarks?: string | null
           side_effects?: string[] | null
+          stock_level?: number | null
           strength_options?: string[] | null
           updated_at?: string
         }
@@ -481,14 +539,19 @@ export type Database = {
           brand_name?: string | null
           category?: string | null
           contraindications?: string[] | null
+          cost_price?: number | null
           created_at?: string
           dosage_forms?: string[] | null
+          enable_dosage_settings?: boolean | null
           generic_name?: string | null
+          groups?: string[] | null
           id?: string
           interactions?: string[] | null
           name?: string
           price_per_unit?: number | null
+          remarks?: string | null
           side_effects?: string[] | null
+          stock_level?: number | null
           strength_options?: string[] | null
           updated_at?: string
         }
@@ -767,8 +830,8 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
-          payment_method: Database["public"]["Enums"]["payment_method_type"]
           tier_name: string
+          tier_type: string | null
           updated_at: string
         }
         Insert: {
@@ -776,8 +839,8 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          payment_method: Database["public"]["Enums"]["payment_method_type"]
           tier_name: string
+          tier_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -785,8 +848,8 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          payment_method?: Database["public"]["Enums"]["payment_method_type"]
           tier_name?: string
+          tier_type?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -882,6 +945,38 @@ export type Database = {
           },
           {
             foreignKeyName: "service_pricing_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "price_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tier_payment_methods: {
+        Row: {
+          created_at: string | null
+          id: string
+          payment_method_type: string
+          payment_method_value: string
+          tier_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payment_method_type: string
+          payment_method_value: string
+          tier_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payment_method_type?: string
+          payment_method_value?: string
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tier_payment_methods_tier_id_fkey"
             columns: ["tier_id"]
             isOneToOne: false
             referencedRelation: "price_tiers"
