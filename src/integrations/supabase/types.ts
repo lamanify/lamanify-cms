@@ -569,6 +569,81 @@ export type Database = {
         }
         Relationships: []
       }
+      package_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_type: string
+          package_id: string
+          quantity: number
+          stock_at_time_added: number | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          package_id: string
+          quantity?: number
+          stock_at_time_added?: number | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          package_id?: string
+          quantity?: number
+          stock_at_time_added?: number | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: []
+      }
+      packages: {
+        Row: {
+          bundle_value: number
+          created_at: string | null
+          created_by: string | null
+          discount_percentage: number | null
+          id: string
+          package_name: string
+          package_price: number
+          status: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          bundle_value: number
+          created_at?: string | null
+          created_by?: string | null
+          discount_percentage?: number | null
+          id?: string
+          package_name: string
+          package_price: number
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          bundle_value?: number
+          created_at?: string | null
+          created_by?: string | null
+          discount_percentage?: number | null
+          id?: string
+          package_name?: string
+          package_price?: number
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       patient_activities: {
         Row: {
           activity_date: string

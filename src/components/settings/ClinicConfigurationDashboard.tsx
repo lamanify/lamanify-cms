@@ -20,9 +20,10 @@ import { NotificationSettings } from './NotificationSettings';
 import { EnhancedPriceTierManagement } from './EnhancedPriceTierManagement';
 import { EnhancedServiceManagement } from './EnhancedServiceManagement';
 import { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
+import { EnhancedPackageManagement } from './EnhancedPackageManagement';
 import { useAuth } from '@/hooks/useAuth';
 
-type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications';
+type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications' | 'packages';
 
 const settingCategories = [
   {
@@ -117,6 +118,8 @@ export function ClinicConfigurationDashboard() {
         return <EnhancedServiceManagement />;
       case 'medications':
         return <EnhancedMedicationManagement />;
+      case 'packages':
+        return <EnhancedPackageManagement />;
       case 'notifications':
         return <NotificationSettings onBack={() => setActiveCategory('dashboard')} />;
       default:
@@ -133,7 +136,7 @@ export function ClinicConfigurationDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveCategory('services')}>
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
@@ -168,6 +171,25 @@ export function ClinicConfigurationDashboard() {
             </p>
             <Button variant="outline" className="w-full">
               Manage Medications
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveCategory('packages')}>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="p-2 rounded-lg bg-purple-500 text-white">
+                <Package className="h-5 w-5" />
+              </div>
+            </div>
+            <CardTitle className="text-lg">Packages</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Create and manage service and medication bundles with discounted pricing
+            </p>
+            <Button variant="outline" className="w-full">
+              Manage Packages
             </Button>
           </CardContent>
         </Card>

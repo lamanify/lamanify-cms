@@ -9,3 +9,4 @@ export { EnhancedServiceManagement } from './EnhancedServiceManagement';
 export { ServiceManagement } from './ServiceManagement';
 export { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 export { MedicationManagement } from './MedicationManagement';
+export { EnhancedPackageManagement } from './EnhancedPackageManagement';
