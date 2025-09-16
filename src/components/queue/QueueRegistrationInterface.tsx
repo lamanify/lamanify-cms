@@ -30,6 +30,7 @@ interface VisitData {
 
 export function QueueRegistrationInterface() {
   const [mode, setMode] = useState<'search' | 'register'>('search');
+  const [quickRegisterOpen, setQuickRegisterOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -146,8 +147,8 @@ export function QueueRegistrationInterface() {
           <Button
             variant={mode === 'register' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setMode('register')}
-            className={mode === 'register' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+            onClick={() => setQuickRegisterOpen(true)}
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
             <UserPlus className="h-4 w-4 mr-2" />
             Quick Register
@@ -255,7 +256,10 @@ export function QueueRegistrationInterface() {
             )}
           </div>
         ) : (
-          <QuickRegisterForm />
+      <QuickRegisterForm 
+        isOpen={quickRegisterOpen} 
+        onClose={() => setQuickRegisterOpen(false)} 
+      />
         )}
       </CardContent>
     </Card>
