@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { BasicInfoSettings } from './BasicInfoSettings';
 import { StaffSettings } from './StaffSettings';
+import { EnhancedStaffSettings } from './EnhancedStaffSettings';
 import { SystemSettings } from './SystemSettings';
 import { PaymentSettings } from './PaymentSettings';
 import { NotificationSettings } from './NotificationSettings';
@@ -105,7 +106,7 @@ export function ClinicConfigurationDashboard() {
       case 'basic_info':
         return <BasicInfoSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'staff':
-        return <StaffSettings onBack={() => setActiveCategory('dashboard')} />;
+        return <EnhancedStaffSettings />;
       case 'system':
         return <SystemSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'payment':

@@ -1170,6 +1170,41 @@ export type Database = {
           },
         ]
       }
+      user_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_type: string
+          permission_value: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_type: string
+          permission_value?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_type?: string
+          permission_value?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1194,7 +1229,7 @@ export type Database = {
         | "Insurance"
         | "Corporate"
         | "Government Panel"
-      user_role: "admin" | "doctor" | "nurse" | "receptionist"
+      user_role: "admin" | "doctor" | "nurse" | "receptionist" | "locum"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1328,7 +1363,7 @@ export const Constants = {
         "Corporate",
         "Government Panel",
       ],
-      user_role: ["admin", "doctor", "nurse", "receptionist"],
+      user_role: ["admin", "doctor", "nurse", "receptionist", "locum"],
     },
   },
 } as const
