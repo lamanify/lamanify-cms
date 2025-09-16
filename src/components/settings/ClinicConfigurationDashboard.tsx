@@ -10,7 +10,8 @@ import {
   Bell,
   ArrowLeft,
   Shield,
-  Package
+  Package,
+  FileText
 } from 'lucide-react';
 import { BasicInfoSettings } from './BasicInfoSettings';
 import { StaffSettings } from './StaffSettings';
@@ -22,9 +23,10 @@ import { EnhancedPriceTierManagement } from './EnhancedPriceTierManagement';
 import { EnhancedServiceManagement } from './EnhancedServiceManagement';
 import { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 import { EnhancedPackageManagement } from './EnhancedPackageManagement';
+import { DocumentTemplatesPage } from './DocumentTemplatesPage';
 import { useAuth } from '@/hooks/useAuth';
 
-type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications' | 'packages';
+type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications' | 'packages' | 'templates';
 
 const settingCategories = [
   {
@@ -76,6 +78,13 @@ const settingCategories = [
     icon: Bell,
     color: 'bg-pink-500',
   },
+  {
+    id: 'templates' as const,
+    title: 'Document Templates',
+    description: 'Manage medical letter templates, header settings, and document generation',
+    icon: FileText,
+    color: 'bg-cyan-500',
+  },
 ];
 
 export function ClinicConfigurationDashboard() {
@@ -121,6 +130,8 @@ export function ClinicConfigurationDashboard() {
         return <EnhancedMedicationManagement />;
       case 'packages':
         return <EnhancedPackageManagement />;
+      case 'templates':
+        return <DocumentTemplatesPage />;
       case 'notifications':
         return <NotificationSettings onBack={() => setActiveCategory('dashboard')} />;
       default:

@@ -151,6 +151,39 @@ export type Database = {
           },
         ]
       }
+      clinic_header_settings: {
+        Row: {
+          address: string | null
+          clinic_name: string
+          created_at: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          clinic_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          clinic_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clinic_settings: {
         Row: {
           created_at: string
@@ -362,6 +395,48 @@ export type Database = {
           total_duration_minutes?: number | null
           updated_at?: string
           urgency_level?: string | null
+        }
+        Relationships: []
+      }
+      document_templates: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          price_from: number | null
+          price_to: number | null
+          status: string | null
+          template_name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          price_from?: number | null
+          price_to?: number | null
+          status?: string | null
+          template_name: string
+          template_type: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          price_from?: number | null
+          price_to?: number | null
+          status?: string | null
+          template_name?: string
+          template_type?: string
+          updated_at?: string
         }
         Relationships: []
       }

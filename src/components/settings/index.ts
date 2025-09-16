@@ -11,3 +11,6 @@ export { ServiceManagement } from './ServiceManagement';
 export { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 export { MedicationManagement } from './MedicationManagement';
 export { EnhancedPackageManagement } from './EnhancedPackageManagement';
+export { DocumentTemplatesPage } from './DocumentTemplatesPage';
+export { TemplateEditor } from './TemplateEditor';
+export { HeaderSettingsModal } from './HeaderSettingsModal';
