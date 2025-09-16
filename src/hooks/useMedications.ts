@@ -20,6 +20,7 @@ export interface Medication {
   stock_level?: number;
   remarks?: string;
   enable_dosage_settings?: boolean;
+  unit_of_measure?: string;
   created_at: string;
   updated_at: string;
 }
@@ -112,6 +113,7 @@ export function useMedications() {
     stock_level?: number;
     remarks?: string;
     enable_dosage_settings?: boolean;
+    unit_of_measure?: string;
     pricing: { [tierId: string]: number };
     dosage_template?: DosageTemplate;
   }) => {
@@ -143,6 +145,7 @@ export function useMedications() {
           stock_level: medicationData.stock_level,
           remarks: medicationData.remarks,
           enable_dosage_settings: medicationData.enable_dosage_settings,
+          unit_of_measure: medicationData.unit_of_measure,
           price_per_unit: Object.values(medicationData.pricing)[0] || 0 // Keep for backwards compatibility
         }])
         .select()
@@ -207,6 +210,7 @@ export function useMedications() {
     stock_level?: number;
     remarks?: string;
     enable_dosage_settings?: boolean;
+    unit_of_measure?: string;
     pricing?: { [tierId: string]: number };
     dosage_template?: DosageTemplate;
   }) => {
@@ -229,6 +233,7 @@ export function useMedications() {
           stock_level: medicationData.stock_level,
           remarks: medicationData.remarks,
           enable_dosage_settings: medicationData.enable_dosage_settings,
+          unit_of_measure: medicationData.unit_of_measure,
           price_per_unit: medicationData.pricing ? Object.values(medicationData.pricing)[0] || 0 : undefined
         })
         .eq('id', id);

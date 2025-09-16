@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Pill, Search, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Pill, Search, Eye, HelpCircle } from 'lucide-react';
 import { useMedications, MedicationWithPricing, DosageTemplate } from '@/hooks/useMedications';
 import { usePriceTiers } from '@/hooks/usePriceTiers';
 import { useForm } from 'react-hook-form';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MedicationFormData {
   name: string;
@@ -23,6 +24,7 @@ interface MedicationFormData {
   stock_level: number;
   remarks: string;
   enable_dosage_settings: boolean;
+  unit_of_measure: string;
   pricing: { [tierId: string]: number };
   dosage_template: DosageTemplate;
 }
@@ -44,6 +46,7 @@ export function EnhancedMedicationManagement() {
       stock_level: 0,
       remarks: '',
       enable_dosage_settings: false,
+      unit_of_measure: 'Tablet',
       pricing: {},
       dosage_template: {
         dosage_amount: 0,
@@ -80,6 +83,7 @@ export function EnhancedMedicationManagement() {
       stock_level: 0,
       remarks: '',
       enable_dosage_settings: false,
+      unit_of_measure: 'Tablet',
       pricing: {},
       dosage_template: {
         dosage_amount: 0,
@@ -107,6 +111,7 @@ export function EnhancedMedicationManagement() {
       stock_level: medication.stock_level || 0,
       remarks: medication.remarks || '',
       enable_dosage_settings: medication.enable_dosage_settings || false,
+      unit_of_measure: medication.unit_of_measure || 'Tablet',
       pricing: medication.pricing,
       dosage_template: medication.dosage_template || {
         dosage_amount: 0,
@@ -237,7 +242,19 @@ export function EnhancedMedicationManagement() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="groups">Group</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="groups">Group</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Set the medicine group according to diagnosis for accurate searching during dispensing.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <Select onValueChange={(value) => setValue('groups', [value])}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select group" />
@@ -251,6 +268,23 @@ export function EnhancedMedicationManagement() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="unit_of_measure">Unit of Measure (UOM) *</Label>
+                  <Select onValueChange={(value) => setValue('unit_of_measure', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select unit of measure" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Strip">Strip</SelectItem>
+                      <SelectItem value="Tablet">Tablet</SelectItem>
+                      <SelectItem value="Bottle">Bottle</SelectItem>
+                      <SelectItem value="Tube">Tube</SelectItem>
+                      <SelectItem value="Sachet">Sachet</SelectItem>
+                      <SelectItem value="Vial">Vial</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -418,6 +452,9 @@ export function EnhancedMedicationManagement() {
                       {...register('stock_level', { valueAsNumber: true })}
                       placeholder="0"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      You can enter 0 now and update the stock count later.
+                    </p>
                   </div>
                 </div>
 
@@ -548,7 +585,14 @@ export function EnhancedMedicationManagement() {
                         {getPriceRange(medication)}
                       </TableCell>
                       <TableCell>
-                        {medication.stock_level || 0}
+                        <div>
+                          <div>{medication.stock_level || 0}</div>
+                          {medication.unit_of_measure && (
+                            <div className="text-xs text-muted-foreground">
+                              {medication.unit_of_measure}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground max-w-32 truncate">

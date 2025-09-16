@@ -513,6 +513,7 @@ export type Database = {
           side_effects: string[] | null
           stock_level: number | null
           strength_options: string[] | null
+          unit_of_measure: string | null
           updated_at: string
         }
         Insert: {
@@ -533,6 +534,7 @@ export type Database = {
           side_effects?: string[] | null
           stock_level?: number | null
           strength_options?: string[] | null
+          unit_of_measure?: string | null
           updated_at?: string
         }
         Update: {
@@ -553,6 +555,7 @@ export type Database = {
           side_effects?: string[] | null
           stock_level?: number | null
           strength_options?: string[] | null
+          unit_of_measure?: string | null
           updated_at?: string
         }
         Relationships: []
