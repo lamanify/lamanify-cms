@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,10 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
+import { useMedications, MedicationWithPricing } from "@/hooks/useMedications";
+import { useServices } from "@/hooks/useServices";
+import { usePriceTiers } from "@/hooks/usePriceTiers";
 
 interface PrescriptionItem {
   id: string;
   item: string;
+  itemId: string;
+  itemType: 'medication' | 'service';
   quantity: number;
   priceTier: string;
   rate: number;
@@ -28,10 +33,16 @@ interface PrescriptionModalProps {
 }
 
 export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: PrescriptionModalProps) {
+  const { medications, loading: medicationsLoading } = useMedications();
+  const { services, loading: servicesLoading } = useServices();
+  const { priceTiers } = usePriceTiers();
+  
   const [formData, setFormData] = useState<Omit<PrescriptionItem, 'id'>>({
     item: editItem?.item || '',
+    itemId: editItem?.itemId || '',
+    itemType: editItem?.itemType || 'medication',
     quantity: editItem?.quantity || 1,
-    priceTier: editItem?.priceTier || 'Standard',
+    priceTier: editItem?.priceTier || '',
     rate: editItem?.rate || 0,
     amount: editItem?.amount || 0,
     dosage: editItem?.dosage || '',
@@ -44,6 +55,8 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
     if (editItem) {
       setFormData({
         item: editItem.item,
+        itemId: editItem.itemId,
+        itemType: editItem.itemType,
         quantity: editItem.quantity,
         priceTier: editItem.priceTier,
         rate: editItem.rate,
@@ -56,8 +69,10 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
     } else {
       setFormData({
         item: '',
+        itemId: '',
+        itemType: 'medication',
         quantity: 1,
-        priceTier: 'Standard',
+        priceTier: '',
         rate: 0,
         amount: 0,
         dosage: '',
@@ -68,13 +83,83 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
     }
   }, [editItem, isOpen]);
 
+  // Auto-fill pricing when item or price tier changes
+  React.useEffect(() => {
+    if (formData.itemId && formData.priceTier) {
+      let rate = 0;
+      
+      if (formData.itemType === 'medication') {
+        const medication = medications.find(med => med.id === formData.itemId);
+        if (medication?.pricing[formData.priceTier]) {
+          rate = medication.pricing[formData.priceTier];
+        }
+      } else if (formData.itemType === 'service') {
+        const service = services.find(svc => svc.id === formData.itemId);
+        if (service?.pricing[formData.priceTier]) {
+          rate = service.pricing[formData.priceTier];
+        }
+      }
+      
+      setFormData(prev => ({ ...prev, rate }));
+    }
+  }, [formData.itemId, formData.priceTier, medications, services]);
+
+  // Auto-fill dosage information when medication is selected
+  React.useEffect(() => {
+    if (formData.itemType === 'medication' && formData.itemId) {
+      const medication = medications.find(med => med.id === formData.itemId);
+      if (medication?.dosage_template) {
+        const template = medication.dosage_template;
+        setFormData(prev => ({
+          ...prev,
+          dosage: template.dosage_amount && template.dosage_unit 
+            ? `${template.dosage_amount}${template.dosage_unit}` 
+            : prev.dosage,
+          instruction: template.instruction || prev.instruction,
+          frequency: template.frequency || prev.frequency,
+          duration: template.duration_value && template.duration_unit 
+            ? `${template.duration_value} ${template.duration_unit}` 
+            : prev.duration,
+          quantity: template.dispense_quantity || prev.quantity
+        }));
+      }
+    }
+  }, [formData.itemType, formData.itemId, medications]);
+
   React.useEffect(() => {
     const amount = formData.quantity * formData.rate;
     setFormData(prev => ({ ...prev, amount }));
   }, [formData.quantity, formData.rate]);
 
+  const handleItemSelect = (value: string) => {
+    const [itemType, itemId] = value.split(':');
+    let itemName = '';
+    
+    if (itemType === 'medication') {
+      const medication = medications.find(med => med.id === itemId);
+      itemName = medication?.name || '';
+    } else if (itemType === 'service') {
+      const service = services.find(svc => svc.id === itemId);
+      itemName = service?.name || '';
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      itemId,
+      itemType: itemType as 'medication' | 'service',
+      item: itemName,
+      // Reset dependent fields
+      priceTier: '',
+      rate: 0,
+      dosage: '',
+      instruction: '',
+      frequency: '',
+      duration: ''
+    }));
+  };
+
   const handleSubmit = () => {
-    if (!formData.item.trim()) return;
+    if (!formData.item.trim() || !formData.itemId || !formData.priceTier) return;
     
     const newItem: PrescriptionItem = {
       id: editItem?.id || `item-${Date.now()}`,
@@ -105,12 +190,38 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="item">Item *</Label>
-              <Input
-                id="item"
-                value={formData.item}
-                onChange={(e) => setFormData(prev => ({ ...prev, item: e.target.value }))}
-                placeholder="Medicine/Service name"
-              />
+              <Select 
+                value={formData.itemId ? `${formData.itemType}:${formData.itemId}` : ''} 
+                onValueChange={handleItemSelect}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select medication or service" />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Medications</div>
+                  {medications.map((medication) => (
+                    <SelectItem key={`medication:${medication.id}`} value={`medication:${medication.id}`}>
+                      <div className="flex flex-col">
+                        <span>{medication.name}</span>
+                        {medication.generic_name && (
+                          <span className="text-xs text-muted-foreground">{medication.generic_name}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">Services</div>
+                  {services.map((service) => (
+                    <SelectItem key={`service:${service.id}`} value={`service:${service.id}`}>
+                      <div className="flex flex-col">
+                        <span>{service.name}</span>
+                        {service.category && (
+                          <span className="text-xs text-muted-foreground">{service.category}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
@@ -127,35 +238,42 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="priceTier">Price Tier</Label>
-              <Select value={formData.priceTier} onValueChange={(value) => setFormData(prev => ({ ...prev, priceTier: value }))}>
+              <Label htmlFor="priceTier">Price Tier *</Label>
+              <Select 
+                value={formData.priceTier} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, priceTier: value }))}
+                disabled={!formData.itemId}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select price tier" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="Premium">Premium</SelectItem>
-                  <SelectItem value="Insurance">Insurance</SelectItem>
+                  {priceTiers.map((tier) => (
+                    <SelectItem key={tier.id} value={tier.id}>
+                      {tier.tier_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="rate">Rate</Label>
+              <Label htmlFor="rate">Rate (Auto-filled)</Label>
               <Input
                 id="rate"
                 type="number"
                 min="0"
                 step="0.01"
                 value={formData.rate}
-                onChange={(e) => setFormData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
+                readOnly
+                className="bg-muted"
+                placeholder="Select item and tier first"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Amount (Auto-calculated)</Label>
             <Input
               id="amount"
               type="number"
@@ -165,46 +283,50 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {formData.itemType === 'medication' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dosage">Dosage (Auto-filled from template)</Label>
+                <Input
+                  id="dosage"
+                  value={formData.dosage}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))}
+                  placeholder="e.g., 500mg"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequency (Auto-filled from template)</Label>
+                <Select value={formData.frequency} onValueChange={(value) => setFormData(prev => ({ ...prev, frequency: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Once daily">Once daily</SelectItem>
+                    <SelectItem value="Twice daily">Twice daily</SelectItem>
+                    <SelectItem value="Three times daily">Three times daily</SelectItem>
+                    <SelectItem value="Four times daily">Four times daily</SelectItem>
+                    <SelectItem value="As needed">As needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {formData.itemType === 'medication' && (
             <div className="space-y-2">
-              <Label htmlFor="dosage">Dosage</Label>
+              <Label htmlFor="duration">Duration (Auto-filled from template)</Label>
               <Input
-                id="dosage"
-                value={formData.dosage}
-                onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))}
-                placeholder="e.g., 500mg"
+                id="duration"
+                value={formData.duration}
+                onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+                placeholder="e.g., 7 days, 2 weeks"
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="frequency">Frequency</Label>
-              <Select value={formData.frequency} onValueChange={(value) => setFormData(prev => ({ ...prev, frequency: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Once daily">Once daily</SelectItem>
-                  <SelectItem value="Twice daily">Twice daily</SelectItem>
-                  <SelectItem value="Three times daily">Three times daily</SelectItem>
-                  <SelectItem value="Four times daily">Four times daily</SelectItem>
-                  <SelectItem value="As needed">As needed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
 
           <div className="space-y-2">
-            <Label htmlFor="duration">Duration</Label>
-            <Input
-              id="duration"
-              value={formData.duration}
-              onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
-              placeholder="e.g., 7 days, 2 weeks"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="instruction">Instructions</Label>
+            <Label htmlFor="instruction">Instructions (Auto-filled from template)</Label>
             <Textarea
               id="instruction"
               value={formData.instruction}
@@ -220,7 +342,7 @@ export function PrescriptionModal({ isOpen, onClose, onAdd, editItem }: Prescrip
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!formData.item.trim()}>
+          <Button onClick={handleSubmit} disabled={!formData.item.trim() || !formData.itemId || !formData.priceTier}>
             {editItem ? 'Update' : 'Add'} Item
           </Button>
         </div>
