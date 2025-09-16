@@ -595,11 +595,14 @@ export function QuickRegisterForm() {
                 </SelectTrigger>
                 <SelectContent className="bg-background border shadow-lg z-50">
                   <SelectItem value="none">No preference</SelectItem>
-                  {doctors.map((doctor) => (
-                    <SelectItem key={doctor.id} value={doctor.id}>
-                      Dr. {doctor.first_name} {doctor.last_name}
-                    </SelectItem>
-                  ))}
+                  {doctors.map((doctor) => {
+                    console.log('Rendering doctor:', doctor);
+                    return (
+                      <SelectItem key={doctor.id} value={doctor.id || 'unknown'}>
+                        Dr. {doctor.first_name} {doctor.last_name}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
