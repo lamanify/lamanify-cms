@@ -227,11 +227,10 @@ export function ServiceManagement() {
                           step="0.01"
                           min="0"
                           placeholder="0.00"
-                          value={watchPricing[tier.id] || ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value) || 0;
-                            setValue(`pricing.${tier.id}`, value);
-                          }}
+                          {...register(`pricing.${tier.id}`, { 
+                            valueAsNumber: true,
+                            setValueAs: (value) => value || 0
+                          })}
                           className="flex-1"
                         />
                       </div>
