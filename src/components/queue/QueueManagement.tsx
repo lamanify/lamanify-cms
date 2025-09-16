@@ -18,11 +18,17 @@ export function QueueManagement() {
   const [callingNext, setCallingNext] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [queueFilter, setQueueFilter] = useState<string | null>(null);
 
   const stats = getTodayStats();
   
   // Get current patient info for display
   const currentPatient = queue.find(q => q.status === 'in_consultation');
+  
+  // Filter queue based on selected filter
+  const filteredQueue = queueFilter 
+    ? queue.filter(q => q.status === queueFilter)
+    : queue;
   
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -189,21 +195,25 @@ export function QueueManagement() {
       />
 
       {/* Queue Statistics */}
-      <QueueStats stats={{
-        ...stats,
-        averageWaitTime: Math.round(
-          queue.filter(q => q.status === 'waiting').reduce((acc, entry) => {
-            const waitTime = Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60));
-            return acc + waitTime;
-          }, 0) / Math.max(stats.waiting, 1)
-        ),
-        longestWaitTime: Math.max(
-          ...queue.filter(q => q.status === 'waiting').map(entry => 
-            Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60))
+      <QueueStats 
+        stats={{
+          ...stats,
+          averageWaitTime: Math.round(
+            queue.filter(q => q.status === 'waiting').reduce((acc, entry) => {
+              const waitTime = Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60));
+              return acc + waitTime;
+            }, 0) / Math.max(stats.waiting, 1)
           ),
-          0
-        )
-      }} />
+          longestWaitTime: Math.max(
+            ...queue.filter(q => q.status === 'waiting').map(entry => 
+              Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60))
+            ),
+            0
+          )
+        }}
+        activeFilter={queueFilter}
+        onFilterChange={setQueueFilter}
+      />
 
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-center gap-4">
@@ -242,11 +252,21 @@ export function QueueManagement() {
       {/* Queue Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Today's Patient Queue</CardTitle>
+          <CardTitle>
+            {queueFilter 
+              ? `${queueFilter.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Patients`
+              : "Today's Patient Queue"
+            }
+            {queueFilter && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({filteredQueue.length} patients)
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <QueueTable 
-            queue={queue}
+            queue={filteredQueue}
             onStatusChange={handleStatusChange}
             onRemoveFromQueue={handleRemoveFromQueue}
             isPaused={isPaused}
