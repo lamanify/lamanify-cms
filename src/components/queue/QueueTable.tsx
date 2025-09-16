@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Phone, Clock, AlertTriangle, User, MapPin, CreditCard } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { PatientConsultationModal } from '@/components/consultation/PatientConsultationModal';
+import { DispensaryModal } from '@/components/queue/DispensaryModal';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { useState, useEffect } from 'react';
 
@@ -16,6 +17,7 @@ interface QueueTableProps {
 export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused }: QueueTableProps) {
   const [selectedPatient, setSelectedPatient] = useState<QueueEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDispensaryModalOpen, setIsDispensaryModalOpen] = useState(false);
   const { completeConsultationWorkflow } = useConsultationWorkflow();
 
   // Update selectedPatient when queue data changes (to reflect status updates)
@@ -30,11 +32,20 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
   const handlePatientClick = (entry: QueueEntry) => {
     setSelectedPatient(entry);
-    setIsModalOpen(true);
+    if (entry.status === 'dispensary') {
+      setIsDispensaryModalOpen(true);
+    } else {
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setSelectedPatient(null);
+  };
+
+  const handleCloseDispensaryModal = () => {
+    setIsDispensaryModalOpen(false);
     setSelectedPatient(null);
   };
 
@@ -317,6 +328,14 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         onStartConsultation={handleStartConsultation}
         onCallPatient={handleCallPatient}
         onMarkDone={handleMarkDone}
+      />
+
+      {/* Dispensary Modal */}
+      <DispensaryModal
+        isOpen={isDispensaryModalOpen}
+        onClose={handleCloseDispensaryModal}
+        queueEntry={selectedPatient}
+        onStatusChange={onStatusChange}
       />
     </div>
   );
