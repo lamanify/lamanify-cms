@@ -66,6 +66,7 @@ interface QuickRegisterData {
   
   // Visit-specific
   visitReason: string;
+  visitDetails?: string;
   paymentMethod: string;
   urgencyLevel: 'normal' | 'urgent' | 'emergency';
   preferredDoctorId: string;
@@ -123,12 +124,13 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
     allergies: '',
     medicalConditions: '',
     insuranceInfo: '',
-    visitReason: '',
-    paymentMethod: '',
-    urgencyLevel: 'normal',
-    preferredDoctorId: '',
-    photoFile: null,
-    photoPreview: ''
+        visitReason: '',
+        visitDetails: '',
+        paymentMethod: '',
+        urgencyLevel: 'normal',
+        preferredDoctorId: '',
+        photoFile: null,
+        photoPreview: ''
   });
 
   useEffect(() => {
@@ -339,7 +341,10 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
           allergies: formData.allergies || null,
           medical_history: formData.medicalConditions || null,
           visit_reason: formData.visitReason.trim() || null, // Ensure empty strings become null
-          additional_notes: formData.nricId ? `${idType?.toUpperCase()}: ${formData.nricId}` : null,
+          additional_notes: [
+            formData.nricId ? `${idType?.toUpperCase()}: ${formData.nricId}` : null,
+            formData.visitDetails ? `Visit Details: ${formData.visitDetails}` : null
+          ].filter(Boolean).join('; ') || null,
           created_by: profile?.id
         })
         .select()
@@ -394,12 +399,13 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
         allergies: '',
         medicalConditions: '',
         insuranceInfo: '',
-        visitReason: '',
-        paymentMethod: '',
-        urgencyLevel: 'normal',
-        preferredDoctorId: '',
-        photoFile: null,
-        photoPreview: ''
+    visitReason: '',
+    visitDetails: '',
+    paymentMethod: '',
+    urgencyLevel: 'normal',
+    preferredDoctorId: '',
+    photoFile: null,
+    photoPreview: ''
       });
       setIdType('');
       setShowIdField(false);
@@ -407,6 +413,10 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
       setShowContactSection(false);
       setErrors({});
       setGeneralError(''); // Clear general error
+      
+      // Clear saved draft
+      localStorage.removeItem('patient_registration_draft');
+      
       onClose();
 
     } catch (error: any) {
@@ -432,6 +442,60 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
       setLoading(false);
     }
   };
+
+  const handleSaveAsDraft = async () => {
+    try {
+      const draftData = {
+        ...formData,
+        timestamp: new Date().toISOString(),
+        type: 'patient_registration'
+      };
+      
+      localStorage.setItem('patient_registration_draft', JSON.stringify(draftData));
+      
+      toast({
+        title: "Draft Saved",
+        description: "Your form data has been saved as a draft",
+      });
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save draft",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadDraft = () => {
+    try {
+      const savedDraft = localStorage.getItem('patient_registration_draft');
+      if (savedDraft) {
+        const draftData = JSON.parse(savedDraft);
+        setFormData(prev => ({ ...prev, ...draftData, photoFile: null, photoPreview: '' }));
+        
+        // Set UI states if needed
+        if (draftData.nricId) {
+          setIdType('nric');
+          setShowIdField(true);
+        }
+        
+        toast({
+          title: "Draft Loaded",
+          description: "Your previously saved draft has been loaded",
+        });
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  };
+
+  // Load draft on component mount
+  useEffect(() => {
+    if (isOpen) {
+      loadDraft();
+    }
+  }, [isOpen]);
 
   const getRequiredFieldsCount = () => {
     const requiredFields = ['fullName', 'phone', 'dateOfBirth', 'gender', 'visitReason', 'paymentMethod'];
@@ -850,20 +914,40 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
                 <Label htmlFor="visitReason" className="flex items-center gap-1">
                   Reason for Visit <span className="text-destructive">*</span>
                 </Label>
-                <Textarea
-                  id="visitReason"
-                  value={formData.visitReason}
-                  onChange={(e) => setFormData(prev => ({ ...prev, visitReason: e.target.value }))}
-                  placeholder="Describe reason for today's visit"
-                  rows={2}
-                  className={errors.visitReason ? 'border-destructive' : ''}
-                />
+                <Select 
+                  value={formData.visitReason} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, visitReason: value }))}
+                >
+                  <SelectTrigger className={errors.visitReason ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select reason for visit" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="consultation">Consultation</SelectItem>
+                    <SelectItem value="follow-up">Follow-up</SelectItem>
+                    <SelectItem value="emergency">Emergency</SelectItem>
+                    <SelectItem value="others">Others</SelectItem>
+                  </SelectContent>
+                </Select>
                 {errors.visitReason && (
                   <p className="text-sm text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.visitReason}
                   </p>
                 )}
+              </div>
+
+              {/* Additional Details for Visit */}
+              <div className="space-y-2">
+                <Label htmlFor="visitDetails">
+                  Additional Details <span className="text-muted-foreground">(Optional)</span>
+                </Label>
+                <Textarea
+                  id="visitDetails"
+                  value={formData.visitDetails || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, visitDetails: e.target.value }))}
+                  placeholder="Describe specific symptoms or details about the visit"
+                  rows={2}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -963,7 +1047,8 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
               </Button>
               <Button 
                 variant="secondary" 
-                onClick={() => toast({ title: "Draft saved", description: "Form data has been saved as draft" })}
+                onClick={handleSaveAsDraft}
+                disabled={loading}
               >
                 Save as Draft
               </Button>
