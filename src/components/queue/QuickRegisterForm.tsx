@@ -26,7 +26,9 @@ import {
   FileText,
   Clock,
   Stethoscope,
-  UserPlus
+  UserPlus,
+  FileCheck,
+  X
 } from 'lucide-react';
 
 interface Doctor {
@@ -98,6 +100,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [generalError, setGeneralError] = useState<string>('');
+  const [draftInfo, setDraftInfo] = useState<{ exists: boolean; timestamp?: string }>({ exists: false });
   const [idType, setIdType] = useState<string>('');
   const [showIdField, setShowIdField] = useState(false);
   const [showAddressSection, setShowAddressSection] = useState(false);
@@ -416,6 +419,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
       
       // Clear saved draft
       localStorage.removeItem('patient_registration_draft');
+      setDraftInfo({ exists: false });
       
       onClose();
 
@@ -445,13 +449,15 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
 
   const handleSaveAsDraft = async () => {
     try {
+      const timestamp = new Date().toISOString();
       const draftData = {
         ...formData,
-        timestamp: new Date().toISOString(),
+        timestamp,
         type: 'patient_registration'
       };
       
       localStorage.setItem('patient_registration_draft', JSON.stringify(draftData));
+      setDraftInfo({ exists: true, timestamp });
       
       toast({
         title: "Draft Saved",
@@ -473,6 +479,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
       if (savedDraft) {
         const draftData = JSON.parse(savedDraft);
         setFormData(prev => ({ ...prev, ...draftData, photoFile: null, photoPreview: '' }));
+        setDraftInfo({ exists: true, timestamp: draftData.timestamp });
         
         // Set UI states if needed
         if (draftData.nricId) {
@@ -484,9 +491,12 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
           title: "Draft Loaded",
           description: "Your previously saved draft has been loaded",
         });
+      } else {
+        setDraftInfo({ exists: false });
       }
     } catch (error) {
       console.error('Error loading draft:', error);
+      setDraftInfo({ exists: false });
     }
   };
 
@@ -514,6 +524,67 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
             Quick Patient Registration
           </DialogTitle>
         </DialogHeader>
+        
+        {/* Draft Notification Banner */}
+        {draftInfo.exists && draftInfo.timestamp && (
+          <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <FileCheck className="h-4 w-4 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">Draft Loaded</p>
+                <p className="text-xs text-blue-700">
+                  Autosaved on {new Date(draftInfo.timestamp).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                localStorage.removeItem('patient_registration_draft');
+                setDraftInfo({ exists: false });
+                // Reset form
+                setFormData({
+                  fullName: '',
+                  phone: '',
+                  dateOfBirth: '',
+                  gender: '',
+                  nricId: '',
+                  streetAddress: '',
+                  city: '',
+                  state: '',
+                  postalCode: '',
+                  country: 'Malaysia',
+                  email: '',
+                  emergencyContactName: '',
+                  emergencyContactPhone: '',
+                  allergies: '',
+                  medicalConditions: '',
+                  insuranceInfo: '',
+                  visitReason: '',
+                  visitDetails: '',
+                  paymentMethod: '',
+                  urgencyLevel: 'normal',
+                  preferredDoctorId: '',
+                  photoFile: null,
+                  photoPreview: ''
+                });
+                setIdType('');
+                setShowIdField(false);
+                setShowAddressSection(false);
+                setShowContactSection(false);
+                setErrors({});
+                toast({
+                  title: "Draft Cleared",
+                  description: "Form has been reset",
+                });
+              }}
+              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
         
         <div className="space-y-6">
           {/* Essential Fields */}
