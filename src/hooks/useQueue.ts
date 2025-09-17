@@ -236,6 +236,26 @@ export function useQueue() {
 
       if (error) throw error;
 
+      // Automatically create queue session record
+      const { error: sessionError } = await supabase
+        .from('queue_sessions')
+        .insert({
+          queue_id: data.id,
+          patient_id: patientId,
+          session_data: {
+            queue_number: queueNumber,
+            assigned_doctor_id: doctorId,
+            registration_timestamp: new Date().toISOString()
+          },
+          status: 'active'
+        });
+
+      if (sessionError) {
+        console.error('Error creating queue session:', sessionError);
+        // Don't throw error here as the queue entry was successful
+        // Just log the session creation error
+      }
+
       toast({
         title: "Added to Queue",
         description: `Patient assigned queue number: ${queueNumber}`,

@@ -1072,6 +1072,36 @@ export type Database = {
           },
         ]
       }
+      queue_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          patient_id: string
+          queue_id: string
+          session_data: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patient_id: string
+          queue_id: string
+          session_data?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patient_id?: string
+          queue_id?: string
+          session_data?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       service_pricing: {
         Row: {
           created_at: string
