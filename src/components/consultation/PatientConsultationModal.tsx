@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
-import { PrescriptionModal } from './PrescriptionModal';
+import { IntelligentPrescriptionModal } from './IntelligentPrescriptionModal';
 import { useConsultationDrafts } from '@/hooks/useConsultationDrafts';
 import { 
   ArrowLeft, 
@@ -788,7 +788,7 @@ export function PatientConsultationModal({
         </div>
         </DialogContent>
 
-        <PrescriptionModal
+        <IntelligentPrescriptionModal
           isOpen={isPrescriptionModalOpen}
           onClose={() => {
             setIsPrescriptionModalOpen(false);
@@ -796,6 +796,7 @@ export function PatientConsultationModal({
           }}
           onAdd={addTreatmentItem}
           editItem={editingItem}
+          patientPriceTier={queueEntry?.patient?.assigned_tier_id}
         />
       </Dialog>
     );
