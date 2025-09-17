@@ -76,14 +76,11 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     try {
       setLoading(true);
 
-      // Fetch treatment items directly from the treatment_items table
-      // This is the authoritative source for dispensary items
+      // First try to fetch treatment items from the treatment_items table
       const { data: treatmentItemsData, error: treatmentError } = await supabase
         .from('treatment_items')
         .select(`
           *,
-          medication:medications(name, brand_name),
-          service:medical_services(name, description),
           consultation_session:consultation_sessions!inner(
             patient_id,
             status,
@@ -99,26 +96,109 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
       }
 
       if (treatmentItemsData && treatmentItemsData.length > 0) {
-        // Convert to our interface format
-        const items: TreatmentItem[] = treatmentItemsData.map((item: any) => ({
-          id: item.id,
-          item_type: item.item_type as 'medication' | 'service',
-          medication_id: item.medication_id,
-          service_id: item.service_id,
-          quantity: item.quantity,
-          dosage_instructions: item.dosage_instructions,
-          frequency: item.frequency,
-          duration_days: item.duration_days,
-          rate: item.rate,
-          total_amount: item.total_amount,
-          notes: item.notes,
-          medication: item.medication,
-          service: item.service
-        }));
+        // Get medication and service names separately since foreign keys might not be set up
+        const medicationIds = treatmentItemsData.filter(item => item.medication_id).map(item => item.medication_id);
+        const serviceIds = treatmentItemsData.filter(item => item.service_id).map(item => item.service_id);
+
+        // Fetch medications
+        let medications = [];
+        if (medicationIds.length > 0) {
+          const { data: medicationData } = await supabase
+            .from('medications')
+            .select('id, name, brand_name')
+            .in('id', medicationIds);
+          medications = medicationData || [];
+        }
+
+        // Fetch services  
+        let services = [];
+        if (serviceIds.length > 0) {
+          const { data: serviceData } = await supabase
+            .from('medical_services')
+            .select('id, name, description')
+            .in('id', serviceIds);
+          services = serviceData || [];
+        }
+
+        // Convert to our interface format with proper names
+        const items: TreatmentItem[] = treatmentItemsData.map((item: any) => {
+          const medication = medications.find(med => med.id === item.medication_id);
+          const service = services.find(svc => svc.id === item.service_id);
+          
+          return {
+            id: item.id,
+            item_type: item.item_type as 'medication' | 'service',
+            medication_id: item.medication_id,
+            service_id: item.service_id,
+            quantity: item.quantity,
+            dosage_instructions: item.dosage_instructions,
+            frequency: item.frequency,
+            duration_days: item.duration_days,
+            rate: item.rate,
+            total_amount: item.total_amount,
+            notes: item.notes,
+            medication: medication ? {
+              name: medication.name,
+              brand_name: medication.brand_name
+            } : undefined,
+            service: service ? {
+              name: service.name,
+              description: service.description
+            } : undefined
+          };
+        });
+        
         setTreatmentItems(items);
       } else {
-        console.log('No treatment items found for this patient.');
-        setTreatmentItems([]);
+        // Fallback: Get data from patient activities for today's consultation
+        console.log('No treatment items found, checking patient activities...');
+        
+        const today = new Date().toISOString().split('T')[0];
+        const { data: activities, error: activitiesError } = await supabase
+          .from('patient_activities')
+          .select('*')
+          .eq('patient_id', queueEntry.patient_id)
+          .in('activity_type', ['medication', 'treatment'])
+          .gte('activity_date', `${today}T00:00:00Z`)
+          .lte('activity_date', `${today}T23:59:59Z`)
+          .order('created_at', { ascending: false });
+
+        if (!activitiesError && activities) {
+          // Filter to get unique items from today's consultation
+          const todaysItems = activities.filter(activity => {
+            const metadata = activity.metadata as any;
+            return metadata?.queue_id === queueEntry.id;
+          });
+
+          const items: TreatmentItem[] = todaysItems.map((activity) => {
+            const metadata = activity.metadata as any;
+            return {
+              id: activity.id,
+              item_type: activity.activity_type === 'medication' ? 'medication' : 'service',
+              medication_id: null,
+              service_id: null,
+              quantity: metadata?.quantity || 1,
+              dosage_instructions: metadata?.dosage,
+              frequency: metadata?.frequency,
+              duration_days: metadata?.duration ? parseInt(metadata.duration.toString().replace(/\D/g, '')) || null : null,
+              rate: metadata?.amount ? parseFloat(metadata.amount) / (metadata?.quantity || 1) : 0,
+              total_amount: metadata?.amount ? parseFloat(metadata.amount) : 0,
+              notes: metadata?.instructions,
+              medication: activity.activity_type === 'medication' ? {
+                name: metadata?.medication_name || activity.title.replace('Medication Prescribed: ', ''),
+                brand_name: undefined
+              } : undefined,
+              service: activity.activity_type === 'treatment' ? {
+                name: metadata?.service_name || activity.title.replace('Treatment: ', ''),
+                description: activity.content
+              } : undefined
+            } as TreatmentItem;
+          });
+          
+          setTreatmentItems(items);
+        } else {
+          setTreatmentItems([]);
+        }
       }
 
       // Fetch consultation notes from the latest completed consultation session
