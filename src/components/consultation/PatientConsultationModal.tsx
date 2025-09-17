@@ -769,7 +769,8 @@ export function PatientConsultationModal({
                       description: "Patient status changed to Dispensary. All data saved to medical history.",
                     });
                     
-                    // Don't close the modal - let doctor continue with updates
+                    // Auto close modal and return to queue management
+                    onClose();
                   } catch (error) {
                     console.error('Failed to complete consultation:', error);
                     toast({
