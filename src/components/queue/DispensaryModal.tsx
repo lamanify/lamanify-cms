@@ -76,22 +76,31 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     try {
       setLoading(true);
 
-      // Get treatment items directly from patient_activities for this queue entry
-      // This matches exactly what the consultation modal shows
-      const { data: activities, error: activitiesError } = await supabase
-        .from('patient_activities')
-        .select('*')
-        .eq('patient_id', queueEntry.patient_id)
-        .in('activity_type', ['medication', 'treatment'])
-        .eq('metadata->>queue_id', queueEntry.id)
-        .order('created_at', { ascending: false });
+      // First try to fetch from treatment_items table with proper JOIN to get names
+      const { data: treatmentData, error: treatmentError } = await supabase
+        .from('treatment_items')
+        .select(`
+          *,
+          medications(name, brand_name),
+          medical_services(name)
+        `)
+        .eq('consultation_session_id', queueEntry.id);
 
-      if (activitiesError) {
-        console.error('Error fetching patient activities:', activitiesError);
-        setTreatmentItems([]);
-      } else if (activities && activities.length > 0) {
-        // Convert activities to treatment items format
-        const items: TreatmentItem[] = activities.map((activity) => {
+      if (treatmentError) {
+        console.error('Error fetching from treatment_items:', treatmentError);
+        // Fallback to patient_activities if treatment_items fails
+        const { data: activitiesData, error: activitiesError } = await supabase
+          .from('patient_activities')
+          .select('*')
+          .eq('patient_id', queueEntry.patient_id)
+          .in('activity_type', ['medication', 'treatment'])
+          .eq('metadata->>queue_id', queueEntry.id)
+          .order('created_at', { ascending: false });
+
+        if (activitiesError) throw activitiesError;
+
+        // Transform activities into treatment items format
+        const transformedItems = activitiesData?.map(activity => {
           const metadata = activity.metadata as any;
           
           return {
@@ -115,13 +124,36 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
               description: activity.content
             } : undefined
           } as TreatmentItem;
-        });
-        
-        setTreatmentItems(items);
-      } else {
-        // No prescribed items found for this specific queue entry
-        setTreatmentItems([]);
+        }) || [];
+
+        setTreatmentItems(transformedItems);
+        return;
       }
+
+      // Transform treatment_items data with proper names from JOINs
+      const transformedItems = treatmentData?.map(item => ({
+        id: item.id,
+        item_type: item.item_type as 'medication' | 'service',
+        medication_id: item.medication_id,
+        service_id: item.service_id,
+        quantity: item.quantity || 1,
+        dosage_instructions: item.dosage_instructions,
+        frequency: item.frequency,
+        duration_days: item.duration_days,
+        rate: item.rate || 0,
+        total_amount: item.total_amount || 0,
+        notes: item.notes,
+        medication: item.medications ? {
+          name: item.medications.name,
+          brand_name: item.medications.brand_name
+        } : undefined,
+        service: item.medical_services ? {
+          name: item.medical_services.name,
+          description: undefined
+        } : undefined
+      } as TreatmentItem)) || [];
+
+      setTreatmentItems(transformedItems);
 
       // Fetch consultation notes from the latest completed consultation session
       const { data: sessionNotes, error: notesError } = await supabase

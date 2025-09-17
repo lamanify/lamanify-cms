@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useConsultation } from '@/hooks/useConsultation';
 import { usePatientActivities } from '@/hooks/usePatientActivities';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useMedications } from '@/hooks/useMedications';
+import { useServices } from '@/hooks/useServices';
 
 interface ConsultationData {
   notes: string;
@@ -25,6 +27,24 @@ export function useConsultationWorkflow() {
   const [activeConsultationSession, setActiveConsultationSession] = useState<string | null>(null);
   const { completeConsultation } = useConsultation();
   const { toast } = useToast();
+  const { medications } = useMedications();
+  const { services } = useServices();
+
+  // Helper function to find medication or service ID by name
+  const findItemId = (itemName: string, itemType: 'medication' | 'service'): string | null => {
+    if (itemType === 'medication') {
+      const medication = medications.find(med => 
+        med.name.toLowerCase() === itemName.toLowerCase() ||
+        `${med.name} ${med.brand_name || ''}`.toLowerCase().includes(itemName.toLowerCase())
+      );
+      return medication?.id || null;
+    } else {
+      const service = services.find(svc => 
+        svc.name.toLowerCase() === itemName.toLowerCase()
+      );
+      return service?.id || null;
+    }
+  };
 
   // Start consultation and create session
   const startConsultationWorkflow = async (patientId: string, queueId: string) => {
@@ -104,12 +124,14 @@ export function useConsultationWorkflow() {
         for (const item of consultationData.treatmentItems) {
           // Determine if it's a medication or service based on dosage info
           const isMedication = !!(item.dosage || item.frequency || item.duration);
+          const itemType = isMedication ? 'medication' : 'service';
+          const itemId = findItemId(item.item, itemType);
           
           await supabase.from('treatment_items').insert({
             consultation_session_id: consultationSessionId,
-            item_type: isMedication ? 'medication' : 'service',
-            medication_id: isMedication ? null : null, // We don't have the actual medication ID from the form
-            service_id: !isMedication ? null : null, // We don't have the actual service ID from the form
+            item_type: itemType,
+            medication_id: isMedication ? itemId : null,
+            service_id: !isMedication ? itemId : null,
             quantity: item.quantity,
             dosage_instructions: item.dosage,
             frequency: item.frequency,
@@ -203,11 +225,15 @@ export function useConsultationWorkflow() {
       if (consultationData.treatmentItems && consultationData.treatmentItems.length > 0) {
         // First, store treatment items in the treatment_items table for dispensary sync
         for (const item of consultationData.treatmentItems) {
+          const isMedication = !!(item.dosage || item.frequency || item.duration);
+          const itemType = isMedication ? 'medication' : 'service';
+          const itemId = findItemId(item.item, itemType);
+          
           await supabase.from('treatment_items').insert({
-            consultation_session_id: activeConsultationSession,
-            item_type: item.dosage || item.frequency || item.duration ? 'medication' : 'service',
-            medication_id: null, // Will be enhanced later with proper ID mapping
-            service_id: null, // Will be enhanced later with proper ID mapping
+            consultation_session_id: consultationSessionId,
+            item_type: itemType,
+            medication_id: isMedication ? itemId : null,
+            service_id: !isMedication ? itemId : null,
             quantity: item.quantity || 1,
             rate: item.rate || 0,
             total_amount: item.amount || 0,
@@ -215,9 +241,9 @@ export function useConsultationWorkflow() {
             frequency: item.frequency || null,
             duration_days: item.duration ? parseInt(item.duration.replace(/\D/g, '')) || null : null,
             notes: item.instruction || null,
-            tier_id_used: null, // Will be enhanced later
-            tier_price_applied: null, // Will be enhanced later
-            original_price: null // Will be enhanced later
+            tier_id_used: item.priceTier || null,
+            tier_price_applied: item.rate || null,
+            original_price: item.rate || null
           });
         }
 
