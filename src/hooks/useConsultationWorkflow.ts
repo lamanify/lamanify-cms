@@ -199,8 +199,29 @@ export function useConsultationWorkflow() {
         status: 'completed'
       });
 
-      // Process treatment items for patient history
+      // Process treatment items for patient history and dispensary
       if (consultationData.treatmentItems && consultationData.treatmentItems.length > 0) {
+        // First, store treatment items in the treatment_items table for dispensary sync
+        for (const item of consultationData.treatmentItems) {
+          await supabase.from('treatment_items').insert({
+            consultation_session_id: activeConsultationSession,
+            item_type: item.dosage || item.frequency || item.duration ? 'medication' : 'service',
+            medication_id: null, // Will be enhanced later with proper ID mapping
+            service_id: null, // Will be enhanced later with proper ID mapping
+            quantity: item.quantity || 1,
+            rate: item.rate || 0,
+            total_amount: item.amount || 0,
+            dosage_instructions: item.dosage || null,
+            frequency: item.frequency || null,
+            duration_days: item.duration ? parseInt(item.duration.replace(/\D/g, '')) || null : null,
+            notes: item.instruction || null,
+            tier_id_used: null, // Will be enhanced later
+            tier_price_applied: null, // Will be enhanced later
+            original_price: null // Will be enhanced later
+          });
+        }
+
+        // Then process for patient history
         for (const item of consultationData.treatmentItems) {
           // Add medication to current medications if it has dosage info
           if (item.dosage || item.frequency || item.duration) {
