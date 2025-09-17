@@ -76,8 +76,8 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     try {
       setLoading(true);
 
-      // Fetch consultation session and treatment items
-      const { data: session } = await supabase
+      // First try to fetch consultation session and treatment items
+      const { data: session, error: sessionError } = await supabase
         .from('consultation_sessions')
         .select(`
           *,
@@ -89,18 +89,23 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           consultation_notes (
             diagnosis,
             treatment_plan,
-            prescriptions
+            prescriptions,
+            chief_complaint
           )
         `)
         .eq('patient_id', queueEntry.patient_id)
         .eq('status', 'completed')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (session) {
+      if (sessionError) {
+        console.error('Error fetching consultation session:', sessionError);
+      }
+
+      if (session && session.treatment_items && session.treatment_items.length > 0) {
         // Cast the treatment items to match our interface
-        const items: TreatmentItem[] = (session.treatment_items || []).map((item: any) => ({
+        const items: TreatmentItem[] = session.treatment_items.map((item: any) => ({
           id: item.id,
           item_type: item.item_type as 'medication' | 'service',
           medication_id: item.medication_id,
@@ -121,11 +126,63 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
         const notes = session.consultation_notes?.[0];
         if (notes) {
           const notesText = [
+            notes.chief_complaint ? `Notes: ${notes.chief_complaint}` : '',
             notes.diagnosis ? `Diagnosis: ${notes.diagnosis}` : '',
             notes.treatment_plan ? `Treatment Plan: ${notes.treatment_plan}` : '',
             notes.prescriptions ? `Prescriptions: ${notes.prescriptions}` : ''
           ].filter(Boolean).join('\n\n');
           setConsultationNotes(notesText);
+        }
+      } else {
+        // Fallback: Try to get data from patient activities if no treatment_items found
+        console.log('No treatment items found in consultation session, checking patient activities...');
+        
+        const { data: activities, error: activitiesError } = await supabase
+          .from('patient_activities')
+          .select('*')
+          .eq('patient_id', queueEntry.patient_id)
+          .in('activity_type', ['medication', 'treatment', 'consultation'])
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+
+        if (activitiesError) {
+          console.error('Error fetching patient activities:', activitiesError);
+        } else if (activities) {
+          // Convert activities to treatment items format
+          const items: TreatmentItem[] = activities
+            .filter(activity => activity.activity_type === 'medication' || activity.activity_type === 'treatment')
+            .map((activity, index) => {
+              const metadata = activity.metadata as any; // Cast to any to access properties
+              return {
+                id: activity.id,
+                item_type: activity.activity_type === 'medication' ? 'medication' : 'service',
+                medication_id: null,
+                service_id: null,
+                quantity: metadata?.quantity || 1,
+                dosage_instructions: metadata?.dosage,
+                frequency: metadata?.frequency,
+                duration_days: metadata?.duration ? parseInt(metadata.duration.toString().replace(/\D/g, '')) || null : null,
+                rate: metadata?.amount ? parseFloat(metadata.amount) / (metadata?.quantity || 1) : 0,
+                total_amount: metadata?.amount ? parseFloat(metadata.amount) : 0,
+                notes: metadata?.instructions,
+                medication: activity.activity_type === 'medication' ? {
+                  name: metadata?.medication_name || activity.title.replace('Medication Prescribed: ', ''),
+                  brand_name: undefined
+                } : undefined,
+                service: activity.activity_type === 'treatment' ? {
+                  name: metadata?.service_name || activity.title.replace('Treatment: ', ''),
+                  description: activity.content
+                } : undefined
+              } as TreatmentItem;
+            });
+          
+          setTreatmentItems(items);
+          
+          // Set consultation notes from consultation activity
+          const consultationActivity = activities.find(activity => activity.activity_type === 'consultation');
+          if (consultationActivity) {
+            setConsultationNotes(consultationActivity.content || '');
+          }
         }
       }
 

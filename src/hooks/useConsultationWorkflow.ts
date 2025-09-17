@@ -65,6 +65,88 @@ export function useConsultationWorkflow() {
     try {
       const doctorId = (await supabase.auth.getUser()).data.user?.id;
       
+      // First, get or create a consultation session
+      let consultationSessionId = activeConsultationSession;
+      
+      if (!consultationSessionId) {
+        // Try to find an existing session for this queue entry
+        const { data: existingSession } = await supabase
+          .from('consultation_sessions')
+          .select('id')
+          .eq('patient_id', patientId)
+          .eq('queue_id', queueId)
+          .eq('status', 'active')
+          .single();
+          
+        if (existingSession) {
+          consultationSessionId = existingSession.id;
+        } else {
+          // Create a new consultation session
+          const { data: newSession, error: sessionError } = await supabase
+            .from('consultation_sessions')
+            .insert({
+              patient_id: patientId,
+              doctor_id: doctorId,
+              queue_id: queueId,
+              status: 'active',
+              urgency_level: 'normal'
+            })
+            .select('id')
+            .single();
+
+          if (sessionError) throw sessionError;
+          consultationSessionId = newSession.id;
+        }
+      }
+
+      // Store treatment items in the treatment_items table for dispensary access
+      if (consultationData.treatmentItems && consultationData.treatmentItems.length > 0) {
+        for (const item of consultationData.treatmentItems) {
+          // Determine if it's a medication or service based on dosage info
+          const isMedication = !!(item.dosage || item.frequency || item.duration);
+          
+          await supabase.from('treatment_items').insert({
+            consultation_session_id: consultationSessionId,
+            item_type: isMedication ? 'medication' : 'service',
+            medication_id: isMedication ? null : null, // We don't have the actual medication ID from the form
+            service_id: !isMedication ? null : null, // We don't have the actual service ID from the form
+            quantity: item.quantity,
+            dosage_instructions: item.dosage,
+            frequency: item.frequency,
+            duration_days: item.duration ? parseInt(item.duration.replace(/\D/g, '')) || null : null,
+            rate: item.rate,
+            total_amount: item.amount,
+            notes: item.instruction,
+            tier_id_used: item.priceTier,
+            tier_price_applied: item.rate,
+            original_price: item.rate
+          });
+        }
+      }
+
+      // Complete the consultation session
+      await supabase
+        .from('consultation_sessions')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', consultationSessionId);
+
+      // Create consultation notes
+      if (consultationData.notes || consultationData.diagnosis) {
+        await supabase.from('consultation_notes').insert({
+          appointment_id: null, // We don't have an appointment ID in this flow
+          patient_id: patientId,
+          doctor_id: doctorId,
+          chief_complaint: consultationData.notes,
+          diagnosis: consultationData.diagnosis,
+          treatment_plan: consultationData.treatmentItems.length > 0 
+            ? consultationData.treatmentItems.map(item => `${item.item} - ${item.dosage || 'As directed'}`).join(', ')
+            : null
+        });
+      }
+      
       // Create main consultation activity with detailed consultation notes
       const consultationTitle = 'Consultation Completed';
       const consultationContent = [];
@@ -117,7 +199,7 @@ export function useConsultationWorkflow() {
         status: 'completed'
       });
 
-      // Process treatment items
+      // Process treatment items for patient history
       if (consultationData.treatmentItems && consultationData.treatmentItems.length > 0) {
         for (const item of consultationData.treatmentItems) {
           // Add medication to current medications if it has dosage info
@@ -175,7 +257,7 @@ export function useConsultationWorkflow() {
           }
         }
       }
-
+      
       // Complete the consultation session if exists
       if (activeConsultationSession) {
         await completeConsultation(activeConsultationSession, consultationData);
