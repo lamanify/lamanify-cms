@@ -48,17 +48,49 @@ export function useQueue() {
   useEffect(() => {
     fetchQueue();
     
-    // Set up real-time subscription
+    // Set up real-time subscription for patient queue changes
     const channel = supabase
       .channel('queue-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'patient_queue'
+        },
+        (payload) => {
+          console.log('Queue status update:', payload);
+          // Update specific queue entry instead of refetching all
+          setQueue(currentQueue => 
+            currentQueue.map(entry => 
+              entry.id === payload.new.id 
+                ? { ...entry, ...payload.new }
+                : entry
+            )
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
           schema: 'public',
           table: 'patient_queue'
         },
         () => {
+          // Refetch on new entries
+          fetchQueue();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'patient_queue'
+        },
+        () => {
+          // Refetch on deletions
           fetchQueue();
         }
       )
@@ -208,7 +240,10 @@ export function useQueue() {
 
   const updateQueueStatus = async (queueId: string, status: QueueEntry['status'], doctorId?: string) => {
     try {
-      const updates: any = { status };
+      const updates: any = { 
+        status,
+        updated_at: new Date().toISOString() // Force updated_at to trigger real-time
+      };
       
       if (status === 'in_consultation') {
         updates.consultation_started_at = new Date().toISOString();
@@ -217,12 +252,16 @@ export function useQueue() {
         updates.consultation_completed_at = new Date().toISOString();
       }
 
+      console.log('Updating queue status:', { queueId, status, updates });
+
       const { error } = await supabase
         .from('patient_queue')
         .update(updates)
         .eq('id', queueId);
 
       if (error) throw error;
+
+      console.log('Queue status updated successfully');
 
       toast({
         title: "Status Updated",
@@ -235,6 +274,7 @@ export function useQueue() {
         description: "Failed to update patient status",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
