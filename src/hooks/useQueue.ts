@@ -59,15 +59,30 @@ export function useQueue() {
           table: 'patient_queue'
         },
         (payload) => {
-          console.log('Queue status update:', payload);
+          console.log('Real-time queue status update received:', payload);
           // Update specific queue entry instead of refetching all
-          setQueue(currentQueue => 
-            currentQueue.map(entry => 
+          setQueue(currentQueue => {
+            const updatedQueue = currentQueue.map(entry => 
               entry.id === payload.new.id 
-                ? { ...entry, ...payload.new }
+                ? { ...entry, ...payload.new, status: payload.new.status as QueueEntry['status'] }
                 : entry
-            )
-          );
+            );
+            
+            // Update current number based on new status
+            const inConsultation = updatedQueue.find(entry => entry.status === 'in_consultation');
+            const firstWaiting = updatedQueue.find(entry => entry.status === 'waiting');
+            
+            if (inConsultation) {
+              setCurrentNumber(inConsultation.queue_number);
+            } else if (firstWaiting) {
+              setCurrentNumber(firstWaiting.queue_number);
+            } else {
+              const lastCompleted = updatedQueue.filter(entry => entry.status === 'completed' || entry.status === 'dispensary').pop();
+              setCurrentNumber(lastCompleted?.queue_number || null);
+            }
+            
+            return updatedQueue;
+          });
         }
       )
       .on(
