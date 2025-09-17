@@ -30,6 +30,25 @@ export function useConsultationWorkflow() {
   const { medications } = useMedications();
   const { services } = useServices();
 
+  // Helper function to update queue session data
+  const updateQueueSessionData = async (queueId: string, sessionData: any) => {
+    try {
+      const { error } = await supabase
+        .from('queue_sessions')
+        .update({ 
+          session_data: sessionData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('queue_id', queueId);
+
+      if (error) {
+        console.error('Error updating queue session:', error);
+      }
+    } catch (error) {
+      console.error('Error updating queue session data:', error);
+    }
+  };
+
   // Helper function to find medication or service ID by name
   const findItemId = (itemName: string, itemType: 'medication' | 'service'): string | null => {
     if (itemType === 'medication') {
@@ -84,6 +103,33 @@ export function useConsultationWorkflow() {
   ) => {
     try {
       const doctorId = (await supabase.auth.getUser()).data.user?.id;
+
+      // First update the queue session with consultation data
+      const sessionData = {
+        consultation_notes: consultationData.notes,
+        diagnosis: consultationData.diagnosis,
+        prescribed_items: consultationData.treatmentItems.map(item => ({
+          type: (item.dosage || item.frequency || item.duration) ? "medication" : "service",
+          name: item.item,
+          quantity: item.quantity,
+          dosage: item.dosage || null,
+          frequency: item.frequency || null,
+          duration: item.duration || null,
+          price: item.amount,
+          instructions: item.instruction || null,
+          rate: item.rate
+        })),
+        completed_at: new Date().toISOString(),
+        doctor_id: doctorId
+      };
+
+      await updateQueueSessionData(queueId, sessionData);
+
+      // Also update the session status to completed
+      await supabase
+        .from('queue_sessions')
+        .update({ status: 'completed' })
+        .eq('queue_id', queueId);
       
       // First, get or create a consultation session
       let consultationSessionId = activeConsultationSession;
@@ -328,9 +374,56 @@ export function useConsultationWorkflow() {
     }
   };
 
+  // Real-time session data update function
+  const updateSessionDataRealtime = async (
+    queueId: string,
+    consultationNotes: string,
+    diagnosis: string,
+    treatmentItems: Array<{
+      id: string;
+      item: string;
+      quantity: number;
+      priceTier: string;
+      rate: number;
+      amount: number;
+      dosage: string;
+      instruction: string;
+      frequency: string;
+      duration: string;
+    }>
+  ) => {
+    try {
+      const doctorId = (await supabase.auth.getUser()).data.user?.id;
+      
+      const sessionData = {
+        consultation_notes: consultationNotes,
+        diagnosis: diagnosis,
+        prescribed_items: treatmentItems.map(item => ({
+          type: (item.dosage || item.frequency || item.duration) ? "medication" : "service",
+          name: item.item,
+          quantity: item.quantity,
+          dosage: item.dosage || null,
+          frequency: item.frequency || null,
+          duration: item.duration || null,
+          price: item.amount,
+          instructions: item.instruction || null,
+          rate: item.rate
+        })),
+        last_updated: new Date().toISOString(),
+        doctor_id: doctorId
+      };
+
+      await updateQueueSessionData(queueId, sessionData);
+    } catch (error) {
+      console.error('Error updating session data realtime:', error);
+    }
+  };
+
   return {
     activeConsultationSession,
     startConsultationWorkflow,
-    completeConsultationWorkflow
+    completeConsultationWorkflow,
+    updateQueueSessionData,
+    updateSessionDataRealtime
   };
 }

@@ -63,7 +63,7 @@ export function PatientConsultationModal({
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [consultationStatus, setConsultationStatus] = useState<string>(queueEntry?.status || 'waiting');
   const { toast } = useToast();
-  const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow } = useConsultationWorkflow();
+  const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow, updateSessionDataRealtime } = useConsultationWorkflow();
   const { saveDraft, getDraftForPatient, deleteDraft, autoSaveStatus } = useConsultationDrafts();
   
   // Sync consultation status with queue entry status
@@ -73,7 +73,7 @@ export function PatientConsultationModal({
     }
   }, [queueEntry?.status]);
   
-  // Auto-save functionality
+  // Auto-save functionality with session updates
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const debouncedSave = useCallback(
     (formData: any, patientId: string) => {
@@ -83,14 +83,25 @@ export function PatientConsultationModal({
       
       saveTimeoutRef.current = setTimeout(async () => {
         if (patientId) {
+          // Save draft locally
           const draftId = await saveDraft(formData, patientId, currentDraftId);
           if (draftId && !currentDraftId) {
             setCurrentDraftId(draftId);
           }
+          
+          // Update queue session data in real-time
+          if (queueEntry?.id) {
+            await updateSessionDataRealtime(
+              queueEntry.id,
+              formData.consultationNotes || '',
+              formData.diagnosis || '',
+              formData.treatmentItems || []
+            );
+          }
         }
       }, 2000); // Auto-save after 2 seconds of inactivity
     },
-    [saveDraft, currentDraftId]
+    [saveDraft, currentDraftId, updateSessionDataRealtime, queueEntry?.id]
   );
 
   // Treatment items state
@@ -169,7 +180,7 @@ export function PatientConsultationModal({
     return `${hours} hours ${minutes} mins`;
   };
 
-  const addTreatmentItem = (item: any) => {
+  const addTreatmentItem = async (item: any) => {
     const newTreatmentItem = {
       ...item,
       amount: item.quantity * item.rate,
@@ -177,13 +188,26 @@ export function PatientConsultationModal({
     };
     
     setTreatmentItems(prev => {
+      let updatedItems;
       if (item.id && prev.find(t => t.id === item.id)) {
         // Update existing item
-        return prev.map(t => t.id === item.id ? newTreatmentItem : t);
+        updatedItems = prev.map(t => t.id === item.id ? newTreatmentItem : t);
       } else {
         // Add new item
-        return [...prev, newTreatmentItem];
+        updatedItems = [...prev, newTreatmentItem];
       }
+      
+      // Update session data with new treatment items
+      if (queueEntry?.id) {
+        updateSessionDataRealtime(
+          queueEntry.id,
+          consultationNotes,
+          diagnosis,
+          updatedItems
+        );
+      }
+      
+      return updatedItems;
     });
     
     setEditingItem(null);
@@ -199,8 +223,23 @@ export function PatientConsultationModal({
     setIsPrescriptionModalOpen(true);
   };
 
-  const removeTreatmentItem = (id: string) => {
-    setTreatmentItems(prev => prev.filter(item => item.id !== id));
+  const removeTreatmentItem = async (id: string) => {
+    setTreatmentItems(prev => {
+      const updatedItems = prev.filter(item => item.id !== id);
+      
+      // Update session data with remaining treatment items
+      if (queueEntry?.id) {
+        updateSessionDataRealtime(
+          queueEntry.id,
+          consultationNotes,
+          diagnosis,
+          updatedItems
+        );
+      }
+      
+      return updatedItems;
+    });
+    
     toast({
       title: "Success",
       description: "Treatment item removed successfully",
@@ -211,7 +250,7 @@ export function PatientConsultationModal({
     return treatmentItems.reduce((total, item) => total + item.amount, 0);
   };
 
-  const saveConsultationNotes = () => {
+  const saveConsultationNotes = async () => {
     if (!consultationNotes.trim() && !diagnosis && treatmentItems.length === 0) {
       toast({
         title: "Error",
@@ -224,9 +263,19 @@ export function PatientConsultationModal({
     // Save as draft - no database operation needed, just local state
     setIsDraftSaved(true);
     
+    // Update queue session data immediately
+    if (queueEntry?.id) {
+      await updateSessionDataRealtime(
+        queueEntry.id,
+        consultationNotes,
+        diagnosis,
+        treatmentItems
+      );
+    }
+    
     toast({
       title: "Draft Saved",
-      description: "Consultation notes saved as draft",
+      description: "Consultation notes saved as draft and synced to session",
     });
   };
 
