@@ -76,7 +76,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     try {
       setLoading(true);
 
-      // First try to fetch treatment items from the treatment_items table
+      // Fetch treatment items from the treatment_items table
       const { data: treatmentItemsData, error: treatmentError } = await supabase
         .from('treatment_items')
         .select(`
@@ -96,34 +96,46 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
       }
 
       if (treatmentItemsData && treatmentItemsData.length > 0) {
-        // Get medication and service names separately since foreign keys might not be set up
-        const medicationIds = treatmentItemsData.filter(item => item.medication_id).map(item => item.medication_id);
-        const serviceIds = treatmentItemsData.filter(item => item.service_id).map(item => item.service_id);
+        // Since foreign keys (medication_id, service_id) are often NULL, 
+        // fetch names from patient_activities which contains the actual names
+        const { data: activitiesData, error: activitiesError } = await supabase
+          .from('patient_activities')
+          .select('*')
+          .eq('patient_id', queueEntry.patient_id)
+          .in('activity_type', ['medication', 'treatment'])
+          .eq('metadata->>queue_id', queueEntry.id)
+          .order('created_at', { ascending: false });
 
-        // Fetch medications
-        let medications = [];
-        if (medicationIds.length > 0) {
-          const { data: medicationData } = await supabase
-            .from('medications')
-            .select('id, name, brand_name')
-            .in('id', medicationIds);
-          medications = medicationData || [];
+        if (activitiesError) {
+          console.error('Error fetching patient activities:', activitiesError);
         }
 
-        // Fetch services  
-        let services = [];
-        if (serviceIds.length > 0) {
-          const { data: serviceData } = await supabase
-            .from('medical_services')
-            .select('id, name, description')
-            .in('id', serviceIds);
-          services = serviceData || [];
-        }
-
-        // Convert to our interface format with proper names
+        // Convert to our interface format with names from patient_activities
         const items: TreatmentItem[] = treatmentItemsData.map((item: any) => {
-          const medication = medications.find(med => med.id === item.medication_id);
-          const service = services.find(svc => svc.id === item.service_id);
+          // Find corresponding activity to get the actual name
+          let itemName = 'Unknown';
+          let itemDescription = '';
+          
+          if (item.item_type === 'medication') {
+            const medicationActivity = activitiesData?.find(activity => {
+              const metadata = activity.metadata as any;
+              return activity.activity_type === 'medication' && metadata?.medication_name;
+            });
+            if (medicationActivity) {
+              const metadata = medicationActivity.metadata as any;
+              itemName = metadata?.medication_name || 'Unknown Medication';
+            }
+          } else if (item.item_type === 'service') {
+            const serviceActivity = activitiesData?.find(activity => {
+              const metadata = activity.metadata as any;
+              return activity.activity_type === 'treatment' && metadata?.service_name;
+            });
+            if (serviceActivity) {
+              const metadata = serviceActivity.metadata as any;
+              itemName = metadata?.service_name || 'Unknown Service';
+              itemDescription = serviceActivity.content || '';
+            }
+          }
           
           return {
             id: item.id,
@@ -137,13 +149,13 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
             rate: item.rate,
             total_amount: item.total_amount,
             notes: item.notes,
-            medication: medication ? {
-              name: medication.name,
-              brand_name: medication.brand_name
+            medication: item.item_type === 'medication' ? {
+              name: itemName,
+              brand_name: undefined
             } : undefined,
-            service: service ? {
-              name: service.name,
-              description: service.description
+            service: item.item_type === 'service' ? {
+              name: itemName,
+              description: itemDescription
             } : undefined
           };
         });
