@@ -134,47 +134,55 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           setConsultationNotes(notesText);
         }
       } else {
-        // Fallback: Try to get data from patient activities if no treatment_items found
-        console.log('No treatment items found in consultation session, checking patient activities...');
+        // Fallback: Try to get data from patient activities from TODAY'S consultation only
+        console.log('No treatment items found in consultation session, checking today\'s patient activities...');
         
+        const today = new Date().toISOString().split('T')[0];
         const { data: activities, error: activitiesError } = await supabase
           .from('patient_activities')
           .select('*')
           .eq('patient_id', queueEntry.patient_id)
           .in('activity_type', ['medication', 'treatment', 'consultation'])
-          .eq('status', 'active')
+          .gte('activity_date', `${today}T00:00:00Z`)
+          .lte('activity_date', `${today}T23:59:59Z`)
+          .or(`metadata->>queue_id.eq.${queueEntry.id},status.eq.active`) // Only today's prescriptions or linked to this queue entry
           .order('created_at', { ascending: false });
 
         if (activitiesError) {
           console.error('Error fetching patient activities:', activitiesError);
         } else if (activities) {
+          // Filter to only get medication/treatment activities from today's consultation
+          const todaysItems = activities.filter(activity => {
+            const metadata = activity.metadata as any;
+            return (activity.activity_type === 'medication' || activity.activity_type === 'treatment') &&
+                   (metadata?.queue_id === queueEntry.id || activity.activity_date >= `${today}T00:00:00Z`);
+          });
+
           // Convert activities to treatment items format
-          const items: TreatmentItem[] = activities
-            .filter(activity => activity.activity_type === 'medication' || activity.activity_type === 'treatment')
-            .map((activity, index) => {
-              const metadata = activity.metadata as any; // Cast to any to access properties
-              return {
-                id: activity.id,
-                item_type: activity.activity_type === 'medication' ? 'medication' : 'service',
-                medication_id: null,
-                service_id: null,
-                quantity: metadata?.quantity || 1,
-                dosage_instructions: metadata?.dosage,
-                frequency: metadata?.frequency,
-                duration_days: metadata?.duration ? parseInt(metadata.duration.toString().replace(/\D/g, '')) || null : null,
-                rate: metadata?.amount ? parseFloat(metadata.amount) / (metadata?.quantity || 1) : 0,
-                total_amount: metadata?.amount ? parseFloat(metadata.amount) : 0,
-                notes: metadata?.instructions,
-                medication: activity.activity_type === 'medication' ? {
-                  name: metadata?.medication_name || activity.title.replace('Medication Prescribed: ', ''),
-                  brand_name: undefined
-                } : undefined,
-                service: activity.activity_type === 'treatment' ? {
-                  name: metadata?.service_name || activity.title.replace('Treatment: ', ''),
-                  description: activity.content
-                } : undefined
-              } as TreatmentItem;
-            });
+          const items: TreatmentItem[] = todaysItems.map((activity, index) => {
+            const metadata = activity.metadata as any;
+            return {
+              id: activity.id,
+              item_type: activity.activity_type === 'medication' ? 'medication' : 'service',
+              medication_id: null,
+              service_id: null,
+              quantity: metadata?.quantity || 1,
+              dosage_instructions: metadata?.dosage,
+              frequency: metadata?.frequency,
+              duration_days: metadata?.duration ? parseInt(metadata.duration.toString().replace(/\D/g, '')) || null : null,
+              rate: metadata?.amount ? parseFloat(metadata.amount) / (metadata?.quantity || 1) : 0,
+              total_amount: metadata?.amount ? parseFloat(metadata.amount) : 0,
+              notes: metadata?.instructions,
+              medication: activity.activity_type === 'medication' ? {
+                name: metadata?.medication_name || activity.title.replace('Medication Prescribed: ', ''),
+                brand_name: undefined
+              } : undefined,
+              service: activity.activity_type === 'treatment' ? {
+                name: metadata?.service_name || activity.title.replace('Treatment: ', ''),
+                description: activity.content
+              } : undefined
+            } as TreatmentItem;
+          });
           
           setTreatmentItems(items);
           
@@ -324,6 +332,39 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 </div>
               </div>
 
+              {/* Status Change Section */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="text-lg font-semibold mb-3 text-blue-800">Patient Status</h3>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Current Status:</span>
+                    <Badge variant={queueEntry.status === 'dispensary' ? 'default' : 'secondary'}>
+                      {queueEntry.status === 'dispensary' ? 'Ready for Dispensary' : queueEntry.status === 'in_consultation' ? 'In Consultation' : queueEntry.status}
+                    </Badge>
+                  </div>
+                  {queueEntry.status === 'dispensary' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => onStatusChange(queueEntry.id, 'in_consultation')}
+                      className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                    >
+                      ← Back to Consultation
+                    </Button>
+                  )}
+                  {queueEntry.status === 'in_consultation' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => onStatusChange(queueEntry.id, 'dispensary')}
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      Ready for Dispensary →
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <Button variant="outline" size="sm">
@@ -345,8 +386,11 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 <h3 className="text-lg font-semibold mb-3">Invoice Items</h3>
                 {loading ? (
                   <div className="text-center py-4">Loading items...</div>
-                ) : treatmentItems.length === 0 ? (
-                  <div className="text-center py-4 text-muted-foreground">No items found</div>
+                 ) : treatmentItems.length === 0 ? (
+                   <div className="text-center py-8 text-muted-foreground">
+                     <div className="mb-2">No prescribed items found for today's consultation</div>
+                     <div className="text-sm">Only items prescribed by the doctor in today's consultation will appear here</div>
+                   </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="grid grid-cols-12 gap-2 text-sm font-medium text-muted-foreground border-b pb-2">
