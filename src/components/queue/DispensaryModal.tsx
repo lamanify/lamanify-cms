@@ -76,36 +76,31 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     try {
       setLoading(true);
 
-      // First try to fetch consultation session and treatment items
-      const { data: session, error: sessionError } = await supabase
-        .from('consultation_sessions')
+      // Fetch treatment items directly from the treatment_items table
+      // This is the authoritative source for dispensary items
+      const { data: treatmentItemsData, error: treatmentError } = await supabase
+        .from('treatment_items')
         .select(`
           *,
-          treatment_items (
-            *,
-            medication:medications(name, brand_name),
-            service:medical_services(name, description)
-          ),
-          consultation_notes (
-            diagnosis,
-            treatment_plan,
-            prescriptions,
-            chief_complaint
+          medication:medications(name, brand_name),
+          service:medical_services(name, description),
+          consultation_session:consultation_sessions!inner(
+            patient_id,
+            status,
+            created_at
           )
         `)
-        .eq('patient_id', queueEntry.patient_id)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq('consultation_session.patient_id', queueEntry.patient_id)
+        .eq('consultation_session.status', 'completed')
+        .order('created_at', { ascending: false });
 
-      if (sessionError) {
-        console.error('Error fetching consultation session:', sessionError);
+      if (treatmentError) {
+        console.error('Error fetching treatment items:', treatmentError);
       }
 
-      if (session && session.treatment_items && session.treatment_items.length > 0) {
-        // Cast the treatment items to match our interface
-        const items: TreatmentItem[] = session.treatment_items.map((item: any) => ({
+      if (treatmentItemsData && treatmentItemsData.length > 0) {
+        // Convert to our interface format
+        const items: TreatmentItem[] = treatmentItemsData.map((item: any) => ({
           id: item.id,
           item_type: item.item_type as 'medication' | 'service',
           medication_id: item.medication_id,
@@ -121,76 +116,50 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           service: item.service
         }));
         setTreatmentItems(items);
-        
-        // Set consultation notes from the latest session
-        const notes = session.consultation_notes?.[0];
-        if (notes) {
-          const notesText = [
-            notes.chief_complaint ? `Notes: ${notes.chief_complaint}` : '',
-            notes.diagnosis ? `Diagnosis: ${notes.diagnosis}` : '',
-            notes.treatment_plan ? `Treatment Plan: ${notes.treatment_plan}` : '',
-            notes.prescriptions ? `Prescriptions: ${notes.prescriptions}` : ''
-          ].filter(Boolean).join('\n\n');
-          setConsultationNotes(notesText);
-        }
       } else {
-        // Fallback: Try to get data from patient activities from TODAY'S consultation only
-        console.log('No treatment items found in consultation session, checking today\'s patient activities...');
-        
-        const today = new Date().toISOString().split('T')[0];
-        const { data: activities, error: activitiesError } = await supabase
+        console.log('No treatment items found for this patient.');
+        setTreatmentItems([]);
+      }
+
+      // Fetch consultation notes from the latest completed consultation session
+      const { data: sessionNotes, error: notesError } = await supabase
+        .from('consultation_sessions')
+        .select(`
+          consultation_notes (
+            diagnosis,
+            treatment_plan,
+            prescriptions,
+            chief_complaint
+          )
+        `)
+        .eq('patient_id', queueEntry.patient_id)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!notesError && sessionNotes?.consultation_notes?.[0]) {
+        const notes = sessionNotes.consultation_notes[0];
+        const notesText = [
+          notes.chief_complaint ? `Notes: ${notes.chief_complaint}` : '',
+          notes.diagnosis ? `Diagnosis: ${notes.diagnosis}` : '',
+          notes.treatment_plan ? `Treatment Plan: ${notes.treatment_plan}` : '',
+          notes.prescriptions ? `Prescriptions: ${notes.prescriptions}` : ''
+        ].filter(Boolean).join('\n\n');
+        setConsultationNotes(notesText);
+      } else {
+        // Fallback: Get consultation notes from patient activities
+        const { data: consultationActivity } = await supabase
           .from('patient_activities')
-          .select('*')
+          .select('content')
           .eq('patient_id', queueEntry.patient_id)
-          .in('activity_type', ['medication', 'treatment', 'consultation'])
-          .gte('activity_date', `${today}T00:00:00Z`)
-          .lte('activity_date', `${today}T23:59:59Z`)
-          .or(`metadata->>queue_id.eq.${queueEntry.id},status.eq.active`) // Only today's prescriptions or linked to this queue entry
-          .order('created_at', { ascending: false });
-
-        if (activitiesError) {
-          console.error('Error fetching patient activities:', activitiesError);
-        } else if (activities) {
-          // Filter to only get medication/treatment activities from today's consultation
-          const todaysItems = activities.filter(activity => {
-            const metadata = activity.metadata as any;
-            return (activity.activity_type === 'medication' || activity.activity_type === 'treatment') &&
-                   (metadata?.queue_id === queueEntry.id || activity.activity_date >= `${today}T00:00:00Z`);
-          });
-
-          // Convert activities to treatment items format
-          const items: TreatmentItem[] = todaysItems.map((activity, index) => {
-            const metadata = activity.metadata as any;
-            return {
-              id: activity.id,
-              item_type: activity.activity_type === 'medication' ? 'medication' : 'service',
-              medication_id: null,
-              service_id: null,
-              quantity: metadata?.quantity || 1,
-              dosage_instructions: metadata?.dosage,
-              frequency: metadata?.frequency,
-              duration_days: metadata?.duration ? parseInt(metadata.duration.toString().replace(/\D/g, '')) || null : null,
-              rate: metadata?.amount ? parseFloat(metadata.amount) / (metadata?.quantity || 1) : 0,
-              total_amount: metadata?.amount ? parseFloat(metadata.amount) : 0,
-              notes: metadata?.instructions,
-              medication: activity.activity_type === 'medication' ? {
-                name: metadata?.medication_name || activity.title.replace('Medication Prescribed: ', ''),
-                brand_name: undefined
-              } : undefined,
-              service: activity.activity_type === 'treatment' ? {
-                name: metadata?.service_name || activity.title.replace('Treatment: ', ''),
-                description: activity.content
-              } : undefined
-            } as TreatmentItem;
-          });
-          
-          setTreatmentItems(items);
-          
-          // Set consultation notes from consultation activity
-          const consultationActivity = activities.find(activity => activity.activity_type === 'consultation');
-          if (consultationActivity) {
-            setConsultationNotes(consultationActivity.content || '');
-          }
+          .eq('activity_type', 'consultation')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (consultationActivity) {
+          setConsultationNotes(consultationActivity.content || '');
         }
       }
 
