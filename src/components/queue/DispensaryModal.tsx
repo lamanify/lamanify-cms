@@ -878,29 +878,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                   <PlusIcon className="h-4 w-4 mr-1" />
                   Add payment
                 </Button>
-
-                {/* Payment History Summary */}
-                {payments.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Recent Payments</h4>
-                    {payments.slice(0, 3).map((payment) => (
-                      <div key={payment.id} className="text-sm bg-background p-2 rounded">
-                        <div className="flex justify-between">
-                          <span>{payment.payment_method}</span>
-                          <span className="font-medium">RM {payment.amount.toFixed(2)}</span>
-                        </div>
-                        {payment.notes && (
-                          <div className="text-muted-foreground mt-1 text-xs">{payment.notes}</div>
-                        )}
-                      </div>
-                    ))}
-                    {payments.length > 3 && (
-                      <div className="text-xs text-muted-foreground text-center">
-                        +{payments.length - 3} more payments
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               <Separator />
