@@ -70,7 +70,7 @@ export function PrintInvoice({
   };
 
   return (
-    <div className="print-invoice bg-white text-black p-8 max-w-4xl mx-auto">
+    <>
       {/* Header */}
       <div className="print-header">
         <h1 className="text-2xl font-bold mb-2">Medical Invoice</h1>
@@ -195,6 +195,6 @@ export function PrintInvoice({
         <p>Thank you for choosing our medical services.</p>
         <p>For inquiries, please contact us at your convenience.</p>
       </div>
-    </div>
+    </>
   );
 }
