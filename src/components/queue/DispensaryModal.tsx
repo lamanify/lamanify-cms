@@ -16,6 +16,7 @@ import { PrintInvoice } from './PrintInvoice';
 import { useMedications } from '@/hooks/useMedications';
 import { useServices } from '@/hooks/useServices';
 import { useTierPricing } from '@/hooks/useTierPricing';
+import { useHeaderSettings } from '@/hooks/useHeaderSettings';
 
 interface TreatmentItem {
   id: string;
@@ -86,6 +87,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   const { medications } = useMedications();
   const { services } = useServices();
   const { getPatientTier, getMedicationWithTierPricing, getServiceWithTierPricing } = useTierPricing();
+  const { headerSettings } = useHeaderSettings();
 
   const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -631,8 +633,183 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   };
 
   const handlePrintLabel = (itemId: string) => {
-    // Implement label printing for specific item
-    console.log('Printing label for item:', itemId);
+    const item = treatmentItems.find(i => i.id === itemId);
+    if (!item || item.item_type !== 'medication') {
+      toast({
+        title: "Error",
+        description: "Only medication items can have labels printed",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!queueEntry || !queueEntry.patient) {
+      toast({
+        title: "Error",
+        description: "Patient information not available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const patient = queueEntry.patient;
+    const clinicName = headerSettings?.clinic_name || 'MEDICAL CLINIC';
+    const clinicAddress = headerSettings?.address || 'Address not set';
+    const clinicPhone = headerSettings?.phone || 'Phone not set';
+    
+    const labelHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Medication Label</title>
+        <style>
+          * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+          }
+          
+          @page {
+            size: 70mm 35mm;
+            margin: 2mm;
+          }
+          
+          body { 
+            font-family: 'Arial', sans-serif;
+            font-size: 8pt;
+            line-height: 1.2;
+            color: black;
+            background: white;
+            padding: 2mm;
+            width: 66mm;
+            height: 31mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          
+          .clinic-header {
+            text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 1mm;
+            margin-bottom: 1mm;
+          }
+          
+          .clinic-name {
+            font-weight: bold;
+            font-size: 9pt;
+            margin-bottom: 0.5mm;
+          }
+          
+          .clinic-info {
+            font-size: 7pt;
+            line-height: 1.1;
+          }
+          
+          .patient-info {
+            margin-bottom: 1mm;
+            font-size: 7pt;
+          }
+          
+          .medication-name {
+            font-weight: bold;
+            font-size: 10pt;
+            text-transform: uppercase;
+            margin: 1mm 0;
+          }
+          
+          .quantity {
+            font-size: 8pt;
+            margin-bottom: 1mm;
+          }
+          
+          .dosage-info {
+            margin-bottom: 1mm;
+          }
+          
+          .dosage-line {
+            font-size: 7pt;
+            margin-bottom: 0.5mm;
+          }
+          
+          .instructions {
+            font-size: 7pt;
+            margin-bottom: 1mm;
+          }
+          
+          .warning {
+            font-size: 6pt;
+            text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 1mm;
+            line-height: 1.1;
+          }
+          
+          .bold { font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="clinic-header">
+          <div class="clinic-name">KLINIK ${clinicName.toUpperCase()}</div>
+          <div class="clinic-info">
+            ${clinicAddress}<br>
+            ${clinicPhone}
+          </div>
+        </div>
+        
+        <div class="patient-info">
+          <div><span class="bold">Patient:</span> ${patient.first_name} ${patient.last_name}</div>
+          <div><span class="bold">Date:</span> ${new Date().toLocaleDateString('en-MY')}</div>
+        </div>
+        
+        <div class="medication-name">
+          ${item.medication?.name || 'MEDICATION'}
+        </div>
+        
+        <div class="quantity">
+          <span class="bold">Qty:</span> ${item.quantity} ${item.medication?.name?.toLowerCase().includes('tablet') || item.medication?.name?.toLowerCase().includes('capsule') ? 'tablets' : 'units'}
+        </div>
+        
+        <div class="dosage-info">
+          ${item.dosage_instructions ? `<div class="dosage-line"><span class="bold">DOSAGE:</span> ${item.dosage_instructions}</div>` : ''}
+          ${item.frequency ? `<div class="dosage-line"><span class="bold">FREQUENCY:</span> ${item.frequency}</div>` : ''}
+          ${item.duration_days ? `<div class="dosage-line"><span class="bold">DURATION:</span> ${item.duration_days} days</div>` : ''}
+        </div>
+        
+        ${item.notes ? `<div class="instructions"><span class="bold">INSTRUCTIONS:</span> ${item.notes}</div>` : ''}
+        
+        <div class="warning">
+          <div><strong>Jauhkan daripada capaian kanak-kanak</strong></div>
+          <div><strong>Keep out of reach of children</strong></div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Error",
+        description: "Unable to open print window. Please check your browser settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    printWindow.document.write(labelHTML);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Wait for content to load, then print
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+
+    toast({
+      title: "Label Printed",
+      description: `Medication label for ${item.medication?.name} has been sent to printer`,
+    });
   };
 
   const getItemDisplayName = (item: TreatmentItem) => {
@@ -1058,29 +1235,36 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                              <div className="col-span-2 text-right font-medium">
                                RM {item.total_amount.toFixed(2)}
                              </div>
-                              <div className="col-span-2 flex justify-center gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => handleEditItem(item)}
-                                  disabled={!isEditingInvoice}
-                                >
-                                  <EditIcon className="h-4 w-4" />
-                                </Button>
-                                {isEditingInvoice && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleRemoveItem(item.id)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <TrashIcon className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                <Button variant="ghost" size="sm" onClick={() => handlePrintLabel(item.id)}>
-                                  <PrinterIcon className="h-4 w-4" />
-                                </Button>
-                              </div>
+                               <div className="col-span-2 flex justify-center gap-2">
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm"
+                                   onClick={() => handleEditItem(item)}
+                                   disabled={!isEditingInvoice}
+                                 >
+                                   <EditIcon className="h-4 w-4" />
+                                 </Button>
+                                 {isEditingInvoice && (
+                                   <Button 
+                                     variant="ghost" 
+                                     size="sm" 
+                                     onClick={() => handleRemoveItem(item.id)}
+                                     className="text-destructive hover:text-destructive"
+                                   >
+                                     <TrashIcon className="h-4 w-4" />
+                                   </Button>
+                                 )}
+                                 {item.item_type === 'medication' && (
+                                   <Button 
+                                     variant="ghost" 
+                                     size="sm" 
+                                     onClick={() => handlePrintLabel(item.id)}
+                                     title="Print Medication Label"
+                                   >
+                                     <PrinterIcon className="h-4 w-4" />
+                                   </Button>
+                                 )}
+                               </div>
                            </>
                          )}
                        </div>
