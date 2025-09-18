@@ -195,7 +195,17 @@ export function PaymentModal({
               min="0.01"
               max={summary.amount_due}
               value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, amount: e.target.value }));
+                // Clear amount error when value changes
+                if (errors.amount && parseFloat(e.target.value) > 0) {
+                  setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.amount;
+                    return newErrors;
+                  });
+                }
+              }}
               placeholder="0.00"
               autoFocus
               className={errors.amount ? 'border-destructive' : ''}
@@ -208,9 +218,17 @@ export function PaymentModal({
             <Label htmlFor="payment_method">Payment Method *</Label>
             <Select 
               value={formData.payment_method} 
-              onValueChange={(value: string) => 
-                setFormData(prev => ({ ...prev, payment_method: value }))
-              }
+              onValueChange={(value: string) => {
+                setFormData(prev => ({ ...prev, payment_method: value }));
+                // Clear payment method error when selection is made
+                if (errors.payment_method) {
+                  setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.payment_method;
+                    return newErrors;
+                  });
+                }
+              }}
             >
               <SelectTrigger className={errors.payment_method ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Select payment method" />
@@ -235,7 +253,17 @@ export function PaymentModal({
               <Input
                 id="reference_number"
                 value={formData.reference_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, reference_number: e.target.value }))}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, reference_number: e.target.value }));
+                  // Clear reference number error when value changes
+                  if (errors.reference_number && e.target.value.trim()) {
+                    setErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.reference_number;
+                      return newErrors;
+                    });
+                  }
+                }}
                 placeholder="Enter transaction reference"
                 className={errors.reference_number ? 'border-destructive' : ''}
               />
