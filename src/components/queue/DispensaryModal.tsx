@@ -127,17 +127,29 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   useEffect(() => {
     if (sessionData && isOpen) {
       // Load session data when available
-      if (sessionData.treatment_items) {
-        setTreatmentItems(sessionData.treatment_items);
+      if (sessionData.prescribed_items) {
+        // Convert prescribed_items to treatmentItems format
+        const convertedItems = sessionData.prescribed_items.map((item, index) => ({
+          id: `${item.type}-${index}`,
+          item_type: item.type,
+          quantity: item.quantity,
+          dosage_instructions: item.dosage,
+          frequency: item.frequency,
+          duration_days: item.duration ? parseInt(item.duration) : undefined,
+          rate: item.rate,
+          total_amount: item.rate * item.quantity,
+          notes: item.instructions,
+          medication: item.type === 'medication' ? { name: item.name } : undefined,
+          service: item.type === 'service' ? { name: item.name } : undefined,
+        }));
+        setTreatmentItems(convertedItems);
       }
       if (sessionData.consultation_notes) {
         setConsultationNotes(sessionData.consultation_notes);
       }
       
-      // Set current visit ID from session data for payment tracking
-      if (sessionData.visit_id) {
-        setCurrentVisitId(sessionData.visit_id);
-      }
+      // For now, we'll generate a visit ID from queue entry if needed
+      // This can be enhanced later when visit tracking is fully implemented
     } else if (isOpen) {
       // If no session data, clear the items
       setTreatmentItems([]);
@@ -585,9 +597,22 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                         onClick={() => {
                           // Save changes to session
                           if (sessionData) {
+                            // Convert treatmentItems back to prescribed_items format
+                            const prescribedItems = treatmentItems.map(item => ({
+                              type: item.item_type,
+                              name: item.item_type === 'medication' ? item.medication?.name || '' : item.service?.name || '',
+                              quantity: item.quantity,
+                              dosage: item.dosage_instructions,
+                              frequency: item.frequency,
+                              duration: item.duration_days?.toString(),
+                              price: item.total_amount,
+                              instructions: item.notes,
+                              rate: item.rate
+                            }));
+                            
                             saveSessionData({
                               ...sessionData,
-                              treatment_items: treatmentItems
+                              prescribed_items: prescribedItems
                             });
                           }
                           setIsEditingInvoice(false);
