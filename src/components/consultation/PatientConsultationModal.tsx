@@ -832,6 +832,16 @@ export function PatientConsultationModal({
             ) : (
               <Button 
                 onClick={async () => {
+                  // Show immediate feedback toast
+                  toast({
+                    title: "Processing...",
+                    description: "Completing consultation and syncing medical records.",
+                  });
+                  
+                  // Close modal immediately for better UX
+                  onClose();
+                  
+                  // Background medical record syncing
                   try {
                     await completeConsultationWorkflow(patient.id, queueEntry.id, {
                       notes: consultationNotes,
@@ -846,25 +856,20 @@ export function PatientConsultationModal({
                       treatmentItems: treatmentItems
                     });
                     
-                    // Update local status to dispensary
-                    setConsultationStatus('dispensary');
-                    
+                    // Show success toast (this will appear in main interface)
                     toast({
                       title: "Consultation Completed",
                       description: "Patient status changed to Dispensary. All data saved to medical history.",
                     });
-                    
-                    // Auto close modal and return to queue management
-                    onClose();
                   } catch (error) {
                     console.error('Failed to complete consultation:', error);
                     toast({
                       title: "Error",
                       description: "Failed to complete consultation. Please try again.",
                       variant: "destructive"
-                    });
-                  }
-                }}
+                     });
+                   }
+                 }}
                 className="bg-primary hover:bg-primary/90 h-9 text-sm"
               >
                 Consultation Completed
