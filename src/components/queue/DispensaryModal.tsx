@@ -1006,23 +1006,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                   {loading ? 'Processing...' : 'Complete Visit'}
                 </Button>
                 
-                {finalTotal > 0 && (
-                  <PrintInvoice 
-                    queueEntry={queueEntry}
-                    treatmentItems={treatmentItems}
-                    payments={payments.map(p => ({ 
-                      id: p.id, 
-                      amount: p.amount, 
-                      method: p.payment_method, 
-                      notes: p.notes, 
-                      created_at: p.created_at 
-                    }))}
-                    consultationNotes={consultationNotes}
-                    totalAmount={finalTotal}
-                    totalPaid={summary.total_paid}
-                    amountDue={Math.max(0, finalTotal - summary.total_paid)}
-                  />
-                )}
               </div>
             </div>
           </div>
