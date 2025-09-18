@@ -1124,7 +1124,7 @@ export type Database = {
           id: string
           patient_id: string
           queue_id: string
-          session_data: Json | null
+          session_data: Json
           status: string
           updated_at: string
         }
@@ -1134,7 +1134,7 @@ export type Database = {
           id?: string
           patient_id: string
           queue_id: string
-          session_data?: Json | null
+          session_data?: Json
           status?: string
           updated_at?: string
         }
@@ -1144,7 +1144,7 @@ export type Database = {
           id?: string
           patient_id?: string
           queue_id?: string
-          session_data?: Json | null
+          session_data?: Json
           status?: string
           updated_at?: string
         }
