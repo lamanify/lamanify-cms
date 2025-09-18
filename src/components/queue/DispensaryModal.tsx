@@ -11,8 +11,11 @@ import { QueueEntry } from '@/hooks/useQueue';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
-import { PrinterIcon, EditIcon, TrashIcon, FileTextIcon, DollarSignIcon, PlusIcon } from 'lucide-react';
+import { PrinterIcon, EditIcon, TrashIcon, FileTextIcon, DollarSignIcon, PlusIcon, SearchIcon, SaveIcon, XIcon } from 'lucide-react';
 import { PrintInvoice } from './PrintInvoice';
+import { useMedications } from '@/hooks/useMedications';
+import { useServices } from '@/hooks/useServices';
+import { useTierPricing } from '@/hooks/useTierPricing';
 
 interface TreatmentItem {
   id: string;
@@ -63,8 +66,26 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   // Edit state management
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<TreatmentItem>>({});
+  
+  // Invoice edit mode state
+  const [isEditingInvoice, setIsEditingInvoice] = useState(false);
+  const [addItemMode, setAddItemMode] = useState<'medication' | 'service' | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [newItemData, setNewItemData] = useState<{
+    quantity: number;
+    rate: number;
+    dosage?: string;
+    frequency?: string;
+    duration?: number;
+    notes?: string;
+  }>({ quantity: 1, rate: 0 });
+  const [originalItems, setOriginalItems] = useState<TreatmentItem[]>([]);
   const { toast } = useToast();
   const { sessionData, refreshSessionData, saveSessionData } = useQueueSessionSync(queueEntry?.id || null);
+  const { medications } = useMedications();
+  const { services } = useServices();
+  const { getPatientTier, getMedicationWithTierPricing, getServiceWithTierPricing } = useTierPricing();
 
   const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -271,6 +292,124 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     setEditingItemId(null);
     setEditFormData({});
   };
+
+  // Invoice edit handlers
+  const handleStartEditInvoice = () => {
+    setIsEditingInvoice(true);
+    setOriginalItems([...treatmentItems]);
+  };
+
+  const handleCancelEditInvoice = () => {
+    setIsEditingInvoice(false);
+    setAddItemMode(null);
+    setSearchQuery('');
+    setSelectedItem(null);
+    setNewItemData({ quantity: 1, rate: 0 });
+    setTreatmentItems([...originalItems]);
+    setEditingItemId(null);
+    setEditFormData({});
+  };
+
+  const handleSaveEditInvoice = async () => {
+    try {
+      // Update session data with all changes
+      if (sessionData) {
+        const updatedSessionItems = treatmentItems.map(item => ({
+          type: item.item_type as 'medication' | 'service',
+          name: getItemDisplayName(item),
+          quantity: item.quantity,
+          dosage: item.dosage_instructions || '',
+          frequency: item.frequency || '',
+          duration: item.duration_days ? `${item.duration_days} days` : '',
+          price: item.total_amount,
+          instructions: item.notes || '',
+          rate: item.rate
+        }));
+
+        await saveSessionData({
+          prescribed_items: updatedSessionItems
+        });
+      }
+
+      setIsEditingInvoice(false);
+      setAddItemMode(null);
+      setSearchQuery('');
+      setSelectedItem(null);
+      setNewItemData({ quantity: 1, rate: 0 });
+      setEditingItemId(null);
+      setEditFormData({});
+
+      toast({
+        title: "Invoice Updated",
+        description: "Invoice changes saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving invoice changes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save invoice changes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    const updatedItems = treatmentItems.filter(item => item.id !== itemId);
+    setTreatmentItems(updatedItems);
+  };
+
+  const handleAddNewItem = async () => {
+    if (!selectedItem || !newItemData.quantity || !newItemData.rate) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newItem: TreatmentItem = {
+      id: `new-${Date.now()}`,
+      item_type: addItemMode!,
+      quantity: newItemData.quantity,
+      rate: newItemData.rate,
+      total_amount: newItemData.quantity * newItemData.rate,
+      dosage_instructions: newItemData.dosage || '',
+      frequency: newItemData.frequency || '',
+      duration_days: newItemData.duration || 0,
+      notes: newItemData.notes || '',
+      [addItemMode === 'medication' ? 'medication_id' : 'service_id']: selectedItem.id,
+      [addItemMode === 'medication' ? 'medication' : 'service']: {
+        name: selectedItem.name,
+        ...(addItemMode === 'service' ? { description: selectedItem.description } : {})
+      }
+    };
+
+    setTreatmentItems(prev => [...prev, newItem]);
+    
+    // Reset add item form
+    setAddItemMode(null);
+    setSelectedItem(null);
+    setSearchQuery('');
+    setNewItemData({ quantity: 1, rate: 0 });
+
+    toast({
+      title: "Item Added",
+      description: "New item added to invoice",
+    });
+  };
+
+  // Filter medications and services based on search
+  const filteredMedications = medications.filter(med =>
+    med.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (med.brand_name && med.brand_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (med.generic_name && med.generic_name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredServices = services.filter(service =>
+    service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (service.description && service.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const handlePrintInvoice = () => {
     // Create a new window with the print-optimized invoice
@@ -599,15 +738,186 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                   <PrinterIcon className="h-4 w-4 mr-2" />
                   Print all labels
                 </Button>
-                <Button variant="outline" size="sm">
-                  <EditIcon className="h-4 w-4 mr-2" />
-                  Edit invoice
-                </Button>
+                {!isEditingInvoice ? (
+                  <Button variant="outline" size="sm" onClick={handleStartEditInvoice}>
+                    <EditIcon className="h-4 w-4 mr-2" />
+                    Edit invoice
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleSaveEditInvoice}>
+                      <SaveIcon className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleCancelEditInvoice}>
+                      <XIcon className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                )}
                 <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
                   <PrinterIcon className="h-4 w-4 mr-2" />
                   Print invoice
                 </Button>
               </div>
+
+              {/* Add Item Interface - Only visible in edit mode */}
+              {isEditingInvoice && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-blue-800">Add Items to Invoice</h3>
+                  {!addItemMode ? (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setAddItemMode('medication')}
+                        className="flex-1"
+                      >
+                        <PlusIcon className="h-4 w-4 mr-2" />
+                        Add Medication
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setAddItemMode('service')}
+                        className="flex-1"
+                      >
+                        <PlusIcon className="h-4 w-4 mr-2" />
+                        Add Service
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h4 className="font-medium">Add {addItemMode}</h4>
+                        <Button variant="ghost" size="sm" onClick={() => setAddItemMode(null)}>
+                          <XIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Search */}
+                      <div className="relative">
+                        <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder={`Search ${addItemMode}s...`}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+
+                      {/* Item Selection */}
+                      {searchQuery && (
+                        <div className="max-h-40 overflow-y-auto border rounded-lg">
+                          {addItemMode === 'medication' ? 
+                            filteredMedications.slice(0, 10).map((med) => (
+                              <div 
+                                key={med.id} 
+                                className={`p-2 cursor-pointer hover:bg-secondary/50 border-b last:border-b-0 ${selectedItem?.id === med.id ? 'bg-primary/10' : ''}`}
+                                onClick={() => {
+                                  setSelectedItem(med);
+                                  setNewItemData(prev => ({ ...prev, rate: med.price_per_unit || 0 }));
+                                }}
+                              >
+                                <div className="font-medium">{med.name}</div>
+                                {med.brand_name && <div className="text-sm text-muted-foreground">{med.brand_name}</div>}
+                                <div className="text-sm">RM {(med.price_per_unit || 0).toFixed(2)}</div>
+                              </div>
+                            )) :
+                            filteredServices.slice(0, 10).map((service) => (
+                              <div 
+                                key={service.id} 
+                                className={`p-2 cursor-pointer hover:bg-secondary/50 border-b last:border-b-0 ${selectedItem?.id === service.id ? 'bg-primary/10' : ''}`}
+                                onClick={() => {
+                                  setSelectedItem(service);
+                                  setNewItemData(prev => ({ ...prev, rate: service.price || 0 }));
+                                }}
+                              >
+                                <div className="font-medium">{service.name}</div>
+                                {service.description && <div className="text-sm text-muted-foreground">{service.description}</div>}
+                                <div className="text-sm">RM {(service.price || 0).toFixed(2)}</div>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      )}
+
+                      {/* Item Form */}
+                      {selectedItem && (
+                        <div className="bg-white p-3 rounded border">
+                          <div className="font-medium mb-3">{selectedItem.name}</div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label>Quantity</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={newItemData.quantity}
+                                onChange={(e) => setNewItemData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                              />
+                            </div>
+                            <div>
+                              <Label>Rate (RM)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={newItemData.rate}
+                                onChange={(e) => setNewItemData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
+                              />
+                            </div>
+                          </div>
+                          
+                          {addItemMode === 'medication' && (
+                            <div className="grid grid-cols-3 gap-3 mt-3">
+                              <div>
+                                <Label>Dosage</Label>
+                                <Input
+                                  placeholder="e.g., 1 tablet"
+                                  value={newItemData.dosage || ''}
+                                  onChange={(e) => setNewItemData(prev => ({ ...prev, dosage: e.target.value }))}
+                                />
+                              </div>
+                              <div>
+                                <Label>Frequency</Label>
+                                <Input
+                                  placeholder="e.g., twice daily"
+                                  value={newItemData.frequency || ''}
+                                  onChange={(e) => setNewItemData(prev => ({ ...prev, frequency: e.target.value }))}
+                                />
+                              </div>
+                              <div>
+                                <Label>Duration (days)</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={newItemData.duration || ''}
+                                  onChange={(e) => setNewItemData(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="mt-3">
+                            <Label>Notes</Label>
+                            <Textarea
+                              placeholder="Additional notes..."
+                              value={newItemData.notes || ''}
+                              onChange={(e) => setNewItemData(prev => ({ ...prev, notes: e.target.value }))}
+                              rows={2}
+                            />
+                          </div>
+
+                          <div className="flex justify-between items-center mt-3">
+                            <div className="font-medium">
+                              Total: RM {(newItemData.quantity * newItemData.rate).toFixed(2)}
+                            </div>
+                            <Button onClick={handleAddNewItem}>Add Item</Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Itemized List */}
               <div>
@@ -745,21 +1055,29 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                              <div className="col-span-2 text-right font-medium">
                                RM {item.total_amount.toFixed(2)}
                              </div>
-                             <div className="col-span-2 flex justify-center gap-2">
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm"
-                                 onClick={() => handleEditItem(item)}
-                               >
-                                 <EditIcon className="h-4 w-4" />
-                               </Button>
-                               <Button variant="ghost" size="sm">
-                                 <TrashIcon className="h-4 w-4" />
-                               </Button>
-                               <Button variant="ghost" size="sm" onClick={() => handlePrintLabel(item.id)}>
-                                 <PrinterIcon className="h-4 w-4" />
-                               </Button>
-                             </div>
+                              <div className="col-span-2 flex justify-center gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleEditItem(item)}
+                                  disabled={!isEditingInvoice}
+                                >
+                                  <EditIcon className="h-4 w-4" />
+                                </Button>
+                                {isEditingInvoice && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleRemoveItem(item.id)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="sm" onClick={() => handlePrintLabel(item.id)}>
+                                  <PrinterIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
                            </>
                          )}
                        </div>
