@@ -296,6 +296,11 @@ export function useQueue() {
 
       if (error) throw error;
 
+      // Handle session finalization when status becomes "completed"
+      if (status === 'completed') {
+        await finalizeSession(queueId);
+      }
+
       console.log('Queue status updated successfully');
 
       toast({
@@ -310,6 +315,79 @@ export function useQueue() {
         variant: "destructive",
       });
       throw error;
+    }
+  };
+
+  const finalizeSession = async (queueId: string) => {
+    try {
+      console.log('Finalizing session for queue:', queueId);
+
+      // Get the queue entry and session data
+      const { data: queueEntry, error: queueError } = await supabase
+        .from('patient_queue')
+        .select('patient_id, assigned_doctor_id, queue_date')
+        .eq('id', queueId)
+        .single();
+
+      if (queueError) throw queueError;
+
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('queue_sessions')
+        .select('session_data')
+        .eq('queue_id', queueId)
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Type cast and extract session data safely
+      const sessionContent = sessionData?.session_data as any;
+      const prescribedItems = sessionContent?.prescribed_items || [];
+      const totalAmount = prescribedItems.reduce((sum: number, item: any) => sum + (item.price || 0), 0);
+      
+      // Create visit summary
+      const visitSummary = [
+        sessionContent?.consultation_notes ? `Notes: ${sessionContent.consultation_notes}` : '',
+        sessionContent?.diagnosis ? `Diagnosis: ${sessionContent.diagnosis}` : '',
+        prescribedItems.length > 0 ? `Prescribed ${prescribedItems.length} item(s)` : 'No prescriptions'
+      ].filter(Boolean).join(' | ');
+
+      // Create permanent visit record
+      const { error: visitError } = await supabase
+        .from('patient_visits')
+        .insert({
+          patient_id: queueEntry.patient_id,
+          queue_id: queueId,
+          doctor_id: queueEntry.assigned_doctor_id,
+          visit_date: queueEntry.queue_date,
+          session_data: sessionContent || {},
+          total_amount: totalAmount,
+          amount_paid: 0, // Will be updated when payments are recorded
+          payment_status: totalAmount > 0 ? 'pending' : 'completed',
+          visit_summary: visitSummary
+        });
+
+      if (visitError) throw visitError;
+
+      // Mark session as archived
+      const { error: archiveError } = await supabase
+        .from('queue_sessions')
+        .update({ 
+          status: 'archived',
+          archived_at: new Date().toISOString()
+        })
+        .eq('queue_id', queueId);
+
+      if (archiveError) throw archiveError;
+
+      console.log('Session finalized successfully');
+    } catch (error) {
+      console.error('Error finalizing session:', error);
+      // Don't throw here to prevent blocking the status update
+      toast({
+        title: "Warning",
+        description: "Session finalized with some issues - visit may need manual review",
+        variant: "destructive",
+      });
     }
   };
 

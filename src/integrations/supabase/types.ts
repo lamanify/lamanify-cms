@@ -890,6 +890,51 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_visits: {
+        Row: {
+          amount_paid: number | null
+          created_at: string
+          doctor_id: string | null
+          id: string
+          patient_id: string
+          payment_status: string | null
+          queue_id: string
+          session_data: Json
+          total_amount: number | null
+          updated_at: string
+          visit_date: string
+          visit_summary: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          created_at?: string
+          doctor_id?: string | null
+          id?: string
+          patient_id: string
+          payment_status?: string | null
+          queue_id: string
+          session_data?: Json
+          total_amount?: number | null
+          updated_at?: string
+          visit_date?: string
+          visit_summary?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          created_at?: string
+          doctor_id?: string | null
+          id?: string
+          patient_id?: string
+          payment_status?: string | null
+          queue_id?: string
+          session_data?: Json
+          total_amount?: number | null
+          updated_at?: string
+          visit_date?: string
+          visit_summary?: string | null
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           additional_notes: string | null
@@ -1074,6 +1119,7 @@ export type Database = {
       }
       queue_sessions: {
         Row: {
+          archived_at: string | null
           created_at: string
           id: string
           patient_id: string
@@ -1083,6 +1129,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           id?: string
           patient_id: string
@@ -1092,6 +1139,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           id?: string
           patient_id?: string
