@@ -289,25 +289,24 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
 
     setLoading(true);
     try {
-      // Check if payment is required and if there's an outstanding balance
-      // Use finalTotal instead of summary.total_amount to account for adjustments
+      // Calculate outstanding amount for information
       const outstandingAmount = finalTotal - summary.total_paid;
-      if (outstandingAmount > 0) {
-        toast({
-          title: "Payment Required",
-          description: `Outstanding balance of RM${outstandingAmount.toFixed(2)} must be paid before completing the visit`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Update queue status to completed
+      
+      // Update queue status to completed (allow completion even with outstanding balance)
       onStatusChange(queueEntry.id, 'completed');
       
-      toast({
-        title: "Visit Completed",
-        description: "Patient visit has been marked as completed",
-      });
+      // Show appropriate success message based on payment status
+      if (outstandingAmount > 0) {
+        toast({
+          title: "Visit Completed",
+          description: `Visit completed with outstanding balance of RM${outstandingAmount.toFixed(2)}`,
+        });
+      } else {
+        toast({
+          title: "Visit Completed",
+          description: "Patient visit has been marked as completed",
+        });
+      }
       
       onClose();
     } catch (error: any) {
