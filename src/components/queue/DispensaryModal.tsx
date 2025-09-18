@@ -969,7 +969,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 <DialogTitle>Invoice Preview</DialogTitle>
               </DialogHeader>
               
-              <div className="print:p-0">
+              <div className="print-invoice-content">
                 <PrintInvoice
                   queueEntry={queueEntry}
                   treatmentItems={treatmentItems}
@@ -990,7 +990,69 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 </Button>
                 <Button
                   onClick={() => {
-                    window.print();
+                    // Hide the modal temporarily and open print-specific window
+                    const printContent = document.querySelector('.print-invoice-content');
+                    if (printContent) {
+                      const printWindow = window.open('', '_blank');
+                      if (printWindow) {
+                        printWindow.document.write(`
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <title>Invoice</title>
+                            <style>
+                              @page {
+                                size: A4;
+                                margin: 1in;
+                              }
+                              body {
+                                font-family: system-ui, -apple-system, sans-serif;
+                                margin: 0;
+                                padding: 0;
+                                background: white;
+                                color: black;
+                                font-size: 12px;
+                                line-height: 1.4;
+                              }
+                              .invoice-container {
+                                max-width: 100%;
+                                margin: 0 auto;
+                                padding: 20px;
+                                background: white;
+                              }
+                              h1, h2, h3 { margin: 0 0 10px 0; }
+                              table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                              th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                              th { background-color: #f5f5f5; font-weight: bold; }
+                              .text-right { text-align: right; }
+                              .font-bold { font-weight: bold; }
+                              .mb-4 { margin-bottom: 16px; }
+                              .grid { display: grid; }
+                              .grid-cols-2 { grid-template-columns: 1fr 1fr; }
+                              .gap-4 { gap: 16px; }
+                              .border { border: 1px solid #ddd; }
+                              .p-4 { padding: 16px; }
+                              .bg-gray-50 { background-color: #f9f9f9; }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="invoice-container">
+                              ${printContent.innerHTML}
+                            </div>
+                            <script>
+                              window.onload = function() {
+                                window.print();
+                                window.onafterprint = function() {
+                                  window.close();
+                                }
+                              }
+                            </script>
+                          </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                      }
+                    }
                   }}
                 >
                   <PrinterIcon className="h-4 w-4 mr-2" />
