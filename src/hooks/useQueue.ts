@@ -92,8 +92,9 @@ export function useQueue() {
           schema: 'public',
           table: 'patient_queue'
         },
-        () => {
-          // Refetch on new entries
+        (payload) => {
+          console.log('New patient added to queue:', payload);
+          // Refetch immediately to show the new entry
           fetchQueue();
         }
       )

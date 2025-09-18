@@ -356,7 +356,8 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
       if (patientError) throw patientError;
 
       // Add to queue
-      await addToQueue(patient.id, formData.preferredDoctorId === "none" ? undefined : formData.preferredDoctorId);
+      const queueResult = await addToQueue(patient.id, formData.preferredDoctorId === "none" ? undefined : formData.preferredDoctorId);
+      console.log('Queue addition successful:', queueResult);
 
       // Create registration activity
       await supabase
