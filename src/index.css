@@ -136,3 +136,70 @@ All colors MUST be HSL.
     transform: translateX(100%);
   }
 }
+
+/* Print styles */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  body {
+    margin: 0;
+    padding: 20px;
+    font-size: 12pt;
+    line-height: 1.4;
+    color: black !important;
+    background: white !important;
+  }
+  
+  .print-invoice {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  .print-break {
+    page-break-after: always;
+  }
+  
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+  
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  th, td {
+    border: 1px solid #333;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  .print-header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 20px;
+  }
+  
+  .print-total {
+    font-size: 14pt;
+    font-weight: bold;
+    border-top: 2px solid #333;
+    padding-top: 10px;
+    margin-top: 20px;
+  }
+}

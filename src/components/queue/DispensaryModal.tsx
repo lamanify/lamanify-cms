@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
 import { PrinterIcon, EditIcon, TrashIcon, FileTextIcon, DollarSignIcon, PlusIcon } from 'lucide-react';
+import { PrintInvoice } from './PrintInvoice';
 
 interface TreatmentItem {
   id: string;
@@ -181,8 +182,222 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   };
 
   const handlePrintInvoice = () => {
-    // Implement print functionality
-    window.print();
+    // Create a new window with the print-optimized invoice
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Create the print document
+    const printContent = document.createElement('div');
+    printContent.className = 'print-invoice';
+
+    // Render the PrintInvoice component to string (we'll use a different approach)
+    // For now, we'll create the print content directly
+    printContent.innerHTML = `
+      <div class="print-invoice bg-white text-black p-8 max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="print-header text-center mb-8 border-b-2 border-gray-800 pb-4">
+          <h1 class="text-2xl font-bold mb-2">Medical Invoice</h1>
+          <div class="text-sm">
+            <p>Invoice Date: ${new Date().toLocaleDateString()}</p>
+            <p>Invoice #: INV-${Date.now().toString().slice(-6)}</p>
+          </div>
+        </div>
+
+        <!-- Patient Information -->
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-1">Patient Information</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p><strong>Name:</strong> ${queueEntry.patient?.first_name} ${queueEntry.patient?.last_name}</p>
+              <p><strong>Patient ID:</strong> ${queueEntry.patient?.patient_id || 'N/A'}</p>
+            </div>
+            <div>
+              <p><strong>Phone:</strong> ${queueEntry.patient?.phone || 'N/A'}</p>
+              <p><strong>Email:</strong> ${queueEntry.patient?.email || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+
+        ${consultationNotes ? `
+        <!-- Consultation Notes -->
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-1">Consultation Notes</h2>
+          <div class="text-sm whitespace-pre-wrap bg-gray-50 p-3 rounded border">
+            ${consultationNotes}
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Treatment Items -->
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-1">Prescribed Items</h2>
+          ${treatmentItems.length === 0 ? 
+            '<p class="text-center py-4 text-gray-500">No items prescribed</p>' :
+            `<table class="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border border-gray-300 p-2 text-left w-8">#</th>
+                  <th class="border border-gray-300 p-2 text-left">Item</th>
+                  <th class="border border-gray-300 p-2 text-center w-16">Qty</th>
+                  <th class="border border-gray-300 p-2 text-right w-20">Rate</th>
+                  <th class="border border-gray-300 p-2 text-right w-24">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${treatmentItems.map((item, index) => `
+                  <tr>
+                    <td class="border border-gray-300 p-2 text-center">${index + 1}</td>
+                    <td class="border border-gray-300 p-2">
+                      <div class="font-medium">${getItemDisplayName(item)}</div>
+                      ${getItemInstructions(item) ? `
+                        <div class="text-xs text-gray-600 mt-1">
+                          ${getItemInstructions(item)}
+                        </div>
+                      ` : ''}
+                      ${item.notes ? `
+                        <div class="text-xs text-gray-600 mt-1">
+                          Note: ${item.notes}
+                        </div>
+                      ` : ''}
+                    </td>
+                    <td class="border border-gray-300 p-2 text-center">${item.quantity}</td>
+                    <td class="border border-gray-300 p-2 text-right">RM ${item.rate.toFixed(2)}</td>
+                    <td class="border border-gray-300 p-2 text-right font-medium">RM ${item.total_amount.toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>`
+          }
+        </div>
+
+        <!-- Payment Summary -->
+        <div class="border-t-2 border-gray-800 pt-4">
+          <div class="grid grid-cols-2 gap-8">
+            <!-- Payment History -->
+            <div>
+              <h3 class="font-semibold mb-2">Payment History</h3>
+              ${payments.length === 0 ? 
+                '<p class="text-sm text-gray-500">No payments recorded</p>' :
+                `<div class="space-y-1">
+                  ${payments.map(payment => `
+                    <div class="flex justify-between text-sm">
+                      <span>${payment.method}</span>
+                      <span>RM ${payment.amount.toFixed(2)}</span>
+                    </div>
+                  `).join('')}
+                </div>`
+              }
+            </div>
+
+            <!-- Total Summary -->
+            <div class="text-right">
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>RM ${totalAmount.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-green-600">
+                  <span>Total Paid:</span>
+                  <span>RM ${totalPaid.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold border-t-2 border-gray-300 pt-2">
+                  <span>Amount Due:</span>
+                  <span class="${amountDue > 0 ? 'text-red-600' : 'text-green-600'}">
+                    RM ${amountDue.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 pt-4 border-t border-gray-300 text-center text-sm text-gray-600">
+          <p>Thank you for choosing our medical services.</p>
+          <p>For inquiries, please contact us at your convenience.</p>
+        </div>
+      </div>
+    `;
+
+    // Set up the print window
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Medical Invoice</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.4; color: black; background: white; padding: 20px; }
+          .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+          .grid { display: grid; }
+          .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+          .gap-4 { gap: 1rem; }
+          .gap-8 { gap: 2rem; }
+          .mb-2 { margin-bottom: 0.5rem; }
+          .mb-3 { margin-bottom: 0.75rem; }
+          .mb-6 { margin-bottom: 1.5rem; }
+          .mb-8 { margin-bottom: 2rem; }
+          .mt-1 { margin-top: 0.25rem; }
+          .mt-8 { margin-top: 2rem; }
+          .p-2 { padding: 0.5rem; }
+          .p-3 { padding: 0.75rem; }
+          .p-8 { padding: 2rem; }
+          .pb-1 { padding-bottom: 0.25rem; }
+          .pb-4 { padding-bottom: 1rem; }
+          .pt-2 { padding-top: 0.5rem; }
+          .pt-4 { padding-top: 1rem; }
+          .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+          .text-center { text-align: center; }
+          .text-left { text-align: left; }
+          .text-right { text-align: right; }
+          .text-xs { font-size: 10pt; }
+          .text-sm { font-size: 11pt; }
+          .text-lg { font-size: 14pt; }
+          .text-xl { font-size: 16pt; }
+          .text-2xl { font-size: 18pt; }
+          .font-medium { font-weight: 500; }
+          .font-semibold { font-weight: 600; }
+          .font-bold { font-weight: bold; }
+          .border { border: 1px solid #ccc; }
+          .border-b { border-bottom: 1px solid #ccc; }
+          .border-t { border-top: 1px solid #ccc; }
+          .border-b-2 { border-bottom: 2px solid #333; }
+          .border-t-2 { border-top: 2px solid #333; }
+          .border-gray-300 { border-color: #d1d5db; }
+          .border-gray-800 { border-color: #1f2937; }
+          .bg-gray-50 { background-color: #f9fafb; }
+          .bg-gray-100 { background-color: #f3f4f6; }
+          .text-gray-500 { color: #6b7280; }
+          .text-gray-600 { color: #4b5563; }
+          .text-green-600 { color: #059669; }
+          .text-red-600 { color: #dc2626; }
+          .rounded { border-radius: 0.25rem; }
+          .space-y-1 > * + * { margin-top: 0.25rem; }
+          .space-y-2 > * + * { margin-top: 0.5rem; }
+          .whitespace-pre-wrap { white-space: pre-wrap; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+          .w-8 { width: 2rem; }
+          .w-16 { width: 4rem; }
+          .w-20 { width: 5rem; }
+          .w-24 { width: 6rem; }
+          .max-w-4xl { max-width: 56rem; }
+          .mx-auto { margin-left: auto; margin-right: auto; }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   const handlePrintLabel = (itemId: string) => {
