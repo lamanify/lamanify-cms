@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { X, AlertTriangle, Package, Unlock, Star, Clock, Search } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { X, AlertTriangle, Package, Unlock, Star, Clock, Search, Check, ChevronsUpDown } from "lucide-react";
 import { useMedications, MedicationWithPricing } from "@/hooks/useMedications";
 import { useServices } from "@/hooks/useServices";
 import { usePriceTiers } from "@/hooks/usePriceTiers";
@@ -63,6 +65,7 @@ export function IntelligentPrescriptionModal({
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [comboOpen, setComboOpen] = useState(false);
   const [dosageFieldsDisabled, setDosageFieldsDisabled] = useState(false);
   const [stockWarning, setStockWarning] = useState<string | null>(null);
   const [priceWarning, setPriceWarning] = useState<string | null>(null);
@@ -98,6 +101,16 @@ export function IntelligentPrescriptionModal({
     });
   }, [medications, searchQuery]);
 
+  // Filter services for search
+  const filteredServices = useMemo(() => {
+    return services.filter(service => {
+      const matchesSearch = !searchQuery || 
+        service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (service.category && service.category.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesSearch;
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [services, searchQuery]);
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (editItem) {
@@ -130,6 +143,7 @@ export function IntelligentPrescriptionModal({
       });
     }
     setSearchQuery('');
+    setComboOpen(false);
     setStockWarning(null);
     setPriceWarning(null);
   }, [editItem, isOpen, patientPriceTier]);
@@ -240,6 +254,8 @@ export function IntelligentPrescriptionModal({
       duration: '',
       quantity: 1
     }));
+    setComboOpen(false);
+    setSearchQuery('');
   };
 
   const handleSubmit = () => {
@@ -287,80 +303,107 @@ export function IntelligentPrescriptionModal({
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
-          {/* Item Selection with Search */}
+          {/* Item Selection with Searchable Combobox */}
           <div className="space-y-2">
-            <Label htmlFor="item">Medication/Service *</Label>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search medications by name or generic name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
-              <Select 
-                value={formData.itemId ? `${formData.itemType}:${formData.itemId}` : ''} 
-                onValueChange={handleItemSelect}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select medication or service" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Medications</div>
-                  {processedMedications.map((medication) => {
-                    const stockLevel = medication.stock_level || 0;
-                    const isOutOfStock = stockLevel === 0;
-                    const isLowStock = stockLevel <= 10 && stockLevel > 0;
+            <Label>Medication/Service *</Label>
+            <Popover open={comboOpen} onOpenChange={setComboOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboOpen}
+                  className="w-full justify-between text-left font-normal"
+                >
+                  {formData.item || "Search and select medication or service..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[650px] p-0 max-h-[400px]" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search medications by name or generic name..." 
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No results found.</CommandEmpty>
                     
-                    return (
-                      <SelectItem 
-                        key={`medication:${medication.id}`} 
-                        value={`medication:${medication.id}`}
-                        disabled={isOutOfStock}
-                        className={isOutOfStock ? "opacity-50" : ""}
-                      >
-                        <div className="flex flex-col w-full">
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex flex-col">
-                              <span className="font-medium">{medication.name}</span>
-                              {medication.generic_name && (
-                                <span className="text-xs text-muted-foreground">{medication.generic_name}</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 ml-2">
-                              <Badge variant={
-                                isOutOfStock ? "destructive" : 
-                                isLowStock ? "secondary" : "outline"
-                              } className="text-xs">
-                                {isOutOfStock ? "Out of Stock" : `Stock: ${stockLevel}`}
-                              </Badge>
-                              {medication.unit_of_measure && (
-                                <Badge variant="outline" className="text-xs">
-                                  {medication.unit_of_measure}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">Services</div>
-                  {services.map((service) => (
-                    <SelectItem key={`service:${service.id}`} value={`service:${service.id}`}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{service.name}</span>
-                        {service.category && (
-                          <span className="text-xs text-muted-foreground">{service.category}</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    {processedMedications.length > 0 && (
+                      <CommandGroup heading="Medications">
+                        {processedMedications.map((medication) => {
+                          const stockLevel = medication.stock_level || 0;
+                          const isOutOfStock = stockLevel === 0;
+                          const isLowStock = stockLevel <= 10 && stockLevel > 0;
+                          const value = `medication:${medication.id}`;
+                          const isSelected = formData.itemId === medication.id && formData.itemType === 'medication';
+                          
+                          return (
+                            <CommandItem
+                              key={value}
+                              value={value}
+                              disabled={isOutOfStock}
+                              onSelect={() => handleItemSelect(value)}
+                              className={`${isOutOfStock ? "opacity-50" : ""} ${isSelected ? "bg-accent" : ""}`}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-medium truncate">{medication.name}</span>
+                                  {medication.generic_name && (
+                                    <span className="text-xs text-muted-foreground truncate">{medication.generic_name}</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                                  <Badge variant={
+                                    isOutOfStock ? "destructive" : 
+                                    isLowStock ? "secondary" : "outline"
+                                  } className="text-xs">
+                                    {isOutOfStock ? "Out of Stock" : `Stock: ${stockLevel}`}
+                                  </Badge>
+                                  {medication.unit_of_measure && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {medication.unit_of_measure}
+                                    </Badge>
+                                  )}
+                                  {isSelected && <Check className="h-4 w-4" />}
+                                </div>
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    )}
+                    
+                    {filteredServices.length > 0 && (
+                      <CommandGroup heading="Services">
+                        {filteredServices.map((service) => {
+                          const value = `service:${service.id}`;
+                          const isSelected = formData.itemId === service.id && formData.itemType === 'service';
+                          
+                          return (
+                            <CommandItem
+                              key={value}
+                              value={value}
+                              onSelect={() => handleItemSelect(value)}
+                              className={isSelected ? "bg-accent" : ""}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-medium truncate">{service.name}</span>
+                                  {service.category && (
+                                    <span className="text-xs text-muted-foreground truncate">{service.category}</span>
+                                  )}
+                                </div>
+                                {isSelected && <Check className="h-4 w-4 flex-shrink-0 ml-2" />}
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Stock Warning */}
