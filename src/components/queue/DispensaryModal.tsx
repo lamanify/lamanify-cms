@@ -84,6 +84,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     notes?: string;
   }>({ quantity: 1, rate: 0 });
   const [originalItems, setOriginalItems] = useState<TreatmentItem[]>([]);
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
 
   const { toast } = useToast();
   const { sessionData, refreshSessionData, saveSessionData } = useQueueSessionSync(queueEntry?.id || null);
@@ -566,17 +567,27 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 <h3 className="text-lg font-semibold">Treatment Items</h3>
                 <div className="flex gap-2">
                   {!isEditingInvoice ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setOriginalItems([...treatmentItems]);
-                        setIsEditingInvoice(true);
-                      }}
-                    >
-                      <EditIcon className="h-4 w-4 mr-2" />
-                      Edit Invoice
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowInvoicePreview(true)}
+                      >
+                        <FileTextIcon className="h-4 w-4 mr-2" />
+                        View Invoice
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setOriginalItems([...treatmentItems]);
+                          setIsEditingInvoice(true);
+                        }}
+                      >
+                        <EditIcon className="h-4 w-4 mr-2" />
+                        Edit Invoice
+                      </Button>
+                    </div>
                   ) : (
                     <div className="flex gap-2">
                       <Button
@@ -948,6 +959,46 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
             patientId={queueEntry.patient_id}
             patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'}
           />
+        )}
+
+        {/* Invoice Preview Modal */}
+        {showInvoicePreview && (
+          <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto print:max-w-none print:max-h-none print:shadow-none">
+              <DialogHeader className="print:hidden">
+                <DialogTitle>Invoice Preview</DialogTitle>
+              </DialogHeader>
+              
+              <div className="print:p-0">
+                <PrintInvoice
+                  queueEntry={queueEntry}
+                  treatmentItems={treatmentItems}
+                  payments={[]}
+                  consultationNotes={consultationNotes}
+                  totalAmount={finalTotal}
+                  totalPaid={summary.total_paid}
+                  amountDue={Math.max(0, finalTotal - summary.total_paid)}
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-4 print:hidden">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowInvoicePreview(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    window.print();
+                  }}
+                >
+                  <PrinterIcon className="h-4 w-4 mr-2" />
+                  Print Invoice
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </DialogContent>
     </Dialog>
