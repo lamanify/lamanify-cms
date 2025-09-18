@@ -13,10 +13,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
 import { PrinterIcon, EditIcon, TrashIcon, FileTextIcon, DollarSignIcon, PlusIcon, SearchIcon, SaveIcon, XIcon } from 'lucide-react';
 import { PrintInvoice } from './PrintInvoice';
+import { PaymentModal } from './PaymentModal';
+import { PaymentHistory } from './PaymentHistory';
 import { useMedications } from '@/hooks/useMedications';
 import { useServices } from '@/hooks/useServices';
 import { useTierPricing } from '@/hooks/useTierPricing';
 import { useHeaderSettings } from '@/hooks/useHeaderSettings';
+import { usePayments } from '@/hooks/usePayments';
 
 interface TreatmentItem {
   id: string;
@@ -40,13 +43,7 @@ interface TreatmentItem {
   };
 }
 
-interface Payment {
-  id: string;
-  amount: number;
-  method: string;
-  notes?: string;
-  created_at: string;
-}
+// Payment interface moved to usePayments hook
 
 interface DispensaryModalProps {
   isOpen: boolean;
@@ -57,13 +54,10 @@ interface DispensaryModalProps {
 
 export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }: DispensaryModalProps) {
   const [treatmentItems, setTreatmentItems] = useState<TreatmentItem[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [paymentNotes, setPaymentNotes] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [currentVisitId, setCurrentVisitId] = useState<string | null>(null);
   // Edit state management
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<TreatmentItem>>({});
@@ -88,10 +82,18 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   const { services } = useServices();
   const { getPatientTier, getMedicationWithTierPricing, getServiceWithTierPricing } = useTierPricing();
   const { headerSettings } = useHeaderSettings();
+  
+  // Initialize payments hook with current visit ID
+  const { 
+    payments, 
+    summary, 
+    loading: paymentsLoading, 
+    addPayment, 
+    deletePayment,
+    refresh: refreshPayments
+  } = usePayments(currentVisitId || undefined);
 
   const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
-  const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const amountDue = totalAmount - totalPaid;
 
   useEffect(() => {
     if (isOpen && queueEntry) {
@@ -513,7 +515,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 `<div class="space-y-1">
                   ${payments.map(payment => `
                     <div class="flex justify-between text-sm">
-                      <span>${payment.method}</span>
+                      <span>${payment.payment_method}</span>
                       <span>RM ${payment.amount.toFixed(2)}</span>
                     </div>
                   `).join('')}
@@ -528,14 +530,14 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                   <span>Subtotal:</span>
                   <span>RM ${totalAmount.toFixed(2)}</span>
                 </div>
-                <div class="flex justify-between text-green-600">
-                  <span>Total Paid:</span>
-                  <span>RM ${totalPaid.toFixed(2)}</span>
-                </div>
-                <div class="flex justify-between text-lg font-bold border-t-2 border-gray-300 pt-2">
-                  <span>Amount Due:</span>
-                  <span class="${amountDue > 0 ? 'text-red-600' : 'text-green-600'}">
-                    RM ${amountDue.toFixed(2)}
+                 <div class="flex justify-between text-green-600">
+                   <span>Total Paid:</span>
+                   <span>RM ${summary.total_paid.toFixed(2)}</span>
+                 </div>
+                 <div class="flex justify-between text-lg font-bold border-t-2 border-gray-300 pt-2">
+                   <span>Amount Due:</span>
+                   <span class="${summary.amount_due > 0 ? 'text-red-600' : 'text-green-600'}">
+                     RM ${summary.amount_due.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -1290,96 +1292,37 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Record payment</h3>
                 
-                {!showPaymentForm ? (
-                  <Button 
-                    variant="link" 
-                    className="h-auto p-0 text-primary"
-                    onClick={() => setShowPaymentForm(true)}
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add payment
-                  </Button>
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="payment-amount">Amount</Label>
-                      <Input
-                        id="payment-amount"
-                        type="number"
-                        step="0.01"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="payment-method">Payment Method</Label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="card">Credit/Debit Card</SelectItem>
-                          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                          <SelectItem value="online">Online Payment</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="payment-notes">Notes (optional)</Label>
-                      <Textarea
-                        id="payment-notes"
-                        value={paymentNotes}
-                        onChange={(e) => setPaymentNotes(e.target.value)}
-                        placeholder="Payment notes..."
-                        rows={2}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handlePaymentSubmit}>
-                        Record Payment
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => setShowPaymentForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                <Button 
+                  variant="link" 
+                  className="h-auto p-0 text-primary"
+                  onClick={() => setShowPaymentModal(true)}
+                >
+                  <PlusIcon className="h-4 w-4 mr-1" />
+                  Add payment
+                </Button>
 
-                {/* Payment History */}
+                {/* Payment History Summary */}
                 {payments.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="font-medium">Payment History</h4>
-                    {payments.map((payment) => (
+                    <h4 className="font-medium">Recent Payments</h4>
+                    {payments.slice(0, 3).map((payment) => (
                       <div key={payment.id} className="text-sm bg-background p-2 rounded">
                         <div className="flex justify-between">
-                          <span>{payment.method}</span>
+                          <span>{payment.payment_method}</span>
                           <span className="font-medium">RM {payment.amount.toFixed(2)}</span>
                         </div>
                         {payment.notes && (
-                          <div className="text-muted-foreground mt-1">{payment.notes}</div>
+                          <div className="text-muted-foreground mt-1 text-xs">{payment.notes}</div>
                         )}
                       </div>
                     ))}
+                    {payments.length > 3 && (
+                      <div className="text-xs text-muted-foreground text-center">
+                        +{payments.length - 3} more payments
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-
-              <Separator />
-
-              {/* Adjustments */}
-              <div className="space-y-2">
-                <Button variant="link" className="h-auto p-0 text-primary">
-                  Add Adjustment
-                </Button>
-                <Button variant="link" className="h-auto p-0 text-primary">
-                  Add tax
-                </Button>
               </div>
 
               <Separator />
@@ -1388,30 +1331,64 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Total</span>
-                  <span className="font-medium">RM {totalAmount.toFixed(2)}</span>
+                  <span className="font-medium">RM {summary.total_amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Paid</span>
-                  <span className="font-medium">RM {totalPaid.toFixed(2)}</span>
+                  <span className="font-medium text-success">RM {summary.total_paid.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-bold">
                   <span>Amount due</span>
-                  <span>RM {Math.max(0, amountDue).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Amount to claim</span>
-                  <span>RM 0.00</span>
+                  <span className={summary.amount_due === 0 ? 'text-success' : 'text-destructive'}>
+                    RM {summary.amount_due.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
-              {amountDue <= 0 && totalAmount > 0 && (
+              {summary.amount_due === 0 && summary.total_amount > 0 && (
                 <Badge className="w-full justify-center bg-success text-success-foreground">
                   Fully Paid
                 </Badge>
               )}
+
+              {/* Action Buttons */}
+              <div className="space-y-2">
+                <Button 
+                  className="w-full" 
+                  onClick={handleCompleteVisit}
+                  disabled={loading}
+                >
+                  {loading ? 'Processing...' : 'Complete Visit'}
+                </Button>
+                
+                {summary.total_amount > 0 && (
+                  <PrintInvoice 
+                    queueEntry={queueEntry}
+                    treatmentItems={treatmentItems}
+                    payments={payments}
+                    consultationNotes={consultationNotes}
+                    totalAmount={summary.total_amount}
+                    totalPaid={summary.total_paid}
+                    amountDue={summary.amount_due}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Payment Modal */}
+        {queueEntry && (
+          <PaymentModal
+            isOpen={showPaymentModal}
+            onClose={() => setShowPaymentModal(false)}
+            onPaymentAdded={addPayment}
+            summary={summary}
+            visitId={currentVisitId || undefined}
+            patientId={queueEntry.patient_id}
+            patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

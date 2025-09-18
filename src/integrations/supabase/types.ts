@@ -916,6 +916,7 @@ export type Database = {
           queue_id: string
           session_data: Json
           total_amount: number | null
+          total_paid: number | null
           updated_at: string
           visit_date: string
           visit_summary: string | null
@@ -930,6 +931,7 @@ export type Database = {
           queue_id: string
           session_data?: Json
           total_amount?: number | null
+          total_paid?: number | null
           updated_at?: string
           visit_date?: string
           visit_summary?: string | null
@@ -944,6 +946,7 @@ export type Database = {
           queue_id?: string
           session_data?: Json
           total_amount?: number | null
+          total_paid?: number | null
           updated_at?: string
           visit_date?: string
           visit_summary?: string | null
@@ -1042,6 +1045,79 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_records: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          notes: string | null
+          patient_id: string
+          payment_date: string
+          payment_method: string
+          processed_by: string | null
+          reference_number: string | null
+          status: string
+          updated_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          patient_id: string
+          payment_date?: string
+          payment_method?: string
+          processed_by?: string | null
+          reference_number?: string | null
+          status?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          patient_id?: string
+          payment_date?: string
+          payment_method?: string
+          processed_by?: string | null
+          reference_number?: string | null
+          status?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_records_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_records_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "patient_visits"
             referencedColumns: ["id"]
           },
         ]
