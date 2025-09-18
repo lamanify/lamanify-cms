@@ -15,6 +15,7 @@ import { PrinterIcon, EditIcon, TrashIcon, FileTextIcon, DollarSignIcon, PlusIco
 import { PrintInvoice } from './PrintInvoice';
 import { PaymentModal } from './PaymentModal';
 import { PaymentHistory } from './PaymentHistory';
+import { AdjustmentModal } from './AdjustmentModal';
 import { useMedications } from '@/hooks/useMedications';
 import { useServices } from '@/hooks/useServices';
 import { useTierPricing } from '@/hooks/useTierPricing';
@@ -43,8 +44,6 @@ interface TreatmentItem {
   };
 }
 
-// Payment interface moved to usePayments hook
-
 interface DispensaryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,7 +56,16 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [currentVisitId, setCurrentVisitId] = useState<string | null>(null);
+  const [adjustments, setAdjustments] = useState<Array<{
+    id: string;
+    type: 'add' | 'deduct';
+    amountType: 'fixed' | 'percentage';
+    amount: number;
+    description: string;
+  }>>([]);
+
   // Edit state management
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<TreatmentItem>>({});
@@ -76,6 +84,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     notes?: string;
   }>({ quantity: 1, rate: 0 });
   const [originalItems, setOriginalItems] = useState<TreatmentItem[]>([]);
+
   const { toast } = useToast();
   const { sessionData, refreshSessionData, saveSessionData } = useQueueSessionSync(queueEntry?.id || null);
   const { medications } = useMedications();
@@ -94,59 +103,40 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   } = usePayments(currentVisitId || undefined);
 
   const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
+  
+  // Calculate adjustments total
+  const adjustmentsTotal = adjustments.reduce((sum, adj) => {
+    const adjustmentAmount = adj.amountType === 'percentage' 
+      ? (totalAmount * adj.amount) / 100 
+      : adj.amount;
+    return sum + (adj.type === 'add' ? adjustmentAmount : -adjustmentAmount);
+  }, 0);
+  
+  // Final total after adjustments
+  const finalTotal = Math.max(0, totalAmount + adjustmentsTotal);
 
   useEffect(() => {
     if (isOpen && queueEntry) {
-      refreshSessionData(); // Refresh session data on modal open
-      // Initialize empty states - data will be populated from session sync
+      refreshSessionData();
       setTreatmentItems([]);
       setConsultationNotes('');
-      setPayments([]);
+      setAdjustments([]);
     }
   }, [isOpen, queueEntry, refreshSessionData]);
 
-  // Sync with real-time session data
   useEffect(() => {
     if (sessionData && isOpen) {
-      console.log('Syncing dispensary with session data:', sessionData);
-      
-      // Update consultation notes
-      if (sessionData.consultation_notes || sessionData.diagnosis) {
-        const notesText = [
-          sessionData.consultation_notes ? `Notes: ${sessionData.consultation_notes}` : '',
-          sessionData.diagnosis ? `Diagnosis: ${sessionData.diagnosis}` : ''
-        ].filter(Boolean).join('\n\n');
-        setConsultationNotes(notesText);
-      } else {
-        setConsultationNotes('');
+      // Load session data when available
+      if (sessionData.treatment_items) {
+        setTreatmentItems(sessionData.treatment_items);
       }
-
-      // Update treatment items from session data
-      if (sessionData.prescribed_items && sessionData.prescribed_items.length > 0) {
-        const convertedItems: TreatmentItem[] = sessionData.prescribed_items.map((item, index) => ({
-          id: `session-${index}`,
-          item_type: item.type,
-          medication_id: item.type === 'medication' ? `med-${index}` : undefined,
-          service_id: item.type === 'service' ? `svc-${index}` : undefined,
-          quantity: item.quantity,
-          dosage_instructions: item.dosage,
-          frequency: item.frequency,
-          duration_days: item.duration ? parseInt(item.duration.replace(/\D/g, '')) || null : null,
-          rate: item.rate,
-          total_amount: item.price,
-          notes: item.instructions,
-          medication: item.type === 'medication' ? {
-            name: item.name,
-            brand_name: undefined
-          } : undefined,
-          service: item.type === 'service' ? {
-            name: item.name,
-            description: undefined
-          } : undefined
-        }));
-        setTreatmentItems(convertedItems);
-      } else {
-        setTreatmentItems([]);
+      if (sessionData.consultation_notes) {
+        setConsultationNotes(sessionData.consultation_notes);
+      }
+      
+      // Set current visit ID from session data for payment tracking
+      if (sessionData.visit_id) {
+        setCurrentVisitId(sessionData.visit_id);
       }
     } else if (isOpen) {
       // If no session data, clear the items
@@ -155,57 +145,162 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     }
   }, [sessionData, isOpen]);
 
-  const handlePaymentSubmit = async () => {
-    if (!paymentAmount || !paymentMethod) {
-      toast({
-        title: "Error",
-        description: "Please fill in payment amount and method",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Handle adjustment confirmation
+  const handleAdjustmentConfirm = (adjustment: {
+    type: 'add' | 'deduct';
+    amountType: 'fixed' | 'percentage';
+    amount: number;
+  }) => {
+    const newAdjustment = {
+      id: Date.now().toString(),
+      ...adjustment,
+      description: `${adjustment.type === 'add' ? 'Addition' : 'Discount'} - ${
+        adjustment.amountType === 'fixed' 
+          ? `RM${adjustment.amount.toFixed(2)}` 
+          : `${adjustment.amount}%`
+      }`
+    };
+    
+    setAdjustments(prev => [...prev, newAdjustment]);
+    
+    toast({
+      title: "Adjustment Added",
+      description: newAdjustment.description,
+    });
+  };
 
+  // Remove adjustment
+  const removeAdjustment = (adjustmentId: string) => {
+    setAdjustments(prev => prev.filter(adj => adj.id !== adjustmentId));
+    toast({
+      title: "Adjustment Removed",
+      description: "The adjustment has been removed from the invoice",
+    });
+  };
+
+  // Complete and finalize patient visit
+  const handleCompleteVisit = async () => {
+    if (!queueEntry) return;
+
+    setLoading(true);
     try {
-      const amount = parseFloat(paymentAmount);
-      
-      // Add payment (mock implementation - you can store this in a payments table)
-      const newPayment: Payment = {
-        id: Date.now().toString(),
-        amount,
-        method: paymentMethod,
-        notes: paymentNotes,
-        created_at: new Date().toISOString()
-      };
-      
-      setPayments(prev => [...prev, newPayment]);
-      
-      // Reset form
-      setPaymentAmount('');
-      setPaymentMethod('');
-      setPaymentNotes('');
-      setShowPaymentForm(false);
-      
-      // Check if fully paid and update status to completed
-      const newTotalPaid = totalPaid + amount;
-      if (newTotalPaid >= totalAmount && queueEntry) {
-        onStatusChange(queueEntry.id, 'completed');
+      // Check if payment is required and if there's an outstanding balance
+      // Use finalTotal instead of summary.total_amount to account for adjustments
+      const outstandingAmount = finalTotal - summary.total_paid;
+      if (outstandingAmount > 0) {
         toast({
-          title: "Payment Completed",
-          description: "Payment recorded and patient status updated to completed",
+          title: "Payment Required",
+          description: `Outstanding balance of RM${outstandingAmount.toFixed(2)} must be paid before completing the visit`,
+          variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Payment Recorded",
-          description: `Payment of RM ${amount.toFixed(2)} recorded successfully`,
-        });
+        return;
       }
-    } catch (error) {
-      console.error('Error recording payment:', error);
+
+      // Update queue status to completed
+      onStatusChange(queueEntry.id, 'completed');
+      
       toast({
-        title: "Error",
-        description: "Failed to record payment",
+        title: "Visit Completed",
+        description: "Patient visit has been marked as completed",
+      });
+      
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Error completing visit",
+        description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Print medication label functionality
+  const handlePrintLabel = (medicationItem: TreatmentItem) => {
+    if (!queueEntry?.patient || !headerSettings) return;
+
+    const labelHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Medication Label</title>
+          <style>
+            @page { size: 70mm 35mm; margin: 2mm; }
+            body { 
+              font-family: Arial, sans-serif; 
+              font-size: 8pt; 
+              line-height: 1.2; 
+              margin: 0; 
+              padding: 2mm;
+              width: 66mm;
+              height: 31mm;
+            }
+            .clinic-header { 
+              text-align: center; 
+              font-weight: bold; 
+              font-size: 9pt; 
+              margin-bottom: 2mm; 
+              border-bottom: 1px solid #000;
+              padding-bottom: 1mm;
+            }
+            .patient-info { margin: 1mm 0; }
+            .medication-name { 
+              font-weight: bold; 
+              font-size: 10pt; 
+              text-transform: uppercase; 
+              margin: 1mm 0; 
+            }
+            .dosage-info { margin: 1mm 0; }
+            .warning { 
+              font-size: 7pt; 
+              text-align: center; 
+              margin-top: 2mm; 
+              border-top: 1px solid #000;
+              padding-top: 1mm;
+            }
+            .bold { font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="clinic-header">
+            ${headerSettings.clinic_name || 'KLINIK'}<br>
+            ${headerSettings.address ? headerSettings.address.split('\n')[0] : ''}<br>
+            ${headerSettings.phone || ''}
+          </div>
+          
+          <div class="patient-info">
+            <strong>Patient:</strong> ${queueEntry.patient.first_name} ${queueEntry.patient.last_name}<br>
+            <strong>Date:</strong> ${new Date().toLocaleDateString('en-GB')}
+          </div>
+          
+          <div class="medication-name">
+            ${medicationItem.medication?.name || 'MEDICATION'}
+          </div>
+          
+          <div class="dosage-info">
+            <strong>Qty:</strong> ${medicationItem.quantity} ${medicationItem.medication?.name?.toLowerCase().includes('tablet') ? 'tablets' : 'units'}<br>
+            ${medicationItem.dosage_instructions ? `<strong>DOSAGE:</strong> ${medicationItem.dosage_instructions}<br>` : ''}
+            ${medicationItem.frequency ? `<strong>FREQUENCY:</strong> ${medicationItem.frequency}<br>` : ''}
+            ${medicationItem.duration_days ? `<strong>DURATION:</strong> ${medicationItem.duration_days} days<br>` : ''}
+            ${medicationItem.notes ? `<strong>INSTRUCTIONS:</strong> ${medicationItem.notes}<br>` : ''}
+          </div>
+          
+          <div class="warning">
+            <strong>Jauhkan daripada capaian kanak-kanak<br>
+            Keep out of reach of children</strong>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(labelHTML);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
     }
   };
 
@@ -415,405 +510,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     (service.description && service.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handlePrintInvoice = () => {
-    // Create a new window with the print-optimized invoice
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    // Create the print document
-    const printContent = document.createElement('div');
-    printContent.className = 'print-invoice';
-
-    // Render the PrintInvoice component to string (we'll use a different approach)
-    // For now, we'll create the print content directly
-    printContent.innerHTML = `
-      <div class="print-invoice bg-white text-black p-8 max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="print-header text-center mb-8 border-b-2 border-gray-800 pb-4">
-          <h1 class="text-2xl font-bold mb-2">Medical Invoice</h1>
-          <div class="text-sm">
-            <p>Invoice Date: ${new Date().toLocaleDateString()}</p>
-            <p>Invoice #: INV-${Date.now().toString().slice(-6)}</p>
-          </div>
-        </div>
-
-        <!-- Patient Information -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-1">Patient Information</h2>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <p><strong>Name:</strong> ${queueEntry.patient?.first_name} ${queueEntry.patient?.last_name}</p>
-              <p><strong>Patient ID:</strong> ${queueEntry.patient?.patient_id || 'N/A'}</p>
-            </div>
-            <div>
-              <p><strong>Phone:</strong> ${queueEntry.patient?.phone || 'N/A'}</p>
-              <p><strong>Email:</strong> ${queueEntry.patient?.email || 'N/A'}</p>
-            </div>
-          </div>
-        </div>
-
-        ${consultationNotes ? `
-        <!-- Consultation Notes -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-1">Consultation Notes</h2>
-          <div class="text-sm whitespace-pre-wrap bg-gray-50 p-3 rounded border">
-            ${consultationNotes}
-          </div>
-        </div>
-        ` : ''}
-
-        <!-- Treatment Items -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-1">Prescribed Items</h2>
-          ${treatmentItems.length === 0 ? 
-            '<p class="text-center py-4 text-gray-500">No items prescribed</p>' :
-            `<table class="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr class="bg-gray-100">
-                  <th class="border border-gray-300 p-2 text-left w-8">#</th>
-                  <th class="border border-gray-300 p-2 text-left">Item</th>
-                  <th class="border border-gray-300 p-2 text-center w-16">Qty</th>
-                  <th class="border border-gray-300 p-2 text-right w-20">Rate</th>
-                  <th class="border border-gray-300 p-2 text-right w-24">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${treatmentItems.map((item, index) => `
-                  <tr>
-                    <td class="border border-gray-300 p-2 text-center">${index + 1}</td>
-                    <td class="border border-gray-300 p-2">
-                      <div class="font-medium">${getItemDisplayName(item)}</div>
-                      ${getItemInstructions(item) ? `
-                        <div class="text-xs text-gray-600 mt-1">
-                          ${getItemInstructions(item)}
-                        </div>
-                      ` : ''}
-                      ${item.notes ? `
-                        <div class="text-xs text-gray-600 mt-1">
-                          Note: ${item.notes}
-                        </div>
-                      ` : ''}
-                    </td>
-                    <td class="border border-gray-300 p-2 text-center">${item.quantity}</td>
-                    <td class="border border-gray-300 p-2 text-right">RM ${item.rate.toFixed(2)}</td>
-                    <td class="border border-gray-300 p-2 text-right font-medium">RM ${item.total_amount.toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>`
-          }
-        </div>
-
-        <!-- Payment Summary -->
-        <div class="border-t-2 border-gray-800 pt-4">
-          <div class="grid grid-cols-2 gap-8">
-            <!-- Payment History -->
-            <div>
-              <h3 class="font-semibold mb-2">Payment History</h3>
-              ${payments.length === 0 ? 
-                '<p class="text-sm text-gray-500">No payments recorded</p>' :
-                `<div class="space-y-1">
-                  ${payments.map(payment => `
-                    <div class="flex justify-between text-sm">
-                      <span>${payment.payment_method}</span>
-                      <span>RM ${payment.amount.toFixed(2)}</span>
-                    </div>
-                  `).join('')}
-                </div>`
-              }
-            </div>
-
-            <!-- Total Summary -->
-            <div class="text-right">
-              <div class="space-y-2">
-                <div class="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>RM ${totalAmount.toFixed(2)}</span>
-                </div>
-                 <div class="flex justify-between text-green-600">
-                   <span>Total Paid:</span>
-                   <span>RM ${summary.total_paid.toFixed(2)}</span>
-                 </div>
-                 <div class="flex justify-between text-lg font-bold border-t-2 border-gray-300 pt-2">
-                   <span>Amount Due:</span>
-                   <span class="${summary.amount_due > 0 ? 'text-red-600' : 'text-green-600'}">
-                     RM ${summary.amount_due.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="mt-8 pt-4 border-t border-gray-300 text-center text-sm text-gray-600">
-          <p>Thank you for choosing our medical services.</p>
-          <p>For inquiries, please contact us at your convenience.</p>
-        </div>
-      </div>
-    `;
-
-    // Set up the print window
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Medical Invoice</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.4; color: black; background: white; padding: 20px; }
-          .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-          .grid { display: grid; }
-          .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-          .gap-4 { gap: 1rem; }
-          .gap-8 { gap: 2rem; }
-          .mb-2 { margin-bottom: 0.5rem; }
-          .mb-3 { margin-bottom: 0.75rem; }
-          .mb-6 { margin-bottom: 1.5rem; }
-          .mb-8 { margin-bottom: 2rem; }
-          .mt-1 { margin-top: 0.25rem; }
-          .mt-8 { margin-top: 2rem; }
-          .p-2 { padding: 0.5rem; }
-          .p-3 { padding: 0.75rem; }
-          .p-8 { padding: 2rem; }
-          .pb-1 { padding-bottom: 0.25rem; }
-          .pb-4 { padding-bottom: 1rem; }
-          .pt-2 { padding-top: 0.5rem; }
-          .pt-4 { padding-top: 1rem; }
-          .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-          .text-center { text-align: center; }
-          .text-left { text-align: left; }
-          .text-right { text-align: right; }
-          .text-xs { font-size: 10pt; }
-          .text-sm { font-size: 11pt; }
-          .text-lg { font-size: 14pt; }
-          .text-xl { font-size: 16pt; }
-          .text-2xl { font-size: 18pt; }
-          .font-medium { font-weight: 500; }
-          .font-semibold { font-weight: 600; }
-          .font-bold { font-weight: bold; }
-          .border { border: 1px solid #ccc; }
-          .border-b { border-bottom: 1px solid #ccc; }
-          .border-t { border-top: 1px solid #ccc; }
-          .border-b-2 { border-bottom: 2px solid #333; }
-          .border-t-2 { border-top: 2px solid #333; }
-          .border-gray-300 { border-color: #d1d5db; }
-          .border-gray-800 { border-color: #1f2937; }
-          .bg-gray-50 { background-color: #f9fafb; }
-          .bg-gray-100 { background-color: #f3f4f6; }
-          .text-gray-500 { color: #6b7280; }
-          .text-gray-600 { color: #4b5563; }
-          .text-green-600 { color: #059669; }
-          .text-red-600 { color: #dc2626; }
-          .rounded { border-radius: 0.25rem; }
-          .space-y-1 > * + * { margin-top: 0.25rem; }
-          .space-y-2 > * + * { margin-top: 0.5rem; }
-          .whitespace-pre-wrap { white-space: pre-wrap; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #333; padding: 8px; text-align: left; }
-          .w-8 { width: 2rem; }
-          .w-16 { width: 4rem; }
-          .w-20 { width: 5rem; }
-          .w-24 { width: 6rem; }
-          .max-w-4xl { max-width: 56rem; }
-          .mx-auto { margin-left: auto; margin-right: auto; }
-        </style>
-      </head>
-      <body>
-        ${printContent.innerHTML}
-      </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    
-    // Wait for content to load, then print
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
-  };
-
-  const handlePrintLabel = (itemId: string) => {
-    const item = treatmentItems.find(i => i.id === itemId);
-    if (!item || item.item_type !== 'medication') {
-      toast({
-        title: "Error",
-        description: "Only medication items can have labels printed",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!queueEntry || !queueEntry.patient) {
-      toast({
-        title: "Error",
-        description: "Patient information not available",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const patient = queueEntry.patient;
-    const clinicName = headerSettings?.clinic_name || 'MEDICAL CLINIC';
-    const clinicAddress = headerSettings?.address || 'Address not set';
-    const clinicPhone = headerSettings?.phone || 'Phone not set';
-    
-    const labelHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Medication Label</title>
-        <style>
-          * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-          }
-          
-          @page {
-            size: 70mm 35mm;
-            margin: 2mm;
-          }
-          
-          body { 
-            font-family: 'Arial', sans-serif;
-            font-size: 8pt;
-            line-height: 1.2;
-            color: black;
-            background: white;
-            padding: 2mm;
-            width: 66mm;
-            height: 31mm;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-          }
-          
-          .clinic-header {
-            text-align: center;
-            border-bottom: 1px solid #000;
-            padding-bottom: 1mm;
-            margin-bottom: 1mm;
-          }
-          
-          .clinic-name {
-            font-weight: bold;
-            font-size: 9pt;
-            margin-bottom: 0.5mm;
-          }
-          
-          .clinic-info {
-            font-size: 7pt;
-            line-height: 1.1;
-          }
-          
-          .patient-info {
-            margin-bottom: 1mm;
-            font-size: 7pt;
-          }
-          
-          .medication-name {
-            font-weight: bold;
-            font-size: 10pt;
-            text-transform: uppercase;
-            margin: 1mm 0;
-          }
-          
-          .quantity {
-            font-size: 8pt;
-            margin-bottom: 1mm;
-          }
-          
-          .dosage-info {
-            margin-bottom: 1mm;
-          }
-          
-          .dosage-line {
-            font-size: 7pt;
-            margin-bottom: 0.5mm;
-          }
-          
-          .instructions {
-            font-size: 7pt;
-            margin-bottom: 1mm;
-          }
-          
-          .warning {
-            font-size: 6pt;
-            text-align: center;
-            border-top: 1px solid #000;
-            padding-top: 1mm;
-            line-height: 1.1;
-          }
-          
-          .bold { font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <div class="clinic-header">
-          <div class="clinic-name">KLINIK ${clinicName.toUpperCase()}</div>
-          <div class="clinic-info">
-            ${clinicAddress}<br>
-            ${clinicPhone}
-          </div>
-        </div>
-        
-        <div class="patient-info">
-          <div><span class="bold">Patient:</span> ${patient.first_name} ${patient.last_name}</div>
-          <div><span class="bold">Date:</span> ${new Date().toLocaleDateString('en-MY')}</div>
-        </div>
-        
-        <div class="medication-name">
-          ${item.medication?.name || 'MEDICATION'}
-        </div>
-        
-        <div class="quantity">
-          <span class="bold">Qty:</span> ${item.quantity} ${item.medication?.name?.toLowerCase().includes('tablet') || item.medication?.name?.toLowerCase().includes('capsule') ? 'tablets' : 'units'}
-        </div>
-        
-        <div class="dosage-info">
-          ${item.dosage_instructions ? `<div class="dosage-line"><span class="bold">DOSAGE:</span> ${item.dosage_instructions}</div>` : ''}
-          ${item.frequency ? `<div class="dosage-line"><span class="bold">FREQUENCY:</span> ${item.frequency}</div>` : ''}
-          ${item.duration_days ? `<div class="dosage-line"><span class="bold">DURATION:</span> ${item.duration_days} days</div>` : ''}
-        </div>
-        
-        ${item.notes ? `<div class="instructions"><span class="bold">INSTRUCTIONS:</span> ${item.notes}</div>` : ''}
-        
-        <div class="warning">
-          <div><strong>Jauhkan daripada capaian kanak-kanak</strong></div>
-          <div><strong>Keep out of reach of children</strong></div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast({
-        title: "Error",
-        description: "Unable to open print window. Please check your browser settings.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    printWindow.document.write(labelHTML);
-    printWindow.document.close();
-    printWindow.focus();
-    
-    // Wait for content to load, then print
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
-
-    toast({
-      title: "Label Printed",
-      description: `Medication label for ${item.medication?.name} has been sent to printer`,
-    });
-  };
-
   const getItemDisplayName = (item: TreatmentItem) => {
     if (item.item_type === 'medication') {
       return item.medication?.name || 'Unknown Medication';
@@ -837,444 +533,198 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-7xl h-[95vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Dispensary - {queueEntry.patient?.first_name} {queueEntry.patient?.last_name}</DialogTitle>
+          <DialogTitle>
+            Dispensary - {queueEntry.patient?.first_name} {queueEntry.patient?.last_name}
+            {queueEntry.patient?.patient_id && (
+              <span className="text-muted-foreground ml-2">
+                (ID: {queueEntry.patient.patient_id})
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
-        
-        <div className="flex gap-6 h-[70vh]">
-          {/* Left Column - Invoice Menu */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="space-y-6">
-              {/* Summary Section */}
-              <div className="bg-secondary/20 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-3">Summary</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Patient:</span>
-                    <span className="font-medium">
-                      {queueEntry.patient?.first_name} {queueEntry.patient?.last_name}
-                    </span>
-                  </div>
-                  {consultationNotes && (
-                    <div className="mt-3 p-3 bg-background rounded border">
-                      <h4 className="font-medium text-sm mb-2">Consultation Notes:</h4>
-                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {consultationNotes}
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Billed to:</span>
-                    <span>-</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Billing details:</span>
-                    <span>-</span>
-                  </div>
-                  <Button variant="link" className="h-auto p-0 text-primary">
-                    Change billing details
-                  </Button>
-                </div>
-              </div>
 
-              {/* Status Change Section */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h3 className="text-lg font-semibold mb-3 text-blue-800">Patient Status</h3>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Current Status:</span>
-                    <Badge variant={queueEntry.status === 'dispensary' ? 'default' : 'secondary'}>
-                      {queueEntry.status === 'dispensary' ? 'Ready for Dispensary' : queueEntry.status === 'in_consultation' ? 'In Consultation' : queueEntry.status}
-                    </Badge>
-                  </div>
-                  {queueEntry.status === 'dispensary' && (
-                    <Button 
-                      variant="outline" 
+        <div className="flex gap-6 h-full overflow-hidden">
+          {/* Left Column - Treatment Items */}
+          <div className="flex-1 space-y-4 overflow-y-auto">
+            {/* Treatment Items Table */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Treatment Items</h3>
+                <div className="flex gap-2">
+                  {!isEditingInvoice ? (
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => {
-                        onStatusChange(queueEntry.id, 'in_consultation');
-                        onClose();
+                        setOriginalItems([...treatmentItems]);
+                        setIsEditingInvoice(true);
                       }}
-                      className="border-orange-300 text-orange-700 hover:bg-orange-50"
                     >
-                      ← Back to Consultation
+                      <EditIcon className="h-4 w-4 mr-2" />
+                      Edit Invoice
                     </Button>
-                  )}
-                  {queueEntry.status === 'in_consultation' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onStatusChange(queueEntry.id, 'dispensary')}
-                      className="border-green-300 text-green-700 hover:bg-green-50"
-                    >
-                      Ready for Dispensary →
-                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTreatmentItems(originalItems);
+                          setIsEditingInvoice(false);
+                          setAddItemMode(null);
+                          setEditingItemId(null);
+                        }}
+                      >
+                        <XIcon className="h-4 w-4 mr-2" />
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          // Save changes to session
+                          if (sessionData) {
+                            saveSessionData({
+                              ...sessionData,
+                              treatment_items: treatmentItems
+                            });
+                          }
+                          setIsEditingInvoice(false);
+                          setAddItemMode(null);
+                          setEditingItemId(null);
+                          toast({
+                            title: "Invoice Updated",
+                            description: "Treatment items have been updated successfully",
+                          });
+                        }}
+                      >
+                        <SaveIcon className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button variant="outline" size="sm">
-                  <PrinterIcon className="h-4 w-4 mr-2" />
-                  Print all labels
-                </Button>
-                {!isEditingInvoice ? (
-                  <Button variant="outline" size="sm" onClick={handleStartEditInvoice}>
-                    <EditIcon className="h-4 w-4 mr-2" />
-                    Edit invoice
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleSaveEditInvoice}>
-                      <SaveIcon className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={handleCancelEditInvoice}>
-                      <XIcon className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
+              {/* Treatment Items List */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted/50 px-4 py-2 border-b">
+                  <div className="grid grid-cols-12 gap-4 text-sm font-medium">
+                    <div className="col-span-4">ITEM</div>
+                    <div className="col-span-2">QTY</div>
+                    <div className="col-span-2">RATE</div>
+                    <div className="col-span-2">AMOUNT</div>
+                    <div className="col-span-2">ACTION</div>
                   </div>
-                )}
-                <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
-                  <PrinterIcon className="h-4 w-4 mr-2" />
-                  Print invoice
-                </Button>
-              </div>
+                </div>
 
-              {/* Add Item Interface - Only visible in edit mode */}
-              {isEditingInvoice && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-blue-800">Add Items to Invoice</h3>
-                  {!addItemMode ? (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setAddItemMode('medication')}
-                        className="flex-1"
-                      >
-                        <PlusIcon className="h-4 w-4 mr-2" />
-                        Add Medication
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setAddItemMode('service')}
-                        className="flex-1"
-                      >
-                        <PlusIcon className="h-4 w-4 mr-2" />
-                        Add Service
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <h4 className="font-medium">Add {addItemMode}</h4>
-                        <Button variant="ghost" size="sm" onClick={() => setAddItemMode(null)}>
-                          <XIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      {/* Search */}
-                      <div className="relative">
-                        <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder={`Search ${addItemMode}s...`}
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-
-                      {/* Item Selection */}
-                      {searchQuery && (
-                        <div className="max-h-40 overflow-y-auto border rounded-lg">
-                          {addItemMode === 'medication' ? 
-                            filteredMedications.slice(0, 10).map((med) => (
-                              <div 
-                                key={med.id} 
-                                className={`p-2 cursor-pointer hover:bg-secondary/50 border-b last:border-b-0 ${selectedItem?.id === med.id ? 'bg-primary/10' : ''}`}
-                                onClick={() => {
-                                  setSelectedItem(med);
-                                  setNewItemData(prev => ({ ...prev, rate: med.price_per_unit || 0 }));
-                                }}
-                              >
-                                <div className="font-medium">{med.name}</div>
-                                {med.brand_name && <div className="text-sm text-muted-foreground">{med.brand_name}</div>}
-                                <div className="text-sm">RM {(med.price_per_unit || 0).toFixed(2)}</div>
-                              </div>
-                            )) :
-                            filteredServices.slice(0, 10).map((service) => (
-                              <div 
-                                key={service.id} 
-                                className={`p-2 cursor-pointer hover:bg-secondary/50 border-b last:border-b-0 ${selectedItem?.id === service.id ? 'bg-primary/10' : ''}`}
-                                onClick={() => {
-                                  setSelectedItem(service);
-                                  setNewItemData(prev => ({ ...prev, rate: service.price || 0 }));
-                                }}
-                              >
-                                <div className="font-medium">{service.name}</div>
-                                {service.description && <div className="text-sm text-muted-foreground">{service.description}</div>}
-                                <div className="text-sm">RM {(service.price || 0).toFixed(2)}</div>
-                              </div>
-                            ))
-                          }
-                        </div>
-                      )}
-
-                      {/* Item Form */}
-                      {selectedItem && (
-                        <div className="bg-white p-3 rounded border">
-                          <div className="font-medium mb-3">{selectedItem.name}</div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label>Quantity</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={newItemData.quantity}
-                                onChange={(e) => setNewItemData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
-                              />
-                            </div>
-                            <div>
-                              <Label>Rate (RM)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={newItemData.rate}
-                                onChange={(e) => setNewItemData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
-                              />
-                            </div>
+                <div className="divide-y">
+                  {treatmentItems.map((item) => (
+                    <div key={item.id} className="px-4 py-3">
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        <div className="col-span-4">
+                          <div className="font-medium">
+                            {item.item_type === 'medication' 
+                              ? item.medication?.name 
+                              : item.service?.name
+                            }
                           </div>
-                          
-                          {addItemMode === 'medication' && (
-                            <div className="grid grid-cols-3 gap-3 mt-3">
-                              <div>
-                                <Label>Dosage</Label>
-                                <Input
-                                  placeholder="e.g., 1 tablet"
-                                  value={newItemData.dosage || ''}
-                                  onChange={(e) => setNewItemData(prev => ({ ...prev, dosage: e.target.value }))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Frequency</Label>
-                                <Input
-                                  placeholder="e.g., twice daily"
-                                  value={newItemData.frequency || ''}
-                                  onChange={(e) => setNewItemData(prev => ({ ...prev, frequency: e.target.value }))}
-                                />
-                              </div>
-                              <div>
-                                <Label>Duration (days)</Label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={newItemData.duration || ''}
-                                  onChange={(e) => setNewItemData(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
-                                />
-                              </div>
+                          {item.dosage_instructions && (
+                            <div className="text-sm text-muted-foreground">
+                              {item.dosage_instructions}
+                              {item.frequency && ` - ${item.frequency}`}
+                              {item.duration_days && ` (${item.duration_days} days)`}
                             </div>
                           )}
-                          
-                          <div className="mt-3">
-                            <Label>Notes</Label>
-                            <Textarea
-                              placeholder="Additional notes..."
-                              value={newItemData.notes || ''}
-                              onChange={(e) => setNewItemData(prev => ({ ...prev, notes: e.target.value }))}
-                              rows={2}
-                            />
-                          </div>
-
-                          <div className="flex justify-between items-center mt-3">
-                            <div className="font-medium">
-                              Total: RM {(newItemData.quantity * newItemData.rate).toFixed(2)}
-                            </div>
-                            <Button onClick={handleAddNewItem}>Add Item</Button>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="font-medium">{item.quantity}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="font-medium">RM {item.rate.toFixed(2)}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="font-bold">RM {item.total_amount.toFixed(2)}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <div className="flex items-center gap-1">
+                            {item.item_type === 'medication' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePrintLabel(item)}
+                                title="Print Medication Label"
+                              >
+                                <PrinterIcon className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {isEditingInvoice && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingItemId(item.id);
+                                    setEditFormData(item);
+                                  }}
+                                >
+                                  <EditIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setTreatmentItems(prev => prev.filter(i => i.id !== item.id));
+                                  }}
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
-                      )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {treatmentItems.length === 0 && (
+                    <div className="px-4 py-8 text-center text-muted-foreground">
+                      No treatment items found. Items will appear here from the consultation session.
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Itemized List */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Invoice Items</h3>
-                {loading ? (
-                  <div className="text-center py-4">Loading items...</div>
-                 ) : treatmentItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <div className="mb-2">No prescribed items found in current session</div>
-                    <div className="text-sm">Only items prescribed in the current queue session will appear here</div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-12 gap-2 text-sm font-medium text-muted-foreground border-b pb-2">
-                      <div className="col-span-1">#</div>
-                      <div className="col-span-5">ITEM</div>
-                      <div className="col-span-2 text-center">QTY</div>
-                      <div className="col-span-2 text-right">TOTAL PRICE</div>
-                      <div className="col-span-2 text-center">ACTION</div>
-                    </div>
-                     {treatmentItems.map((item, index) => (
-                       <div key={item.id} className="grid grid-cols-12 gap-2 py-3 border-b last:border-b-0">
-                         <div className="col-span-1 text-center">{index + 1}</div>
-                         {editingItemId === item.id ? (
-                           // Edit Form
-                           <>
-                             <div className="col-span-5 space-y-2">
-                               <div className="font-medium">{getItemDisplayName(item)}</div>
-                               {item.item_type === 'medication' && (
-                                 <div className="space-y-2">
-                                   <div>
-                                     <Label className="text-xs">Dosage Instructions</Label>
-                                     <Input
-                                       value={editFormData.dosage_instructions || ''}
-                                       onChange={(e) => setEditFormData(prev => ({ ...prev, dosage_instructions: e.target.value }))}
-                                       className="h-8 text-sm"
-                                       placeholder="e.g., 1 tablet"
-                                     />
-                                   </div>
-                                   <div className="grid grid-cols-2 gap-2">
-                                     <div>
-                                       <Label className="text-xs">Frequency</Label>
-                                       <Input
-                                         value={editFormData.frequency || ''}
-                                         onChange={(e) => setEditFormData(prev => ({ ...prev, frequency: e.target.value }))}
-                                         className="h-8 text-sm"
-                                         placeholder="e.g., twice daily"
-                                       />
-                                     </div>
-                                     <div>
-                                       <Label className="text-xs">Duration (days)</Label>
-                                       <Input
-                                         type="number"
-                                         value={editFormData.duration_days || ''}
-                                         onChange={(e) => setEditFormData(prev => ({ ...prev, duration_days: parseInt(e.target.value) || 0 }))}
-                                         className="h-8 text-sm"
-                                         placeholder="7"
-                                       />
-                                     </div>
-                                   </div>
-                                 </div>
-                               )}
-                               <div>
-                                 <Label className="text-xs">Notes</Label>
-                                 <Textarea
-                                   value={editFormData.notes || ''}
-                                   onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
-                                   className="h-16 text-sm resize-none"
-                                   placeholder="Additional notes..."
-                                 />
-                               </div>
-                             </div>
-                             <div className="col-span-2 space-y-2">
-                               <div>
-                                 <Label className="text-xs">Quantity</Label>
-                                 <Input
-                                   type="number"
-                                   value={editFormData.quantity || ''}
-                                   onChange={(e) => setEditFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
-                                   className="h-8 text-sm text-center"
-                                   min="1"
-                                 />
-                               </div>
-                               <div>
-                                 <Label className="text-xs">Rate (RM)</Label>
-                                 <Input
-                                   type="number"
-                                   step="0.01"
-                                   value={editFormData.rate || ''}
-                                   onChange={(e) => setEditFormData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
-                                   className="h-8 text-sm text-right"
-                                   min="0"
-                                 />
-                               </div>
-                             </div>
-                             <div className="col-span-2 text-right font-medium">
-                               RM {((editFormData.quantity || 0) * (editFormData.rate || 0)).toFixed(2)}
-                             </div>
-                             <div className="col-span-2 flex flex-col gap-1">
-                               <Button 
-                                 variant="outline" 
-                                 size="sm" 
-                                 onClick={handleSaveEdit}
-                                 className="h-7 text-xs"
-                               >
-                                 Save
-                               </Button>
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm" 
-                                 onClick={handleCancelEdit}
-                                 className="h-7 text-xs"
-                               >
-                                 Cancel
-                               </Button>
-                             </div>
-                           </>
-                         ) : (
-                           // Display Mode
-                           <>
-                             <div className="col-span-5">
-                               <div className="font-medium">{getItemDisplayName(item)}</div>
-                               {getItemInstructions(item) && (
-                                 <div className="text-sm text-muted-foreground mt-1">
-                                   {getItemInstructions(item)}
-                                 </div>
-                               )}
-                               {item.notes && (
-                                 <div className="text-sm text-muted-foreground mt-1">
-                                   Note: {item.notes}
-                                 </div>
-                               )}
-                             </div>
-                             <div className="col-span-2 text-center">{item.quantity}</div>
-                             <div className="col-span-2 text-right font-medium">
-                               RM {item.total_amount.toFixed(2)}
-                             </div>
-                               <div className="col-span-2 flex justify-center gap-2">
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm"
-                                   onClick={() => handleEditItem(item)}
-                                   disabled={!isEditingInvoice}
-                                 >
-                                   <EditIcon className="h-4 w-4" />
-                                 </Button>
-                                 {isEditingInvoice && (
-                                   <Button 
-                                     variant="ghost" 
-                                     size="sm" 
-                                     onClick={() => handleRemoveItem(item.id)}
-                                     className="text-destructive hover:text-destructive"
-                                   >
-                                     <TrashIcon className="h-4 w-4" />
-                                   </Button>
-                                 )}
-                                 {item.item_type === 'medication' && (
-                                   <Button 
-                                     variant="ghost" 
-                                     size="sm" 
-                                     onClick={() => handlePrintLabel(item.id)}
-                                     title="Print Medication Label"
-                                   >
-                                     <PrinterIcon className="h-4 w-4" />
-                                   </Button>
-                                 )}
-                               </div>
-                           </>
-                         )}
-                       </div>
-                     ))}
-                  </div>
-                )}
               </div>
             </div>
+
+            {/* Consultation Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="consultation-notes">Consultation Notes</Label>
+              <Textarea
+                id="consultation-notes"
+                value={consultationNotes}
+                onChange={(e) => setConsultationNotes(e.target.value)}
+                placeholder="Additional notes from consultation..."
+                rows={4}
+                readOnly
+                className="bg-muted/50"
+              />
+            </div>
+
+            {/* Payment History */}
+            {currentVisitId && (
+              <PaymentHistory
+                payments={payments}
+                summary={{
+                  ...summary,
+                  total_amount: finalTotal,
+                  amount_due: Math.max(0, finalTotal - summary.total_paid)
+                }}
+                onDeletePayment={deletePayment}
+                loading={paymentsLoading}
+                patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'}
+              />
+            )}
           </div>
 
           {/* Right Column - Checkout/Payment Menu */}
@@ -1282,8 +732,8 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
             <div className="space-y-6">
               {/* Total Amount */}
               <div className="text-right">
-                <div className="text-sm text-muted-foreground">Invoice 552</div>
-                <div className="text-3xl font-bold">RM {totalAmount.toFixed(2)}</div>
+                <div className="text-sm text-muted-foreground">Invoice</div>
+                <div className="text-3xl font-bold">RM {finalTotal.toFixed(2)}</div>
               </div>
 
               <Separator />
@@ -1327,25 +777,92 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
 
               <Separator />
 
+              {/* Adjustments Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Adjustments</h3>
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 text-primary"
+                    onClick={() => setShowAdjustmentModal(true)}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Add Adjustment
+                  </Button>
+                </div>
+
+                {/* Adjustments List */}
+                {adjustments.length > 0 && (
+                  <div className="space-y-2">
+                    {adjustments.map((adjustment) => {
+                      const adjustmentAmount = adjustment.amountType === 'percentage' 
+                        ? (totalAmount * adjustment.amount) / 100 
+                        : adjustment.amount;
+                      
+                      return (
+                        <div key={adjustment.id} className="flex items-center justify-between bg-background p-2 rounded">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">{adjustment.description}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {adjustment.amountType === 'percentage' && `${adjustment.amount}% of RM${totalAmount.toFixed(2)}`}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${adjustment.type === 'add' ? 'text-green-600' : 'text-red-600'}`}>
+                              {adjustment.type === 'add' ? '+' : '-'}RM{adjustmentAmount.toFixed(2)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeAdjustment(adjustment.id)}
+                            >
+                              <XIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
               {/* Financial Summary */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span>Total</span>
-                  <span className="font-medium">RM {summary.total_amount.toFixed(2)}</span>
+                  <span>Subtotal</span>
+                  <span className="font-medium">RM {totalAmount.toFixed(2)}</span>
                 </div>
+                
+                {adjustments.length > 0 && (
+                  <div className="flex justify-between">
+                    <span>Adjustments</span>
+                    <span className={`font-medium ${adjustmentsTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {adjustmentsTotal >= 0 ? '+' : ''}RM {adjustmentsTotal.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                  <span>Total</span>
+                  <span>RM {finalTotal.toFixed(2)}</span>
+                </div>
+                
                 <div className="flex justify-between">
                   <span>Paid</span>
                   <span className="font-medium text-success">RM {summary.total_paid.toFixed(2)}</span>
                 </div>
+                
                 <div className="flex justify-between font-bold">
                   <span>Amount due</span>
-                  <span className={summary.amount_due === 0 ? 'text-success' : 'text-destructive'}>
-                    RM {summary.amount_due.toFixed(2)}
+                  <span className={finalTotal - summary.total_paid === 0 ? 'text-success' : 'text-destructive'}>
+                    RM {Math.max(0, finalTotal - summary.total_paid).toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              {summary.amount_due === 0 && summary.total_amount > 0 && (
+              {finalTotal - summary.total_paid === 0 && finalTotal > 0 && (
                 <Badge className="w-full justify-center bg-success text-success-foreground">
                   Fully Paid
                 </Badge>
@@ -1361,15 +878,21 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                   {loading ? 'Processing...' : 'Complete Visit'}
                 </Button>
                 
-                {summary.total_amount > 0 && (
+                {finalTotal > 0 && (
                   <PrintInvoice 
                     queueEntry={queueEntry}
                     treatmentItems={treatmentItems}
-                    payments={payments}
+                    payments={payments.map(p => ({ 
+                      id: p.id, 
+                      amount: p.amount, 
+                      method: p.payment_method, 
+                      notes: p.notes, 
+                      created_at: p.created_at 
+                    }))}
                     consultationNotes={consultationNotes}
-                    totalAmount={summary.total_amount}
+                    totalAmount={finalTotal}
                     totalPaid={summary.total_paid}
-                    amountDue={summary.amount_due}
+                    amountDue={Math.max(0, finalTotal - summary.total_paid)}
                   />
                 )}
               </div>
@@ -1377,13 +900,25 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           </div>
         </div>
 
+        {/* Adjustment Modal */}
+        <AdjustmentModal
+          isOpen={showAdjustmentModal}
+          onClose={() => setShowAdjustmentModal(false)}
+          onConfirm={handleAdjustmentConfirm}
+          currentTotal={totalAmount}
+        />
+
         {/* Payment Modal */}
         {queueEntry && (
           <PaymentModal
             isOpen={showPaymentModal}
             onClose={() => setShowPaymentModal(false)}
             onPaymentAdded={addPayment}
-            summary={summary}
+            summary={{
+              ...summary,
+              total_amount: finalTotal,
+              amount_due: Math.max(0, finalTotal - summary.total_paid)
+            }}
             visitId={currentVisitId || undefined}
             patientId={queueEntry.patient_id}
             patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'}
