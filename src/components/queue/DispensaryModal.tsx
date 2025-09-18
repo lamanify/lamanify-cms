@@ -125,6 +125,98 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     }
   }, [isOpen, queueEntry, refreshSessionData]);
 
+  // Effect to create/get visit when modal opens
+  useEffect(() => {
+    const createOrGetVisit = async () => {
+      if (!queueEntry || !isOpen) return;
+
+      try {
+        // Check if a visit already exists for this queue entry
+        const { data: existingVisit, error: visitError } = await supabase
+          .from('patient_visits')
+          .select('id')
+          .eq('queue_id', queueEntry.id)
+          .maybeSingle();
+
+        if (visitError) {
+          console.error('Error checking for existing visit:', visitError);
+          return;
+        }
+
+        if (existingVisit) {
+          // Use existing visit
+          setCurrentVisitId(existingVisit.id);
+        } else {
+          // Create new visit
+          const { data: newVisit, error: createError } = await supabase
+            .from('patient_visits')
+            .insert({
+              patient_id: queueEntry.patient_id,
+              queue_id: queueEntry.id,
+              doctor_id: queueEntry.assigned_doctor_id,
+              visit_date: new Date().toISOString().split('T')[0],
+              total_amount: 0,
+              payment_status: 'pending'
+            })
+            .select('id')
+            .single();
+
+          if (createError) {
+            console.error('Error creating visit:', createError);
+            return;
+          }
+
+          if (newVisit) {
+            setCurrentVisitId(newVisit.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error in createOrGetVisit:', error);
+      }
+    };
+
+    createOrGetVisit();
+  }, [queueEntry, isOpen]);
+
+  // Effect to update visit total when treatment items change
+  useEffect(() => {
+    const updateVisitTotal = async () => {
+      if (!currentVisitId || treatmentItems.length === 0) return;
+
+      try {
+        const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
+        const finalTotal = totalAmount + adjustmentsTotal;
+
+        await supabase
+          .from('patient_visits')
+          .update({ 
+            total_amount: finalTotal,
+            session_data: {
+              prescribed_items: treatmentItems.map(item => ({
+                type: item.item_type,
+                name: item.item_type === 'medication' ? item.medication?.name || '' : item.service?.name || '',
+                quantity: item.quantity,
+                dosage: item.dosage_instructions,
+                frequency: item.frequency,
+                duration: item.duration_days?.toString(),
+                price: item.total_amount,
+                instructions: item.notes,
+                rate: item.rate
+              })),
+              consultation_notes: consultationNotes,
+              adjustments: adjustments
+            }
+          })
+          .eq('id', currentVisitId);
+      } catch (error) {
+        console.error('Error updating visit total:', error);
+      }
+    };
+
+    updateVisitTotal();
+  }, [currentVisitId, treatmentItems, consultationNotes, adjustments, adjustmentsTotal]);
+
+  // Effect to load session data when available
   useEffect(() => {
     if (sessionData && isOpen) {
       // Load session data when available
