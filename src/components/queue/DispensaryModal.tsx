@@ -69,7 +69,10 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   useEffect(() => {
     if (isOpen && queueEntry) {
       refreshSessionData(); // Refresh session data on modal open
-      fetchDispensaryData();
+      // Initialize empty states - data will be populated from session sync
+      setTreatmentItems([]);
+      setConsultationNotes('');
+      setPayments([]);
     }
   }, [isOpen, queueEntry, refreshSessionData]);
 
@@ -79,16 +82,18 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
       console.log('Syncing dispensary with session data:', sessionData);
       
       // Update consultation notes
-      if (sessionData.consultation_notes) {
+      if (sessionData.consultation_notes || sessionData.diagnosis) {
         const notesText = [
           sessionData.consultation_notes ? `Notes: ${sessionData.consultation_notes}` : '',
           sessionData.diagnosis ? `Diagnosis: ${sessionData.diagnosis}` : ''
         ].filter(Boolean).join('\n\n');
         setConsultationNotes(notesText);
+      } else {
+        setConsultationNotes('');
       }
 
       // Update treatment items from session data
-      if (sessionData.prescribed_items) {
+      if (sessionData.prescribed_items && sessionData.prescribed_items.length > 0) {
         const convertedItems: TreatmentItem[] = sessionData.prescribed_items.map((item, index) => ({
           id: `session-${index}`,
           item_type: item.type,
@@ -111,151 +116,15 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           } : undefined
         }));
         setTreatmentItems(convertedItems);
+      } else {
+        setTreatmentItems([]);
       }
+    } else if (isOpen) {
+      // If no session data, clear the items
+      setTreatmentItems([]);
+      setConsultationNotes('');
     }
   }, [sessionData, isOpen]);
-
-  const fetchDispensaryData = async () => {
-    if (!queueEntry) return;
-    
-    try {
-      setLoading(true);
-
-      // First try to fetch from treatment_items table with proper JOIN to get names
-      const { data: treatmentData, error: treatmentError } = await supabase
-        .from('treatment_items')
-        .select(`
-          *,
-          medications(name, brand_name),
-          medical_services(name)
-        `)
-        .eq('consultation_session_id', queueEntry.id);
-
-      if (treatmentError) {
-        console.error('Error fetching from treatment_items:', treatmentError);
-        // Fallback to patient_activities if treatment_items fails
-        const { data: activitiesData, error: activitiesError } = await supabase
-          .from('patient_activities')
-          .select('*')
-          .eq('patient_id', queueEntry.patient_id)
-          .in('activity_type', ['medication', 'treatment'])
-          .eq('metadata->>queue_id', queueEntry.id)
-          .order('created_at', { ascending: false });
-
-        if (activitiesError) throw activitiesError;
-
-        // Transform activities into treatment items format
-        const transformedItems = activitiesData?.map(activity => {
-          const metadata = activity.metadata as any;
-          
-          return {
-            id: activity.id,
-            item_type: activity.activity_type === 'medication' ? 'medication' : 'service',
-            medication_id: null,
-            service_id: null,
-            quantity: metadata?.quantity || 1,
-            dosage_instructions: metadata?.dosage,
-            frequency: metadata?.frequency,
-            duration_days: metadata?.duration ? parseInt(metadata.duration.toString().replace(/\D/g, '')) || null : null,
-            rate: metadata?.amount ? parseFloat(metadata.amount) / (metadata?.quantity || 1) : 0,
-            total_amount: metadata?.amount ? parseFloat(metadata.amount) : 0,
-            notes: metadata?.instructions,
-            medication: activity.activity_type === 'medication' ? {
-              name: metadata?.medication_name || activity.title.replace('Medication Prescribed: ', ''),
-              brand_name: undefined
-            } : undefined,
-            service: activity.activity_type === 'treatment' ? {
-              name: metadata?.service_name || activity.title.replace('Treatment: ', ''),
-              description: activity.content
-            } : undefined
-          } as TreatmentItem;
-        }) || [];
-
-        setTreatmentItems(transformedItems);
-        return;
-      }
-
-      // Transform treatment_items data with proper names from JOINs
-      const transformedItems = treatmentData?.map(item => ({
-        id: item.id,
-        item_type: item.item_type as 'medication' | 'service',
-        medication_id: item.medication_id,
-        service_id: item.service_id,
-        quantity: item.quantity || 1,
-        dosage_instructions: item.dosage_instructions,
-        frequency: item.frequency,
-        duration_days: item.duration_days,
-        rate: item.rate || 0,
-        total_amount: item.total_amount || 0,
-        notes: item.notes,
-        medication: item.medications ? {
-          name: item.medications.name,
-          brand_name: item.medications.brand_name
-        } : undefined,
-        service: item.medical_services ? {
-          name: item.medical_services.name,
-          description: undefined
-        } : undefined
-      } as TreatmentItem)) || [];
-
-      setTreatmentItems(transformedItems);
-
-      // Fetch consultation notes from the latest completed consultation session
-      const { data: sessionNotes, error: notesError } = await supabase
-        .from('consultation_sessions')
-        .select(`
-          consultation_notes (
-            diagnosis,
-            treatment_plan,
-            prescriptions,
-            chief_complaint
-          )
-        `)
-        .eq('patient_id', queueEntry.patient_id)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!notesError && sessionNotes?.consultation_notes?.[0]) {
-        const notes = sessionNotes.consultation_notes[0];
-        const notesText = [
-          notes.chief_complaint ? `Notes: ${notes.chief_complaint}` : '',
-          notes.diagnosis ? `Diagnosis: ${notes.diagnosis}` : '',
-          notes.treatment_plan ? `Treatment Plan: ${notes.treatment_plan}` : '',
-          notes.prescriptions ? `Prescriptions: ${notes.prescriptions}` : ''
-        ].filter(Boolean).join('\n\n');
-        setConsultationNotes(notesText);
-      } else {
-        // Fallback: Get consultation notes from patient activities
-        const { data: consultationActivity } = await supabase
-          .from('patient_activities')
-          .select('content')
-          .eq('patient_id', queueEntry.patient_id)
-          .eq('activity_type', 'consultation')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (consultationActivity) {
-          setConsultationNotes(consultationActivity.content || '');
-        }
-      }
-
-      // Fetch payments for this patient (mock for now - you can implement actual payment tracking)
-      setPayments([]);
-
-    } catch (error) {
-      console.error('Error fetching dispensary data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dispensary data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handlePaymentSubmit = async () => {
     if (!paymentAmount || !paymentMethod) {
@@ -363,9 +232,14 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                       {queueEntry.patient?.first_name} {queueEntry.patient?.last_name}
                     </span>
                   </div>
-                  <Button variant="link" className="h-auto p-0 text-primary">
-                    See consultation notes
-                  </Button>
+                  {consultationNotes && (
+                    <div className="mt-3 p-3 bg-background rounded border">
+                      <h4 className="font-medium text-sm mb-2">Consultation Notes:</h4>
+                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {consultationNotes}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Billed to:</span>
                     <span>-</span>
@@ -435,10 +309,10 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 {loading ? (
                   <div className="text-center py-4">Loading items...</div>
                  ) : treatmentItems.length === 0 ? (
-                   <div className="text-center py-8 text-muted-foreground">
-                     <div className="mb-2">No prescribed items found for today's consultation</div>
-                     <div className="text-sm">Only items prescribed by the doctor in today's consultation will appear here</div>
-                   </div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <div className="mb-2">No prescribed items found in current session</div>
+                    <div className="text-sm">Only items prescribed in the current queue session will appear here</div>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="grid grid-cols-12 gap-2 text-sm font-medium text-muted-foreground border-b pb-2">
