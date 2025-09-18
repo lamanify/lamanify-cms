@@ -462,12 +462,13 @@ export function PatientConsultationModal({
                     <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
                   </div>
                   <div className="border border-t-0 rounded-b-lg p-3">
-                    <Textarea
-                      placeholder="Type your consultation notes here"
-                      value={consultationNotes}
-                      onChange={(e) => setConsultationNotes(e.target.value)}
-                      className="min-h-[100px] mb-3 resize-none text-sm"
-                    />
+                     <Textarea
+                       placeholder="Type your consultation notes here"
+                       value={consultationNotes}
+                       onChange={(e) => setConsultationNotes(e.target.value)}
+                       className="min-h-[100px] mb-3 resize-none text-sm"
+                       disabled={consultationStatus === 'waiting'}
+                     />
                     
                     {/* Formatting Toolbar */}
                     <div className="flex items-center justify-between">
