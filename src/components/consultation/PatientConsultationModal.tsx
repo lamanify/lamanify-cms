@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { IntelligentPrescriptionModal } from './IntelligentPrescriptionModal';
 import { useConsultationDrafts } from '@/hooks/useConsultationDrafts';
+import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
 import { 
   ArrowLeft, 
   Bell, 
@@ -65,6 +66,7 @@ export function PatientConsultationModal({
   const { toast } = useToast();
   const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow, updateSessionDataRealtime } = useConsultationWorkflow();
   const { saveDraft, getDraftForPatient, deleteDraft, autoSaveStatus } = useConsultationDrafts();
+  const { sessionData, refreshSessionData } = useQueueSessionSync(queueEntry?.id || null);
   
   // Sync consultation status with queue entry status
   useEffect(() => {
@@ -118,9 +120,12 @@ export function PatientConsultationModal({
     duration: string;
   }>>([]);
   
-  // Reset form when modal opens/closes
+  // Reset form when modal opens/closes and load draft or session data
   useEffect(() => {
     if (isOpen && queueEntry?.patient?.id) {
+      // Refresh session data on modal open
+      refreshSessionData();
+      
       // Load existing draft if available
       const existingDraft = getDraftForPatient(queueEntry.patient.id);
       if (existingDraft) {
@@ -142,7 +147,38 @@ export function PatientConsultationModal({
         clearTimeout(saveTimeoutRef.current);
       }
     }
-  }, [isOpen, queueEntry?.patient?.id, getDraftForPatient]);
+  }, [isOpen, queueEntry?.patient?.id, getDraftForPatient, refreshSessionData]);
+
+  // Sync with real-time session data
+  useEffect(() => {
+    if (sessionData && isOpen) {
+      console.log('Syncing consultation with session data:', sessionData);
+      
+      // Only update if session data is newer than current state
+      if (sessionData.consultation_notes && sessionData.consultation_notes !== consultationNotes) {
+        setConsultationNotes(sessionData.consultation_notes);
+      }
+      if (sessionData.diagnosis && sessionData.diagnosis !== diagnosis) {
+        setDiagnosis(sessionData.diagnosis);
+      }
+      if (sessionData.prescribed_items && sessionData.prescribed_items.length > 0) {
+        // Convert session data items back to treatment items format
+        const convertedItems = sessionData.prescribed_items.map((item, index) => ({
+          id: `session-${index}`,
+          item: item.name,
+          quantity: item.quantity,
+          priceTier: 'standard', // Default tier
+          rate: item.rate,
+          amount: item.price,
+          dosage: item.dosage || '',
+          instruction: item.instructions || '',
+          frequency: item.frequency || '',
+          duration: item.duration || ''
+        }));
+        setTreatmentItems(convertedItems);
+      }
+    }
+  }, [sessionData, isOpen, consultationNotes, diagnosis]);
 
   // Auto-save when form data changes
   useEffect(() => {

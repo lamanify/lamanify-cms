@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { QueueEntry } from '@/hooks/useQueue';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
 import { PrinterIcon, EditIcon, TrashIcon, FileTextIcon, DollarSignIcon, PlusIcon } from 'lucide-react';
 
 interface TreatmentItem {
@@ -59,6 +60,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const { toast } = useToast();
+  const { sessionData, refreshSessionData } = useQueueSessionSync(queueEntry?.id || null);
 
   const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -66,9 +68,52 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
 
   useEffect(() => {
     if (isOpen && queueEntry) {
+      refreshSessionData(); // Refresh session data on modal open
       fetchDispensaryData();
     }
-  }, [isOpen, queueEntry]);
+  }, [isOpen, queueEntry, refreshSessionData]);
+
+  // Sync with real-time session data
+  useEffect(() => {
+    if (sessionData && isOpen) {
+      console.log('Syncing dispensary with session data:', sessionData);
+      
+      // Update consultation notes
+      if (sessionData.consultation_notes) {
+        const notesText = [
+          sessionData.consultation_notes ? `Notes: ${sessionData.consultation_notes}` : '',
+          sessionData.diagnosis ? `Diagnosis: ${sessionData.diagnosis}` : ''
+        ].filter(Boolean).join('\n\n');
+        setConsultationNotes(notesText);
+      }
+
+      // Update treatment items from session data
+      if (sessionData.prescribed_items) {
+        const convertedItems: TreatmentItem[] = sessionData.prescribed_items.map((item, index) => ({
+          id: `session-${index}`,
+          item_type: item.type,
+          medication_id: item.type === 'medication' ? `med-${index}` : undefined,
+          service_id: item.type === 'service' ? `svc-${index}` : undefined,
+          quantity: item.quantity,
+          dosage_instructions: item.dosage,
+          frequency: item.frequency,
+          duration_days: item.duration ? parseInt(item.duration.replace(/\D/g, '')) || null : null,
+          rate: item.rate,
+          total_amount: item.price,
+          notes: item.instructions,
+          medication: item.type === 'medication' ? {
+            name: item.name,
+            brand_name: undefined
+          } : undefined,
+          service: item.type === 'service' ? {
+            name: item.name,
+            description: undefined
+          } : undefined
+        }));
+        setTreatmentItems(convertedItems);
+      }
+    }
+  }, [sessionData, isOpen]);
 
   const fetchDispensaryData = async () => {
     if (!queueEntry) return;
