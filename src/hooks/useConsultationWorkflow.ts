@@ -30,9 +30,28 @@ export function useConsultationWorkflow() {
   const { medications } = useMedications();
   const { services } = useServices();
 
-  // Helper function to update queue session data
+  // Helper function to update queue session data with validation
   const updateQueueSessionData = async (queueId: string, sessionData: any) => {
     try {
+      // Check if queue_id exists and is not archived
+      const { data: existingSession, error: checkError } = await supabase
+        .from('queue_sessions')
+        .select('status, archived_at, queue_id')
+        .eq('queue_id', queueId)
+        .single();
+
+      if (checkError) throw checkError;
+
+      // Prevent overwriting archived sessions
+      if (existingSession.status === 'archived' || existingSession.archived_at) {
+        throw new Error('Cannot update archived session data');
+      }
+
+      // Ensure queue_id uniqueness - never overwrite different queue records
+      if (existingSession.queue_id !== queueId) {
+        throw new Error('Queue ID mismatch - data integrity violation');
+      }
+
       const { error } = await supabase
         .from('queue_sessions')
         .update({ 
@@ -41,11 +60,10 @@ export function useConsultationWorkflow() {
         })
         .eq('queue_id', queueId);
 
-      if (error) {
-        console.error('Error updating queue session:', error);
-      }
+      if (error) throw error;
     } catch (error) {
       console.error('Error updating queue session data:', error);
+      throw error;
     }
   };
 
