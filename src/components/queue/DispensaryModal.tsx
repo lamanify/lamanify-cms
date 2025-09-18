@@ -713,7 +713,10 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => onStatusChange(queueEntry.id, 'in_consultation')}
+                      onClick={() => {
+                        onStatusChange(queueEntry.id, 'in_consultation');
+                        onClose();
+                      }}
                       className="border-orange-300 text-orange-700 hover:bg-orange-50"
                     >
                       ← Back to Consultation
