@@ -60,8 +60,11 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
+  // Edit state management
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<TreatmentItem>>({});
   const { toast } = useToast();
-  const { sessionData, refreshSessionData } = useQueueSessionSync(queueEntry?.id || null);
+  const { sessionData, refreshSessionData, saveSessionData } = useQueueSessionSync(queueEntry?.id || null);
 
   const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -179,6 +182,94 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
         variant: "destructive",
       });
     }
+  };
+
+  // Edit handlers
+  const handleEditItem = (item: TreatmentItem) => {
+    setEditingItemId(item.id);
+    setEditFormData({
+      quantity: item.quantity,
+      dosage_instructions: item.dosage_instructions || '',
+      frequency: item.frequency || '',
+      duration_days: item.duration_days || 0,
+      rate: item.rate,
+      notes: item.notes || ''
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItemId || !editFormData.quantity || !editFormData.rate) {
+      toast({
+        title: "Error",
+        description: "Please fill in required fields (quantity and rate)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Calculate new total amount
+      const newTotalAmount = editFormData.quantity! * editFormData.rate!;
+      
+      // Update the treatment item
+      const updatedItems = treatmentItems.map(item => {
+        if (item.id === editingItemId) {
+          return {
+            ...item,
+            quantity: editFormData.quantity!,
+            dosage_instructions: editFormData.dosage_instructions || '',
+            frequency: editFormData.frequency || '',
+            duration_days: editFormData.duration_days || 0,
+            rate: editFormData.rate!,
+            total_amount: newTotalAmount,
+            notes: editFormData.notes || ''
+          };
+        }
+        return item;
+      });
+
+      setTreatmentItems(updatedItems);
+
+      // Update session data with the new prescribed items
+      if (sessionData) {
+        const updatedSessionItems = updatedItems.map(item => ({
+          type: item.item_type as 'medication' | 'service',
+          name: getItemDisplayName(item),
+          quantity: item.quantity,
+          dosage: item.dosage_instructions || '',
+          frequency: item.frequency || '',
+          duration: item.duration_days ? `${item.duration_days} days` : '',
+          price: item.total_amount,
+          instructions: item.notes || '',
+          rate: item.rate
+        }));
+
+        await saveSessionData({
+          prescribed_items: updatedSessionItems
+        });
+      }
+
+      // Reset edit state
+      setEditingItemId(null);
+      setEditFormData({});
+      
+      toast({
+        title: "Item Updated",
+        description: "Treatment item updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditFormData({});
   };
 
   const handlePrintInvoice = () => {
@@ -537,39 +628,142 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                       <div className="col-span-2 text-right">TOTAL PRICE</div>
                       <div className="col-span-2 text-center">ACTION</div>
                     </div>
-                    {treatmentItems.map((item, index) => (
-                      <div key={item.id} className="grid grid-cols-12 gap-2 py-3 border-b last:border-b-0">
-                        <div className="col-span-1 text-center">{index + 1}</div>
-                        <div className="col-span-5">
-                          <div className="font-medium">{getItemDisplayName(item)}</div>
-                          {getItemInstructions(item) && (
-                            <div className="text-sm text-muted-foreground mt-1">
-                              {getItemInstructions(item)}
-                            </div>
-                          )}
-                          {item.notes && (
-                            <div className="text-sm text-muted-foreground mt-1">
-                              Note: {item.notes}
-                            </div>
-                          )}
-                        </div>
-                        <div className="col-span-2 text-center">{item.quantity}</div>
-                        <div className="col-span-2 text-right font-medium">
-                          RM {item.total_amount.toFixed(2)}
-                        </div>
-                        <div className="col-span-2 flex justify-center gap-2">
-                          <Button variant="ghost" size="sm">
-                            <EditIcon className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handlePrintLabel(item.id)}>
-                            <PrinterIcon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                     {treatmentItems.map((item, index) => (
+                       <div key={item.id} className="grid grid-cols-12 gap-2 py-3 border-b last:border-b-0">
+                         <div className="col-span-1 text-center">{index + 1}</div>
+                         {editingItemId === item.id ? (
+                           // Edit Form
+                           <>
+                             <div className="col-span-5 space-y-2">
+                               <div className="font-medium">{getItemDisplayName(item)}</div>
+                               {item.item_type === 'medication' && (
+                                 <div className="space-y-2">
+                                   <div>
+                                     <Label className="text-xs">Dosage Instructions</Label>
+                                     <Input
+                                       value={editFormData.dosage_instructions || ''}
+                                       onChange={(e) => setEditFormData(prev => ({ ...prev, dosage_instructions: e.target.value }))}
+                                       className="h-8 text-sm"
+                                       placeholder="e.g., 1 tablet"
+                                     />
+                                   </div>
+                                   <div className="grid grid-cols-2 gap-2">
+                                     <div>
+                                       <Label className="text-xs">Frequency</Label>
+                                       <Input
+                                         value={editFormData.frequency || ''}
+                                         onChange={(e) => setEditFormData(prev => ({ ...prev, frequency: e.target.value }))}
+                                         className="h-8 text-sm"
+                                         placeholder="e.g., twice daily"
+                                       />
+                                     </div>
+                                     <div>
+                                       <Label className="text-xs">Duration (days)</Label>
+                                       <Input
+                                         type="number"
+                                         value={editFormData.duration_days || ''}
+                                         onChange={(e) => setEditFormData(prev => ({ ...prev, duration_days: parseInt(e.target.value) || 0 }))}
+                                         className="h-8 text-sm"
+                                         placeholder="7"
+                                       />
+                                     </div>
+                                   </div>
+                                 </div>
+                               )}
+                               <div>
+                                 <Label className="text-xs">Notes</Label>
+                                 <Textarea
+                                   value={editFormData.notes || ''}
+                                   onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                   className="h-16 text-sm resize-none"
+                                   placeholder="Additional notes..."
+                                 />
+                               </div>
+                             </div>
+                             <div className="col-span-2 space-y-2">
+                               <div>
+                                 <Label className="text-xs">Quantity</Label>
+                                 <Input
+                                   type="number"
+                                   value={editFormData.quantity || ''}
+                                   onChange={(e) => setEditFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                                   className="h-8 text-sm text-center"
+                                   min="1"
+                                 />
+                               </div>
+                               <div>
+                                 <Label className="text-xs">Rate (RM)</Label>
+                                 <Input
+                                   type="number"
+                                   step="0.01"
+                                   value={editFormData.rate || ''}
+                                   onChange={(e) => setEditFormData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
+                                   className="h-8 text-sm text-right"
+                                   min="0"
+                                 />
+                               </div>
+                             </div>
+                             <div className="col-span-2 text-right font-medium">
+                               RM {((editFormData.quantity || 0) * (editFormData.rate || 0)).toFixed(2)}
+                             </div>
+                             <div className="col-span-2 flex flex-col gap-1">
+                               <Button 
+                                 variant="outline" 
+                                 size="sm" 
+                                 onClick={handleSaveEdit}
+                                 className="h-7 text-xs"
+                               >
+                                 Save
+                               </Button>
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm" 
+                                 onClick={handleCancelEdit}
+                                 className="h-7 text-xs"
+                               >
+                                 Cancel
+                               </Button>
+                             </div>
+                           </>
+                         ) : (
+                           // Display Mode
+                           <>
+                             <div className="col-span-5">
+                               <div className="font-medium">{getItemDisplayName(item)}</div>
+                               {getItemInstructions(item) && (
+                                 <div className="text-sm text-muted-foreground mt-1">
+                                   {getItemInstructions(item)}
+                                 </div>
+                               )}
+                               {item.notes && (
+                                 <div className="text-sm text-muted-foreground mt-1">
+                                   Note: {item.notes}
+                                 </div>
+                               )}
+                             </div>
+                             <div className="col-span-2 text-center">{item.quantity}</div>
+                             <div className="col-span-2 text-right font-medium">
+                               RM {item.total_amount.toFixed(2)}
+                             </div>
+                             <div className="col-span-2 flex justify-center gap-2">
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm"
+                                 onClick={() => handleEditItem(item)}
+                               >
+                                 <EditIcon className="h-4 w-4" />
+                               </Button>
+                               <Button variant="ghost" size="sm">
+                                 <TrashIcon className="h-4 w-4" />
+                               </Button>
+                               <Button variant="ghost" size="sm" onClick={() => handlePrintLabel(item.id)}>
+                                 <PrinterIcon className="h-4 w-4" />
+                               </Button>
+                             </div>
+                           </>
+                         )}
+                       </div>
+                     ))}
                   </div>
                 )}
               </div>
