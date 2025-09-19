@@ -93,9 +93,13 @@ export function useQueue() {
           table: 'patient_queue'
         },
         (payload) => {
-          console.log('New patient added to queue:', payload);
-          // Refetch immediately to show the new entry
-          fetchQueue();
+          console.log('Real-time INSERT event - New patient added to queue:', payload);
+          console.log('INSERT payload details:', JSON.stringify(payload, null, 2));
+          // Add slight delay to ensure database consistency before refetch
+          setTimeout(() => {
+            console.log('Executing fetchQueue after INSERT event');
+            fetchQueue();
+          }, 500);
         }
       )
       .on(

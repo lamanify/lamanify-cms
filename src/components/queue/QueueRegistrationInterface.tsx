@@ -28,7 +28,11 @@ interface VisitData {
   visitNotes: string;
 }
 
-export function QueueRegistrationInterface() {
+interface QueueRegistrationInterfaceProps {
+  onPatientAdded?: () => Promise<void>;
+}
+
+export function QueueRegistrationInterface({ onPatientAdded }: QueueRegistrationInterfaceProps) {
   const [mode, setMode] = useState<'search' | 'register'>('search');
   const [quickRegisterOpen, setQuickRegisterOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -152,6 +156,17 @@ export function QueueRegistrationInterface() {
         title: "Patient added to queue",
         description: `${selectedPatient.first_name} ${selectedPatient.last_name} has been added to the queue${queueResult?.queueNumber ? ` (${queueResult.queueNumber})` : ''}`,
       });
+
+      // Manual refresh to ensure immediate UI update
+      console.log('Manually refreshing queue after adding patient');
+      if (onPatientAdded) {
+        try {
+          await onPatientAdded();
+          console.log('Manual queue refresh completed successfully');
+        } catch (error) {
+          console.error('Manual queue refresh failed:', error);
+        }
+      }
 
       // Reset form
       setSelectedPatient(null);

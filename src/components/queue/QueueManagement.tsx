@@ -181,7 +181,7 @@ export function QueueManagement() {
   return (
     <div className="space-y-6">
       {/* Registration Interface */}
-      <QueueRegistrationInterface />
+      <QueueRegistrationInterface onPatientAdded={handleRefresh} />
 
       {/* Current Queue Display */}
       <CurrentQueueDisplay 
