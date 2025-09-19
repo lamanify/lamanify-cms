@@ -1008,7 +1008,7 @@ export function PatientConsultationModal({
               >
                 Start consultation
               </Button>
-            ) : consultationStatus === 'dispensary' ? (
+            ) : consultationStatus === 'dispensary' || consultationStatus === 'completed' ? (
               <Button 
                 onClick={async () => {
                   try {
