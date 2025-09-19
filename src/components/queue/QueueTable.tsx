@@ -18,17 +18,38 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   const [selectedPatient, setSelectedPatient] = useState<QueueEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDispensaryModalOpen, setIsDispensaryModalOpen] = useState(false);
+  const [removedEntries, setRemovedEntries] = useState<Set<string>>(new Set());
   const { completeConsultationWorkflow } = useConsultationWorkflow();
 
+  const handleOptimisticRemove = async (queueId: string) => {
+    // Immediately hide the patient from UI
+    setRemovedEntries(prev => new Set(prev).add(queueId));
+    
+    try {
+      // Process backend removal
+      await onRemoveFromQueue(queueId);
+    } catch (error) {
+      // If backend operation fails, restore the patient
+      setRemovedEntries(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(queueId);
+        return newSet;
+      });
+      console.error('Failed to remove patient from queue:', error);
+    }
+  };
+
+  // Filter out optimistically removed entries
+  const displayQueue = queue.filter(entry => !removedEntries.has(entry.id));
   // Update selectedPatient when queue data changes (to reflect status updates)
   useEffect(() => {
     if (selectedPatient && isModalOpen) {
-      const updatedPatient = queue.find(entry => entry.id === selectedPatient.id);
+      const updatedPatient = displayQueue.find(entry => entry.id === selectedPatient.id);
       if (updatedPatient) {
         setSelectedPatient(updatedPatient);
       }
     }
-  }, [queue, selectedPatient, isModalOpen]);
+  }, [displayQueue, selectedPatient, isModalOpen]);
 
   const handlePatientClick = (entry: QueueEntry) => {
     setSelectedPatient(entry);
@@ -147,7 +168,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
     }
   };
 
-  if (queue.length === 0) {
+  if (displayQueue.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -165,7 +186,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         </div>
       )}
       
-      {queue.map((entry) => {
+      {displayQueue.map((entry) => {
         const waitTime = getWaitTime(entry.checked_in_at);
         const isPriority = entry.status === 'urgent' || entry.status.includes('urgent');
         
@@ -310,7 +331,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                 variant="destructive"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRemoveFromQueue(entry.id);
+                  handleOptimisticRemove(entry.id);
                 }}
               >
                 Remove
