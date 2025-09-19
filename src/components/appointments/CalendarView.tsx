@@ -256,12 +256,12 @@ export function CalendarView() {
         <div className="flex items-center gap-4">
           {/* Doctor Filter */}
           {(profile?.role === 'admin' || profile?.role === 'receptionist') && (
-            <Select value={selectedDoctorId || ''} onValueChange={(value) => setSelectedDoctorId(value || null)}>
+            <Select value={selectedDoctorId || 'all'} onValueChange={(value) => setSelectedDoctorId(value === 'all' ? null : value)}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="All doctors" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All doctors</SelectItem>
+                <SelectItem value="all">All doctors</SelectItem>
                 {doctors.map((doctor) => (
                   <SelectItem key={doctor.id} value={doctor.id}>
                     Dr. {doctor.first_name} {doctor.last_name}

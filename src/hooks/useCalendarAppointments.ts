@@ -34,15 +34,11 @@ export function useCalendarAppointments() {
       const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
 
-      console.log('Fetching appointments for date range:', startDate, 'to', endDate, 'doctor:', selectedDoctorId);
-
       const { data, error } = await supabase.rpc('get_calendar_appointments', {
         p_start_date: startDate,
         p_end_date: endDate,
         p_doctor_id: selectedDoctorId
       });
-
-      console.log('Calendar appointments response:', { data, error });
 
       if (error) throw error;
 
