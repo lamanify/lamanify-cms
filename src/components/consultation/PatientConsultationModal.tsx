@@ -486,7 +486,7 @@ export function PatientConsultationModal({
                   <TabsTrigger value="consultation" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     Consultation
                   </TabsTrigger>
-                  <TabsTrigger value="treatment" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsTrigger value="treatment" className="data-[state=active]:text-primary-foreground bg-slate-900">
                     Treatment & Billing
                   </TabsTrigger>
                   <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -504,7 +504,7 @@ export function PatientConsultationModal({
               </div>
 
                   {/* Consultation Notes */}
-                  <div className="text-primary-foreground p-3 rounded-t-lg bg-slate-900">
+                  <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
                     <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
                   </div>
                   <div className="border border-t-0 rounded-b-lg p-3">
