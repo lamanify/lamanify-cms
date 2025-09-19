@@ -78,6 +78,7 @@ export function PatientConsultationModal({
   const [editingItem, setEditingItem] = useState<any>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [consultationStatus, setConsultationStatus] = useState<string>(queueEntry?.status || 'waiting');
+  const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const { toast } = useToast();
   const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow, updateSessionDataRealtime } = useConsultationWorkflow();
   const { saveDraft, getDraftForPatient, deleteDraft, autoSaveStatus } = useConsultationDrafts();
@@ -843,8 +844,8 @@ export function PatientConsultationModal({
                                   </p>
                                 </Card>
                               ) : (
-                                filteredVisits.map((visit) => (
-                                  <Card key={visit.id} className="p-3 hover:bg-muted/50 cursor-pointer">
+                                 filteredVisits.map((visit) => (
+                                   <Card key={visit.id} className="p-3 hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedVisit(visit)}>
                                     <div className="flex items-start justify-between">
                                       <div className="flex-1">
                                         <div className="flex items-center space-x-2 mb-1">
@@ -1083,7 +1084,56 @@ export function PatientConsultationModal({
             )}
           </div>
         </div>
-        </DialogContent>
+         </DialogContent>
+
+        {/* Visit Details Modal */}
+        {selectedVisit && (
+          <Dialog open={!!selectedVisit} onOpenChange={() => setSelectedVisit(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <h3 className="text-lg font-semibold">Visit Details - {format(new Date(selectedVisit.date), 'MMM dd, yyyy')}</h3>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Time</label>
+                  <p className="text-sm">{selectedVisit.time}</p>
+                </div>
+                {selectedVisit.consultationNotes && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Consultation Notes</label>
+                    <p className="text-sm whitespace-pre-wrap">{selectedVisit.consultationNotes}</p>
+                  </div>
+                )}
+                {selectedVisit.diagnoses.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Diagnoses</label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedVisit.diagnoses.map((diagnosis, index) => (
+                        <Badge key={index} variant="outline">{diagnosis}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedVisit.medications.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Medications Prescribed</label>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedVisit.medications.map((medication, index) => (
+                        <Badge key={index} variant="secondary">{medication}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedVisit.paymentMethod && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Payment Method</label>
+                    <p className="text-sm">{selectedVisit.paymentMethod}</p>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         <IntelligentPrescriptionModal
           isOpen={isPrescriptionModalOpen}
