@@ -56,14 +56,14 @@ All colors MUST be HSL.
     --queue-priority: 346, 82%, 52%;
     --queue-priority-foreground: 0, 0%, 100%;
 
-    /* Dark sidebar for minimal look */
-    --sidebar-background: 0, 0%, 10%;
-    --sidebar-foreground: 0, 0%, 85%;
+    /* Light sidebar for minimal look */
+    --sidebar-background: 0, 0%, 98%;
+    --sidebar-foreground: 0, 0%, 15%;
     --sidebar-primary: 346, 82%, 52%;
     --sidebar-primary-foreground: 0, 0%, 100%;
-    --sidebar-accent: 0, 0%, 15%;
-    --sidebar-accent-foreground: 0, 0%, 85%;
-    --sidebar-border: 0, 0%, 20%;
+    --sidebar-accent: 0, 0%, 94%;
+    --sidebar-accent-foreground: 0, 0%, 15%;
+    --sidebar-border: 0, 0%, 85%;
     --sidebar-ring: 346, 82%, 52%;
   }
 
@@ -96,13 +96,13 @@ All colors MUST be HSL.
     --input: 0, 0%, 20%;
     --ring: 346, 82%, 52%;
     
-    --sidebar-background: 0, 0%, 5%;
-    --sidebar-foreground: 0, 0%, 85%;
+    --sidebar-background: 0, 0%, 96%;
+    --sidebar-foreground: 0, 0%, 15%;
     --sidebar-primary: 346, 82%, 52%;
     --sidebar-primary-foreground: 0, 0%, 100%;
-    --sidebar-accent: 0, 0%, 10%;
-    --sidebar-accent-foreground: 0, 0%, 85%;
-    --sidebar-border: 0, 0%, 15%;
+    --sidebar-accent: 0, 0%, 92%;
+    --sidebar-accent-foreground: 0, 0%, 15%;
+    --sidebar-border: 0, 0%, 80%;
     --sidebar-ring: 346, 82%, 52%;
   }
 }
