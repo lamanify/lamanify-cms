@@ -214,6 +214,117 @@ export function PatientConsultationModal({
     }
   }, [consultationNotes, diagnosis, treatmentItems, isOpen, queueEntry?.patient?.id, debouncedSave]);
 
+  // Helper function to extract consultation notes from structured content
+  const extractConsultationNotes = (content: string) => {
+    if (!content) return '';
+    
+    // Try to extract consultation notes from structured content
+    const consultationNotesMatch = content.match(/Consultation Notes:\s*([^]*?)(?:\n\n|$)/);
+    if (consultationNotesMatch) {
+      return consultationNotesMatch[1].trim();
+    }
+    
+    // Try to extract notes from legacy format
+    const notesMatch = content.match(/Notes:\s*([^]*?)(?:\nPrescribed|$)/);
+    if (notesMatch) {
+      return notesMatch[1].trim();
+    }
+    
+    // If no structured format found, check if content contains meaningful consultation info
+    if (content.includes('Diagnosis:') || content.includes('Notes:') || content.includes('Prescribed')) {
+      // Extract everything before "Prescribed" or return full content if no "Prescribed" found
+      const beforePrescribed = content.split(/(?:Prescribed \d+ items|Treatment Items Prescribed:)/)[0];
+      return beforePrescribed.replace(/^(Diagnosis:[^\n]*\n?)/g, '').trim();
+    }
+    
+    return content;
+  };
+
+  // Group activities into visits based on consultation date
+  const visits = useMemo(() => {
+    const visitMap = new Map<string, Visit>();
+    
+    activities.forEach(activity => {
+      const visitDate = format(new Date(activity.activity_date), 'yyyy-MM-dd');
+      const existingVisit = visitMap.get(visitDate);
+      
+      if (existingVisit) {
+        existingVisit.activities.push(activity);
+        
+        // Update visit details based on activity type
+        if (activity.activity_type === 'consultation') {
+          const consultationNotes = extractConsultationNotes(activity.content || '');
+          if (consultationNotes && consultationNotes.length > existingVisit.consultationNotes.length) {
+            existingVisit.consultationNotes = consultationNotes;
+          }
+          if (activity.metadata?.diagnosis) {
+            const diagnosis = Array.isArray(activity.metadata.diagnosis) 
+              ? activity.metadata.diagnosis 
+              : [activity.metadata.diagnosis];
+            existingVisit.diagnoses = [...new Set([...existingVisit.diagnoses, ...diagnosis])];
+          }
+        } else if (activity.activity_type === 'medication') {
+          const medName = activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '');
+          if (!existingVisit.medications.includes(medName)) {
+            existingVisit.medications.push(medName);
+          }
+        }
+      } else {
+        const visit: Visit = {
+          id: visitDate + '_' + activity.id,
+          date: visitDate,
+          time: format(new Date(activity.activity_date), 'h:mm a'),
+          consultationNotes: activity.activity_type === 'consultation' ? extractConsultationNotes(activity.content || '') : '',
+          medications: activity.activity_type === 'medication' 
+            ? [activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '')] 
+            : [],
+          diagnoses: activity.activity_type === 'consultation' && activity.metadata?.diagnosis
+            ? Array.isArray(activity.metadata.diagnosis) 
+              ? activity.metadata.diagnosis 
+              : [activity.metadata.diagnosis]
+            : [],
+          paymentMethod: activity.metadata?.payment_method,
+          waitingTime: activity.metadata?.waiting_time,
+          activities: [activity]
+        };
+        visitMap.set(visitDate, visit);
+      }
+    });
+    
+    return Array.from(visitMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [activities]);
+
+  // Filter visits based on search and tab
+  const filteredVisits = useMemo(() => {
+    let filtered = visits;
+    
+    // Apply search filter
+    if (historySearch) {
+      const searchLower = historySearch.toLowerCase();
+      filtered = filtered.filter(visit => {
+        return visit.consultationNotes.toLowerCase().includes(searchLower) ||
+               visit.medications.some(med => med.toLowerCase().includes(searchLower)) ||
+               visit.diagnoses.some(diag => diag.toLowerCase().includes(searchLower));
+      });
+    }
+    
+    // Apply tab filter
+    if (historyTab !== 'all') {
+      filtered = filtered.filter(visit => {
+        if (historyTab === 'diagnosis') return visit.diagnoses.length > 0;
+        if (historyTab === 'medication') return visit.medications.length > 0;
+        if (historyTab === 'documents') return false; // No document filtering yet
+        return true;
+      });
+    }
+    
+    return filtered;
+  }, [visits, historySearch, historyTab]);
+
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   if (!queueEntry || !queueEntry.patient) return null;
 
   const patient = queueEntry.patient;
@@ -356,117 +467,6 @@ export function PatientConsultationModal({
     };
     
     input.click();
-  };
-
-  // Helper function to extract consultation notes from structured content
-  const extractConsultationNotes = (content: string) => {
-    if (!content) return '';
-    
-    // Try to extract consultation notes from structured content
-    const consultationNotesMatch = content.match(/Consultation Notes:\s*([^]*?)(?:\n\n|$)/);
-    if (consultationNotesMatch) {
-      return consultationNotesMatch[1].trim();
-    }
-    
-    // Try to extract notes from legacy format
-    const notesMatch = content.match(/Notes:\s*([^]*?)(?:\nPrescribed|$)/);
-    if (notesMatch) {
-      return notesMatch[1].trim();
-    }
-    
-    // If no structured format found, check if content contains meaningful consultation info
-    if (content.includes('Diagnosis:') || content.includes('Notes:') || content.includes('Prescribed')) {
-      // Extract everything before "Prescribed" or return full content if no "Prescribed" found
-      const beforePrescribed = content.split(/(?:Prescribed \d+ items|Treatment Items Prescribed:)/)[0];
-      return beforePrescribed.replace(/^(Diagnosis:[^\n]*\n?)/g, '').trim();
-    }
-    
-    return content;
-  };
-
-  // Group activities into visits based on consultation date
-  const visits = useMemo(() => {
-    const visitMap = new Map<string, Visit>();
-    
-    activities.forEach(activity => {
-      const visitDate = format(new Date(activity.activity_date), 'yyyy-MM-dd');
-      const existingVisit = visitMap.get(visitDate);
-      
-      if (existingVisit) {
-        existingVisit.activities.push(activity);
-        
-        // Update visit details based on activity type
-        if (activity.activity_type === 'consultation') {
-          const consultationNotes = extractConsultationNotes(activity.content || '');
-          if (consultationNotes && consultationNotes.length > existingVisit.consultationNotes.length) {
-            existingVisit.consultationNotes = consultationNotes;
-          }
-          if (activity.metadata?.diagnosis) {
-            const diagnosis = Array.isArray(activity.metadata.diagnosis) 
-              ? activity.metadata.diagnosis 
-              : [activity.metadata.diagnosis];
-            existingVisit.diagnoses = [...new Set([...existingVisit.diagnoses, ...diagnosis])];
-          }
-        } else if (activity.activity_type === 'medication') {
-          const medName = activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '');
-          if (!existingVisit.medications.includes(medName)) {
-            existingVisit.medications.push(medName);
-          }
-        }
-      } else {
-        const visit: Visit = {
-          id: visitDate + '_' + activity.id,
-          date: visitDate,
-          time: format(new Date(activity.activity_date), 'h:mm a'),
-          consultationNotes: activity.activity_type === 'consultation' ? extractConsultationNotes(activity.content || '') : '',
-          medications: activity.activity_type === 'medication' 
-            ? [activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '')] 
-            : [],
-          diagnoses: activity.activity_type === 'consultation' && activity.metadata?.diagnosis
-            ? Array.isArray(activity.metadata.diagnosis) 
-              ? activity.metadata.diagnosis 
-              : [activity.metadata.diagnosis]
-            : [],
-          paymentMethod: activity.metadata?.payment_method,
-          waitingTime: activity.metadata?.waiting_time,
-          activities: [activity]
-        };
-        visitMap.set(visitDate, visit);
-      }
-    });
-    
-    return Array.from(visitMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [activities]);
-
-  // Filter visits based on search and tab
-  const filteredVisits = useMemo(() => {
-    let filtered = visits;
-    
-    // Apply search filter
-    if (historySearch) {
-      const searchLower = historySearch.toLowerCase();
-      filtered = filtered.filter(visit => {
-        return visit.consultationNotes.toLowerCase().includes(searchLower) ||
-               visit.medications.some(med => med.toLowerCase().includes(searchLower)) ||
-               visit.diagnoses.some(diag => diag.toLowerCase().includes(searchLower));
-      });
-    }
-    
-    // Apply tab filter
-    if (historyTab !== 'all') {
-      filtered = filtered.filter(visit => {
-        if (historyTab === 'diagnosis') return visit.diagnoses.length > 0;
-        if (historyTab === 'medication') return visit.medications.length > 0;
-        if (historyTab === 'documents') return false; // No document filtering yet
-        return true;
-      });
-    }
-    
-    return filtered;
-  }, [visits, historySearch, historyTab]);
-
-  const truncateText = (text: string, maxLength: number) => {
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   return (
