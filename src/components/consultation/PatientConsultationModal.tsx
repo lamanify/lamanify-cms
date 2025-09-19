@@ -481,18 +481,18 @@ export function PatientConsultationModal({
           <div className="flex-1 flex overflow-hidden">
             {/* Main Content with Tabs */}
             <div className="flex-1 flex flex-col">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <TabsList className="w-full justify-start rounded-none border-b bg-background">
-                  <TabsTrigger value="consultation" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                    Consultation
-                  </TabsTrigger>
-                  <TabsTrigger value="treatment" className="data-[state=active]:text-primary-foreground bg-slate-900">
-                    Treatment & Billing
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                    Patient History
-                  </TabsTrigger>
-                </TabsList>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                 <TabsList className="w-full justify-start rounded-none border-b bg-background">
+                   <TabsTrigger value="consultation" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
+                     Consultation
+                   </TabsTrigger>
+                   <TabsTrigger value="treatment" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
+                     Treatment & Billing
+                   </TabsTrigger>
+                   <TabsTrigger value="history" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
+                     Patient History
+                   </TabsTrigger>
+                 </TabsList>
 
                 <TabsContent value="consultation" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
               {/* Waiting Status */}
@@ -504,7 +504,7 @@ export function PatientConsultationModal({
               </div>
 
                   {/* Consultation Notes */}
-                  <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
+                  <div className="bg-slate-800 text-white p-3 rounded-t-lg">
                     <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
                   </div>
                   <div className="border border-t-0 rounded-b-lg p-3">
@@ -573,7 +573,7 @@ export function PatientConsultationModal({
                 <TabsContent value="treatment" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
                   {/* Medicine/Services Header */}
                   <div>
-                    <div className="bg-primary text-primary-foreground p-3 rounded-t-lg flex items-center justify-between">
+                    <div className="bg-slate-800 text-white p-3 rounded-t-lg flex items-center justify-between">
                       <h3 className="font-medium text-sm">Insert your medicine, services and documents here</h3>
                       <Button variant="secondary" size="sm" className="bg-white text-accent-foreground hover:bg-white/90" onClick={() => {
                       setEditingItem(null);
@@ -629,7 +629,7 @@ export function PatientConsultationModal({
 
                 <TabsContent value="history" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
                   {/* Patient History Header */}
-                  <div className="bg-primary text-primary-foreground p-3 rounded-t-lg">
+                  <div className="bg-slate-800 text-white p-3 rounded-t-lg">
                     <h3 className="font-medium text-sm">Patient History - Complete Medical Timeline</h3>
                   </div>
                   <div className="border border-t-0 rounded-b-lg p-4">
