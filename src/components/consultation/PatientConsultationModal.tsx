@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { IntelligentPrescriptionModal } from './IntelligentPrescriptionModal';
 import { useConsultationDrafts } from '@/hooks/useConsultationDrafts';
 import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
+import { usePatientActivities, PatientActivity } from '@/hooks/usePatientActivities';
 import { 
   ArrowLeft, 
   Bell, 
@@ -35,6 +36,19 @@ import {
   FileText
 } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
+import { format } from 'date-fns';
+
+interface Visit {
+  id: string;
+  date: string;
+  time: string;
+  consultationNotes: string;
+  medications: string[];
+  diagnoses: string[];
+  paymentMethod?: string;
+  waitingTime?: number;
+  activities: PatientActivity[];
+}
 
 interface PatientConsultationModalProps {
   isOpen: boolean;
@@ -58,6 +72,7 @@ export function PatientConsultationModal({
   const [diagnosis, setDiagnosis] = useState('');
   const [historyTab, setHistoryTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all-time');
+  const [historySearch, setHistorySearch] = useState('');
   const [isDraftSaved, setIsDraftSaved] = useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -67,6 +82,12 @@ export function PatientConsultationModal({
   const { activeConsultationSession, startConsultationWorkflow, completeConsultationWorkflow, updateSessionDataRealtime } = useConsultationWorkflow();
   const { saveDraft, getDraftForPatient, deleteDraft, autoSaveStatus } = useConsultationDrafts();
   const { sessionData, refreshSessionData } = useQueueSessionSync(queueEntry?.id || null);
+  
+  // Patient activities for history tab
+  const {
+    activities,
+    loading: activitiesLoading
+  } = usePatientActivities(queueEntry?.patient?.id || '');
   
   // Sync consultation status with queue entry status
   useEffect(() => {
@@ -335,6 +356,117 @@ export function PatientConsultationModal({
     };
     
     input.click();
+  };
+
+  // Helper function to extract consultation notes from structured content
+  const extractConsultationNotes = (content: string) => {
+    if (!content) return '';
+    
+    // Try to extract consultation notes from structured content
+    const consultationNotesMatch = content.match(/Consultation Notes:\s*([^]*?)(?:\n\n|$)/);
+    if (consultationNotesMatch) {
+      return consultationNotesMatch[1].trim();
+    }
+    
+    // Try to extract notes from legacy format
+    const notesMatch = content.match(/Notes:\s*([^]*?)(?:\nPrescribed|$)/);
+    if (notesMatch) {
+      return notesMatch[1].trim();
+    }
+    
+    // If no structured format found, check if content contains meaningful consultation info
+    if (content.includes('Diagnosis:') || content.includes('Notes:') || content.includes('Prescribed')) {
+      // Extract everything before "Prescribed" or return full content if no "Prescribed" found
+      const beforePrescribed = content.split(/(?:Prescribed \d+ items|Treatment Items Prescribed:)/)[0];
+      return beforePrescribed.replace(/^(Diagnosis:[^\n]*\n?)/g, '').trim();
+    }
+    
+    return content;
+  };
+
+  // Group activities into visits based on consultation date
+  const visits = useMemo(() => {
+    const visitMap = new Map<string, Visit>();
+    
+    activities.forEach(activity => {
+      const visitDate = format(new Date(activity.activity_date), 'yyyy-MM-dd');
+      const existingVisit = visitMap.get(visitDate);
+      
+      if (existingVisit) {
+        existingVisit.activities.push(activity);
+        
+        // Update visit details based on activity type
+        if (activity.activity_type === 'consultation') {
+          const consultationNotes = extractConsultationNotes(activity.content || '');
+          if (consultationNotes && consultationNotes.length > existingVisit.consultationNotes.length) {
+            existingVisit.consultationNotes = consultationNotes;
+          }
+          if (activity.metadata?.diagnosis) {
+            const diagnosis = Array.isArray(activity.metadata.diagnosis) 
+              ? activity.metadata.diagnosis 
+              : [activity.metadata.diagnosis];
+            existingVisit.diagnoses = [...new Set([...existingVisit.diagnoses, ...diagnosis])];
+          }
+        } else if (activity.activity_type === 'medication') {
+          const medName = activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '');
+          if (!existingVisit.medications.includes(medName)) {
+            existingVisit.medications.push(medName);
+          }
+        }
+      } else {
+        const visit: Visit = {
+          id: visitDate + '_' + activity.id,
+          date: visitDate,
+          time: format(new Date(activity.activity_date), 'h:mm a'),
+          consultationNotes: activity.activity_type === 'consultation' ? extractConsultationNotes(activity.content || '') : '',
+          medications: activity.activity_type === 'medication' 
+            ? [activity.metadata?.medication_name || activity.title.replace('Medication Prescribed: ', '')] 
+            : [],
+          diagnoses: activity.activity_type === 'consultation' && activity.metadata?.diagnosis
+            ? Array.isArray(activity.metadata.diagnosis) 
+              ? activity.metadata.diagnosis 
+              : [activity.metadata.diagnosis]
+            : [],
+          paymentMethod: activity.metadata?.payment_method,
+          waitingTime: activity.metadata?.waiting_time,
+          activities: [activity]
+        };
+        visitMap.set(visitDate, visit);
+      }
+    });
+    
+    return Array.from(visitMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [activities]);
+
+  // Filter visits based on search and tab
+  const filteredVisits = useMemo(() => {
+    let filtered = visits;
+    
+    // Apply search filter
+    if (historySearch) {
+      const searchLower = historySearch.toLowerCase();
+      filtered = filtered.filter(visit => {
+        return visit.consultationNotes.toLowerCase().includes(searchLower) ||
+               visit.medications.some(med => med.toLowerCase().includes(searchLower)) ||
+               visit.diagnoses.some(diag => diag.toLowerCase().includes(searchLower));
+      });
+    }
+    
+    // Apply tab filter
+    if (historyTab !== 'all') {
+      filtered = filtered.filter(visit => {
+        if (historyTab === 'diagnosis') return visit.diagnoses.length > 0;
+        if (historyTab === 'medication') return visit.medications.length > 0;
+        if (historyTab === 'documents') return false; // No document filtering yet
+        return true;
+      });
+    }
+    
+    return filtered;
+  }, [visits, historySearch, historyTab]);
+
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   return (
@@ -643,10 +775,26 @@ export function PatientConsultationModal({
                                 <SelectItem value="last-year">Last year</SelectItem>
                               </SelectContent>
                             </Select>
-                            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                              <Search className="h-3 w-3" />
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 text-xs"
+                              onClick={() => setHistorySearch('')}
+                            >
+                              <Search className="h-3 w-3 mr-1" />
+                              {historySearch ? 'Clear' : 'Search'}
                             </Button>
                           </div>
+                        </div>
+                        
+                        {/* Search Input */}
+                        <div className="mb-4">
+                          <Input 
+                            placeholder="Search visits, diagnoses, medications..." 
+                            value={historySearch}
+                            onChange={(e) => setHistorySearch(e.target.value)}
+                            className="h-8 text-sm"
+                          />
                         </div>
                         
                         <div className="mt-4 space-y-3">
@@ -655,7 +803,7 @@ export function PatientConsultationModal({
                             <Card className="p-3">
                               <div className="text-center">
                                 <div className="text-lg font-bold text-primary">
-                                  {patient.medical_history ? '5' : '0'}
+                                  {visits.length}
                                 </div>
                                 <div className="text-xs text-muted-foreground">Total Visits</div>
                               </div>
@@ -663,14 +811,16 @@ export function PatientConsultationModal({
                             <Card className="p-3">
                               <div className="text-center">
                                 <div className="text-lg font-bold text-primary">
-                                  {patient.date_of_birth ? new Date().getFullYear() - new Date(patient.date_of_birth).getFullYear() : 'N/A'}
+                                  {patient.date_of_birth ? calculateAge(patient.date_of_birth) : 'N/A'}
                                 </div>
                                 <div className="text-xs text-muted-foreground">Age</div>
                               </div>
                             </Card>
                             <Card className="p-3">
                               <div className="text-center">
-                                <div className="text-lg font-bold text-primary">15 Sep</div>
+                                <div className="text-lg font-bold text-primary">
+                                  {visits.length > 0 ? format(new Date(visits[0].date), 'MMM dd') : 'None'}
+                                </div>
                                 <div className="text-xs text-muted-foreground">Last Visit</div>
                               </div>
                             </Card>
@@ -678,72 +828,127 @@ export function PatientConsultationModal({
 
                           {/* Timeline Content */}
                           <TabsContent value="all" className="mt-0">
-                            <div className="space-y-3">
-                              {/* Timeline Entry Example */}
-                              <Card className="p-3 hover:bg-muted/50 cursor-pointer">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center space-x-2 mb-1">
-                                      <Badge variant="outline" className="text-xs">Consultation</Badge>
-                                      <span className="text-xs text-muted-foreground">19 Sep 2023</span>
-                                    </div>
-                                    <h4 className="text-sm font-medium">Regular Check-up</h4>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      Diagnosis: {patient.medical_history || 'Routine examination, no issues found'}
-                                    </p>
-                                    <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
-                                      <span>Dr. Smith</span>
-                                      <span>Duration: 30 mins</span>
-                                    </div>
-                                  </div>
-                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                              {activitiesLoading ? (
+                                <div className="text-center py-4">
+                                  <div className="text-sm text-muted-foreground">Loading history...</div>
                                 </div>
-                              </Card>
-
-                              {/* No data message */}
-                              <Card className="p-4 text-center border-dashed">
-                                <p className="text-sm text-muted-foreground">No previous consultation records found</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  This will populate as consultations are completed
-                                </p>
-                              </Card>
+                              ) : filteredVisits.length === 0 ? (
+                                <Card className="p-4 text-center border-dashed">
+                                  <p className="text-sm text-muted-foreground">
+                                    {historySearch ? 'No visits found matching your search' : 'No previous consultation records found'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    This will populate as consultations are completed
+                                  </p>
+                                </Card>
+                              ) : (
+                                filteredVisits.map((visit) => (
+                                  <Card key={visit.id} className="p-3 hover:bg-muted/50 cursor-pointer">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                          <Badge variant="outline" className="text-xs">Visit</Badge>
+                                          <span className="text-xs text-muted-foreground">
+                                            {format(new Date(visit.date), 'MMM dd, yyyy')} at {visit.time}
+                                          </span>
+                                        </div>
+                                        {visit.consultationNotes && (
+                                          <h4 className="text-sm font-medium mb-1">{truncateText(visit.consultationNotes, 50)}</h4>
+                                        )}
+                                        <div className="text-xs text-muted-foreground space-y-1">
+                                          {visit.diagnoses.length > 0 && (
+                                            <div>Diagnosis: {visit.diagnoses.join(', ')}</div>
+                                          )}
+                                          {visit.medications.length > 0 && (
+                                            <div>Medications: {visit.medications.join(', ')}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                  </Card>
+                                ))
+                              )}
                             </div>
                           </TabsContent>
 
                           <TabsContent value="diagnosis" className="mt-0">
-                            <div className="space-y-3">
-                              <Card className="p-3">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center space-x-2 mb-1">
-                                      <Badge className="text-xs bg-blue-100 text-blue-800">Primary</Badge>
-                                      <span className="text-xs text-muted-foreground">Current</span>
-                                    </div>
-                                    <h4 className="text-sm font-medium">
-                                      {patient.medical_history || 'No previous diagnosis on record'}
-                                    </h4>
-                                  </div>
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                              {activitiesLoading ? (
+                                <div className="text-center py-4">
+                                  <div className="text-sm text-muted-foreground">Loading diagnoses...</div>
                                 </div>
-                              </Card>
+                              ) : filteredVisits.filter(visit => visit.diagnoses.length > 0).length === 0 ? (
+                                <Card className="p-4 text-center border-dashed">
+                                  <p className="text-sm text-muted-foreground">No diagnosis records found</p>
+                                </Card>
+                              ) : (
+                                filteredVisits.filter(visit => visit.diagnoses.length > 0).map((visit) => (
+                                  <Card key={visit.id} className="p-3">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                          <Badge className="text-xs bg-blue-100 text-blue-800">Diagnosis</Badge>
+                                          <span className="text-xs text-muted-foreground">
+                                            {format(new Date(visit.date), 'MMM dd, yyyy')}
+                                          </span>
+                                        </div>
+                                        <div className="text-sm font-medium">
+                                          {visit.diagnoses.join(', ')}
+                                        </div>
+                                        {visit.consultationNotes && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            {truncateText(visit.consultationNotes, 60)}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </Card>
+                                ))
+                              )}
                             </div>
                           </TabsContent>
 
                           <TabsContent value="medication" className="mt-0">
-                            <div className="space-y-3">
-                              <Card className="p-3">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center space-x-2 mb-1">
-                                      <Badge variant="outline" className="text-xs">Current</Badge>
-                                      <span className="text-xs text-muted-foreground">Active</span>
-                                    </div>
-                                    <h4 className="text-sm font-medium">Current Medications</h4>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {patient.allergies ? `Allergies: ${patient.allergies}` : 'No current medications on record'}
-                                    </p>
-                                  </div>
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                              {activitiesLoading ? (
+                                <div className="text-center py-4">
+                                  <div className="text-sm text-muted-foreground">Loading medications...</div>
                                 </div>
-                              </Card>
+                              ) : filteredVisits.filter(visit => visit.medications.length > 0).length === 0 ? (
+                                <Card className="p-4 text-center border-dashed">
+                                  <p className="text-sm text-muted-foreground">No medication records found</p>
+                                  {patient.allergies && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Allergies: {patient.allergies}
+                                    </p>
+                                  )}
+                                </Card>
+                              ) : (
+                                filteredVisits.filter(visit => visit.medications.length > 0).map((visit) => (
+                                  <Card key={visit.id} className="p-3">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                          <Badge variant="outline" className="text-xs">Prescribed</Badge>
+                                          <span className="text-xs text-muted-foreground">
+                                            {format(new Date(visit.date), 'MMM dd, yyyy')}
+                                          </span>
+                                        </div>
+                                        <div className="text-sm font-medium">
+                                          {visit.medications.join(', ')}
+                                        </div>
+                                        {visit.consultationNotes && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            {truncateText(visit.consultationNotes, 60)}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </Card>
+                                ))
+                              )}
                             </div>
                           </TabsContent>
 
