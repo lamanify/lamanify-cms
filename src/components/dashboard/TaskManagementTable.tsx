@@ -59,58 +59,53 @@ const getStatusVariant = (status: string) => {
 
 export function TaskManagementTable() {
   return (
-    <div className="bg-background rounded-lg border border-border">
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Task management</h3>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
-              <span className="text-primary">🔽</span> Filters
-              <Badge variant="default" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                1
-              </Badge>
-            </Button>
-          </div>
-        </div>
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-medium">Task Management</h3>
+        <Button variant="outline" size="sm" className="gap-2">
+          Filters
+          <Badge variant="outline" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+            1
+          </Badge>
+        </Button>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-muted/30">
+          <thead>
             <tr className="border-b border-border">
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Assigned To</th>
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">ID Code</th>
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Age</th>
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Created date</th>
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Due date</th>
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Status</th>
-              <th className="w-12 py-3 px-6"></th>
+              <th className="text-left py-3 px-0 text-sm font-medium text-muted-foreground">Assigned To</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">ID Code</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Age</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Created Date</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Due Date</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+              <th className="w-12 py-3 px-4"></th>
             </tr>
           </thead>
           <tbody>
             {mockTasks.map((task) => (
-              <tr key={task.id} className="border-b border-border last:border-b-0 hover:bg-muted/20">
-                <td className="py-4 px-6">
+              <tr key={task.id} className="border-b border-border last:border-b-0 hover:bg-muted/30">
+                <td className="py-4 px-0">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={task.assignedTo.avatar} />
-                      <AvatarFallback>
+                    <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {task.assignedTo.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
+                      </span>
+                    </div>
                     <span className="text-sm font-medium">{task.assignedTo.name}</span>
                   </div>
                 </td>
-                <td className="py-4 px-6 text-sm">{task.idCode}</td>
-                <td className="py-4 px-6 text-sm">{task.age}</td>
-                <td className="py-4 px-6 text-sm text-muted-foreground">{task.createdDate}</td>
-                <td className="py-4 px-6 text-sm text-muted-foreground">{task.dueDate}</td>
-                <td className="py-4 px-6">
-                  <Badge variant={getStatusVariant(task.status)} className="text-xs">
-                    • {task.status}
-                  </Badge>
+                <td className="py-4 px-4 text-sm">{task.idCode}</td>
+                <td className="py-4 px-4 text-sm">{task.age}</td>
+                <td className="py-4 px-4 text-sm text-muted-foreground">{task.createdDate}</td>
+                <td className="py-4 px-4 text-sm text-muted-foreground">{task.dueDate}</td>
+                <td className="py-4 px-4">
+                  <span className="text-xs text-muted-foreground">
+                    {task.status}
+                  </span>
                 </td>
-                <td className="py-4 px-6">
+                <td className="py-4 px-4">
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>

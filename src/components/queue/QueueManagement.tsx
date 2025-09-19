@@ -179,7 +179,7 @@ export function QueueManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 space-y-12">
       {/* Registration Interface */}
       <QueueRegistrationInterface onPatientAdded={handleRefresh} />
 
@@ -216,15 +216,15 @@ export function QueueManagement() {
       />
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap justify-center gap-4">
+      <div className="flex flex-wrap justify-center gap-6">
         <Button 
-          variant="priority"
+          variant="default"
           size="lg" 
           onClick={handleCallNext}
           disabled={callingNext || !queue.some(q => q.status === 'waiting') || isPaused}
-          className="text-lg px-8 py-3"
+          className="text-base px-8 py-3"
         >
-          <Play className="mr-2 h-5 w-5" />
+          <Play className="mr-2 h-4 w-4" />
           {callingNext ? 'Calling...' : 'Call Next Patient'}
         </Button>
         
@@ -232,9 +232,9 @@ export function QueueManagement() {
           variant="outline"
           size="lg"
           onClick={handleAddPriorityPatient}
-          className="text-lg px-6 py-3"
+          className="text-base px-6 py-3"
         >
-          <UserPlus className="mr-2 h-5 w-5" />
+          <UserPlus className="mr-2 h-4 w-4" />
           Add Priority Patient
         </Button>
         
@@ -242,17 +242,17 @@ export function QueueManagement() {
           variant={isPaused ? "default" : "secondary"}
           size="lg"
           onClick={() => setIsPaused(!isPaused)}
-          className="text-lg px-6 py-3"
+          className="text-base px-6 py-3"
         >
-          {isPaused ? <PlayCircle className="mr-2 h-5 w-5" /> : <Pause className="mr-2 h-5 w-5" />}
+          {isPaused ? <PlayCircle className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
           {isPaused ? 'Resume Queue' : 'Pause Queue'}
         </Button>
       </div>
 
       {/* Queue Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
+      <div className="border-t border-border pt-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-medium">
             {queueFilter 
               ? `${queueFilter.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Patients`
               : "Today's Patient Queue"
@@ -262,17 +262,15 @@ export function QueueManagement() {
                 ({filteredQueue.length} patients)
               </span>
             )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <QueueTable 
-            queue={filteredQueue}
-            onStatusChange={handleStatusChange}
-            onRemoveFromQueue={handleRemoveFromQueue}
-            isPaused={isPaused}
-          />
-        </CardContent>
-      </Card>
+          </h2>
+        </div>
+        <QueueTable 
+          queue={filteredQueue}
+          onStatusChange={handleStatusChange}
+          onRemoveFromQueue={handleRemoveFromQueue}
+          isPaused={isPaused}
+        />
+      </div>
 
       {/* Floating Action Buttons */}
       <FloatingActions 

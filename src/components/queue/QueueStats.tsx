@@ -29,9 +29,9 @@ export function QueueStats({ stats, activeFilter, onFilterChange }: QueueStatsPr
   };
 
   const getCardClassName = (filter: string | null) => {
-    const baseClass = "transition-all duration-200 cursor-pointer hover:shadow-lg hover:scale-105";
-    const activeClass = "ring-2 ring-primary shadow-lg scale-105";
-    const inactiveClass = "hover:bg-muted/50";
+    const baseClass = "transition-colors cursor-pointer hover:bg-muted/50 border-b-2";
+    const activeClass = "border-primary bg-muted/30";
+    const inactiveClass = "border-transparent";
     
     return `${baseClass} ${activeFilter === filter ? activeClass : inactiveClass}`;
   };
@@ -39,79 +39,71 @@ export function QueueStats({ stats, activeFilter, onFilterChange }: QueueStatsPr
   return (
     <div className="space-y-4">
       {/* Clickable filter cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <Card className={getCardClassName(null)} onClick={() => handleFilterClick(null)}>
-          <CardContent className="flex items-center justify-center p-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+        <div className={getCardClassName(null)} onClick={() => handleFilterClick(null)}>
+          <div className="flex items-center justify-center p-6">
             <div className="text-center">
-              <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <div className="text-2xl font-bold">{stats.total}</div>
+              <Users className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
+              <div className="text-xl font-medium">{stats.total}</div>
               <div className="text-sm text-muted-foreground">Total Today</div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className={getCardClassName('waiting')} onClick={() => handleFilterClick('waiting')}>
-          <CardContent className="flex items-center justify-center p-6">
+        <div className={getCardClassName('waiting')} onClick={() => handleFilterClick('waiting')}>
+          <div className="flex items-center justify-center p-6">
             <div className="text-center">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-queue-waiting" />
-              <div className="text-2xl font-bold">{stats.waiting}</div>
+              <Clock className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
+              <div className="text-xl font-medium">{stats.waiting}</div>
               <div className="text-sm text-muted-foreground">Waiting</div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className={getCardClassName('in_consultation')} onClick={() => handleFilterClick('in_consultation')}>
-          <CardContent className="flex items-center justify-center p-6">
+        <div className={getCardClassName('in_consultation')} onClick={() => handleFilterClick('in_consultation')}>
+          <div className="flex items-center justify-center p-6">
             <div className="text-center">
-              <UserCheck className="h-8 w-8 mx-auto mb-2 text-info" />
-              <div className="text-2xl font-bold">{stats.inConsultation}</div>
+              <UserCheck className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
+              <div className="text-xl font-medium">{stats.inConsultation}</div>
               <div className="text-sm text-muted-foreground">In Consultation</div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className={getCardClassName('dispensary')} onClick={() => handleFilterClick('dispensary')}>
-          <CardContent className="flex items-center justify-center p-6">
+        <div className={getCardClassName('dispensary')} onClick={() => handleFilterClick('dispensary')}>
+          <div className="flex items-center justify-center p-6">
             <div className="text-center">
-              <Pill className="h-8 w-8 mx-auto mb-2 text-orange-500" />
-              <div className="text-2xl font-bold">{stats.dispensary || 0}</div>
+              <Pill className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
+              <div className="text-xl font-medium">{stats.dispensary || 0}</div>
               <div className="text-sm text-muted-foreground">Dispensary</div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className={getCardClassName('completed')} onClick={() => handleFilterClick('completed')}>
-          <CardContent className="flex items-center justify-center p-6">
+        <div className={getCardClassName('completed')} onClick={() => handleFilterClick('completed')}>
+          <div className="flex items-center justify-center p-6">
             <div className="text-center">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-success" />
-              <div className="text-2xl font-bold">{stats.completed}</div>
+              <CheckCircle className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
+              <div className="text-xl font-medium">{stats.completed}</div>
               <div className="text-sm text-muted-foreground">Completed</div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Wait time stats - non-clickable, moved below */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
-        <Card>
-          <CardContent className="flex items-center justify-center p-4">
-            <div className="text-center">
-              <Clock className="h-6 w-6 mx-auto mb-2 text-info" />
-              <div className="text-xl font-bold">{formatWaitTime(stats.averageWaitTime)}</div>
-              <div className="text-sm text-muted-foreground">Avg Wait</div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Wait time stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-md mx-auto pt-8 border-t border-border">
+        <div className="text-center">
+          <Clock className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+          <div className="text-lg font-medium">{formatWaitTime(stats.averageWaitTime)}</div>
+          <div className="text-sm text-muted-foreground">Average Wait</div>
+        </div>
 
-        <Card>
-          <CardContent className="flex items-center justify-center p-4">
-            <div className="text-center">
-              <Clock className="h-6 w-6 mx-auto mb-2 text-queue-urgent" />
-              <div className="text-xl font-bold">{formatWaitTime(stats.longestWaitTime)}</div>
-              <div className="text-sm text-muted-foreground">Longest Wait</div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <Clock className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+          <div className="text-lg font-medium">{formatWaitTime(stats.longestWaitTime)}</div>
+          <div className="text-sm text-muted-foreground">Longest Wait</div>
+        </div>
       </div>
     </div>
   );

@@ -14,9 +14,9 @@ const mockData = [
 
 export function PatientStatisticsChart() {
   return (
-    <div className="bg-background rounded-lg border border-border p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold">Patient Statistics</h3>
+    <div className="border-b border-border pb-8">
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-lg font-medium">Patient Statistics</h3>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-muted rounded"></div>
@@ -26,7 +26,7 @@ export function PatientStatisticsChart() {
             <div className="w-3 h-3 bg-primary rounded"></div>
             <span className="text-sm text-muted-foreground">Patient</span>
           </div>
-          <select className="text-sm border border-input rounded px-2 py-1 bg-background">
+          <select className="text-sm border border-input rounded px-3 py-1 bg-background">
             <option>Monthly</option>
           </select>
         </div>

@@ -32,13 +32,13 @@ export function Header({ userProfile }: HeaderProps) {
   const location = useLocation();
 
   return (
-    <header className="h-16 border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center justify-between h-full px-6">
+    <header className="h-16 border-b border-border bg-background">
+      <div className="flex items-center justify-between h-full px-8">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-lg font-medium text-foreground">
             {getPageTitle(location.pathname)}
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -54,10 +54,10 @@ export function Header({ userProfile }: HeaderProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-10 w-10 rounded-full"
+                  className="relative h-8 w-8 rounded"
                 >
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-primary-foreground font-semibold text-sm">
+                  <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
+                    <span className="text-muted-foreground font-medium text-xs">
                       {userProfile.first_name[0]}{userProfile.last_name[0]}
                     </span>
                   </div>
@@ -66,18 +66,11 @@ export function Header({ userProfile }: HeaderProps) {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium leading-none">
-                        {userProfile.first_name} {userProfile.last_name}
-                      </p>
-                      {userProfile.role === 'admin' && (
-                        <span className="text-xs bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded">
-                          ADMIN
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-sm font-medium leading-none">
+                      {userProfile.first_name} {userProfile.last_name}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {userProfile.email}
+                      {userProfile.email} • {userProfile.role}
                     </p>
                   </div>
                 </DropdownMenuLabel>

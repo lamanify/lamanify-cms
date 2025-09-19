@@ -8,96 +8,101 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Minimal color system - only grays and white */
     --background: 0, 0%, 100%;
-    --foreground: 222.2, 84%, 4.9%;
+    --foreground: 0, 0%, 15%;
 
     --card: 0, 0%, 100%;
-    --card-foreground: 222.2, 84%, 4.9%;
+    --card-foreground: 0, 0%, 15%;
 
     --popover: 0, 0%, 100%;
-    --popover-foreground: 222.2, 84%, 4.9%;
+    --popover-foreground: 0, 0%, 15%;
 
+    /* Primary remains #E9204F - only for buttons and selected states */
     --primary: 346, 82%, 52%;
     --primary-foreground: 0, 0%, 100%;
 
-    --secondary: 220, 8%, 96%;
-    --secondary-foreground: 220, 10%, 20%;
+    /* All other elements use gray variants */
+    --secondary: 0, 0%, 96%;
+    --secondary-foreground: 0, 0%, 20%;
 
-    --muted: 220, 8%, 97%;
-    --muted-foreground: 220, 10%, 45%;
+    --muted: 0, 0%, 97%;
+    --muted-foreground: 0, 0%, 45%;
 
-    --accent: 220, 8%, 94%;
-    --accent-foreground: 220, 10%, 15%;
+    --accent: 0, 0%, 94%;
+    --accent-foreground: 0, 0%, 15%;
 
-    --destructive: 0, 84.2%, 60.2%;
+    --destructive: 0, 0%, 60%;
     --destructive-foreground: 0, 0%, 100%;
 
-    --border: 220, 8%, 85%;
-    --input: 220, 8%, 85%;
+    --border: 0, 0%, 85%;
+    --input: 0, 0%, 85%;
     --ring: 346, 82%, 52%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
     
-    /* Medical theme colors */
-    --success: 142, 76%, 36%;
+    /* Status colors converted to grays */
+    --success: 0, 0%, 40%;
     --success-foreground: 0, 0%, 100%;
-    --warning: 45, 93%, 47%;
-    --warning-foreground: 0, 0%, 0%;
-    --info: 217, 91%, 60%;
+    --warning: 0, 0%, 35%;
+    --warning-foreground: 0, 0%, 100%;
+    --info: 0, 0%, 45%;
     --info-foreground: 0, 0%, 100%;
     
-    /* Queue status colors */
-    --queue-new: 217, 91%, 60%;
-    --queue-waiting: 45, 93%, 47%;
-    --queue-urgent: 0, 84%, 60%;
+    /* Queue status - all grays except priority */
+    --queue-new: 0, 0%, 45%;
+    --queue-waiting: 0, 0%, 35%;
+    --queue-urgent: 0, 0%, 25%;
     --queue-priority: 346, 82%, 52%;
     --queue-priority-foreground: 0, 0%, 100%;
 
-    --sidebar-background: 220, 8%, 98%;
-    --sidebar-foreground: 220, 15%, 25%;
+    /* Dark sidebar for minimal look */
+    --sidebar-background: 0, 0%, 10%;
+    --sidebar-foreground: 0, 0%, 85%;
     --sidebar-primary: 346, 82%, 52%;
     --sidebar-primary-foreground: 0, 0%, 100%;
-    --sidebar-accent: 220, 8%, 94%;
-    --sidebar-accent-foreground: 220, 15%, 15%;
-    --sidebar-border: 220, 8%, 85%;
+    --sidebar-accent: 0, 0%, 15%;
+    --sidebar-accent-foreground: 0, 0%, 85%;
+    --sidebar-border: 0, 0%, 20%;
     --sidebar-ring: 346, 82%, 52%;
   }
 
   .dark {
-    --background: 222.2, 84%, 4.9%;
-    --foreground: 210, 40%, 98%;
+    --background: 0, 0%, 8%;
+    --foreground: 0, 0%, 95%;
 
-    --card: 222.2, 84%, 4.9%;
-    --card-foreground: 210, 40%, 98%;
+    --card: 0, 0%, 12%;
+    --card-foreground: 0, 0%, 95%;
 
-    --popover: 222.2, 84%, 4.9%;
-    --popover-foreground: 210, 40%, 98%;
+    --popover: 0, 0%, 12%;
+    --popover-foreground: 0, 0%, 95%;
 
     --primary: 346, 82%, 52%;
     --primary-foreground: 0, 0%, 100%;
 
-    --secondary: 220, 8%, 15%;
-    --secondary-foreground: 220, 10%, 85%;
+    --secondary: 0, 0%, 15%;
+    --secondary-foreground: 0, 0%, 85%;
 
-    --muted: 220, 8%, 12%;
-    --muted-foreground: 220, 10%, 65%;
+    --muted: 0, 0%, 12%;
+    --muted-foreground: 0, 0%, 65%;
 
-    --accent: 220, 8%, 18%;
-    --accent-foreground: 220, 10%, 90%;
+    --accent: 0, 0%, 18%;
+    --accent-foreground: 0, 0%, 90%;
 
-    --destructive: 0, 62.8%, 30.6%;
-    --destructive-foreground: 210, 40%, 98%;
+    --destructive: 0, 0%, 30%;
+    --destructive-foreground: 0, 0%, 95%;
 
-    --border: 220, 8%, 15%;
-    --input: 220, 8%, 15%;
+    --border: 0, 0%, 20%;
+    --input: 0, 0%, 20%;
     --ring: 346, 82%, 52%;
-    --sidebar-background: 220, 8%, 6%;
-    --sidebar-foreground: 220, 10%, 85%;
+    
+    --sidebar-background: 0, 0%, 5%;
+    --sidebar-foreground: 0, 0%, 85%;
     --sidebar-primary: 346, 82%, 52%;
     --sidebar-primary-foreground: 0, 0%, 100%;
-    --sidebar-accent: 220, 8%, 12%;
-    --sidebar-accent-foreground: 220, 10%, 85%;
-    --sidebar-border: 220, 8%, 15%;
+    --sidebar-accent: 0, 0%, 10%;
+    --sidebar-accent-foreground: 0, 0%, 85%;
+    --sidebar-border: 0, 0%, 15%;
     --sidebar-ring: 346, 82%, 52%;
   }
 }

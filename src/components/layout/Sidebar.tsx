@@ -46,21 +46,21 @@ export function Sidebar({ userProfile }: SidebarProps) {
   return (
     <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
       {/* Logo and Brand */}
-      <div className="p-6">
-        <div className="flex items-center space-x-2 mb-6">
-          <Activity className="h-8 w-8 text-primary" />
+      <div className="p-8">
+        <div className="flex items-center space-x-3 mb-8">
+          <Activity className="h-6 w-6 text-sidebar-foreground" />
           <div>
-            <h1 className="text-xl font-bold text-sidebar-foreground">ClinicCare</h1>
-            <p className="text-xs text-sidebar-foreground/60">Management System</p>
+            <h1 className="text-lg font-medium text-sidebar-foreground">ClinicCare</h1>
+            <p className="text-xs text-sidebar-foreground/60">Management</p>
           </div>
         </div>
 
         {/* User Profile */}
         {userProfile && (
-          <div className="bg-sidebar-accent rounded-lg p-4 mb-6">
+          <div className="border-t border-sidebar-border pt-6 mb-8">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold text-sm">
+              <div className="w-8 h-8 bg-sidebar-accent rounded flex items-center justify-center">
+                <span className="text-sidebar-foreground font-medium text-xs">
                   {userProfile.first_name[0]}{userProfile.last_name[0]}
                 </span>
               </div>
@@ -68,7 +68,7 @@ export function Sidebar({ userProfile }: SidebarProps) {
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   {userProfile.first_name} {userProfile.last_name}
                 </p>
-                <Badge variant={getRoleBadgeVariant(userProfile.role)} className="text-xs mt-1">
+                <Badge variant="outline" className="text-xs mt-1 border-sidebar-border">
                   {userProfile.role}
                 </Badge>
               </div>
@@ -78,7 +78,7 @@ export function Sidebar({ userProfile }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 pb-6">
+      <nav className="flex-1 px-6 pb-8">
         <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
@@ -87,10 +87,10 @@ export function Sidebar({ userProfile }: SidebarProps) {
                 key={item.name}
                 variant={isActive ? "default" : "ghost"}
                 className={cn(
-                  "w-full justify-start",
+                  "w-full justify-start font-normal",
                   isActive 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 )}
                 asChild
               >

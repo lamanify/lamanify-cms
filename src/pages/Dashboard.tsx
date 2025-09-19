@@ -79,16 +79,20 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Bar */}
-      <DashboardTopBar />
-      
       {/* Main Content */}
-      <div className="p-6 space-y-8">
+      <div className="p-8 space-y-12">
         {/* Welcome Message */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
+        <div className="border-b border-border pb-6">
+          <h1 className="text-2xl font-medium text-foreground mb-1">
             Welcome back, {profile?.first_name || 'User'}
           </h1>
+          <p className="text-sm text-muted-foreground">
+            {new Date().toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </p>
         </div>
 
         {/* Summary Cards */}
@@ -100,21 +104,21 @@ function DashboardContent() {
         />
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Side - Patient Statistics Chart */}
-          <div className="lg:col-span-2">
+          <div>
             <PatientStatisticsChart />
           </div>
 
           {/* Right Side - Calendar and Appointments */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-12">
             <CalendarWidget />
             <UpcomingAppointments />
           </div>
         </div>
 
         {/* Task Management Table */}
-        <div className="mt-8">
+        <div className="border-t border-border pt-12">
           <TaskManagementTable />
         </div>
       </div>

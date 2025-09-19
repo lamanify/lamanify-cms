@@ -31,18 +31,17 @@ const mockAppointments: Appointment[] = [
 
 export function UpcomingAppointments() {
   return (
-    <div className="bg-background rounded-lg border border-border p-4">
-      <h3 className="font-semibold mb-4">Upcoming Appointments</h3>
+    <div>
+      <h3 className="text-lg font-medium mb-6">Upcoming Appointments</h3>
       
       <div className="space-y-4">
         {mockAppointments.map((appointment) => (
-          <div key={appointment.id} className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={appointment.patientAvatar} />
-              <AvatarFallback>
+          <div key={appointment.id} className="flex items-center gap-4 py-3 border-b border-border last:border-b-0">
+            <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
+              <span className="text-xs font-medium text-muted-foreground">
                 {appointment.patientName.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
+              </span>
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{appointment.patientName}</p>
               <p className="text-xs text-muted-foreground truncate">{appointment.purpose}</p>
