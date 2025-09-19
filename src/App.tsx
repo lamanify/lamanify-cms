@@ -16,6 +16,7 @@ import Billing from "@/pages/Billing";
 import Settings from "@/pages/Settings";
 import ClinicSettings from '@/pages/ClinicSettings';
 import AuthPage from "@/components/auth/AuthPage";
+import CalendarView from "@/pages/CalendarView";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/queue" element={<AppLayout><Queue /></AppLayout>} />
           <Route path="/display" element={<QueueDisplay />} />
           <Route path="/appointments" element={<AppLayout><Appointments /></AppLayout>} />
+          <Route path="/appointments/calendar" element={<AppLayout><CalendarView /></AppLayout>} />
           <Route path="/consultations" element={<AppLayout><Consultations /></AppLayout>} />
           <Route path="/consultation-waiting" element={<AppLayout><ConsultationWaitingList /></AppLayout>} />
           <Route path="/consultation/:sessionId" element={<AppLayout><ConsultationInterface /></AppLayout>} />

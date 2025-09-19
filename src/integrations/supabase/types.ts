@@ -1454,6 +1454,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_appointment_overlap: {
+        Args: {
+          p_appointment_date: string
+          p_appointment_time: string
+          p_doctor_id: string
+          p_duration_minutes: number
+          p_exclude_appointment_id?: string
+        }
+        Returns: boolean
+      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1461,6 +1471,23 @@ export type Database = {
       generate_queue_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_calendar_appointments: {
+        Args: { p_doctor_id?: string; p_end_date: string; p_start_date: string }
+        Returns: {
+          appointment_date: string
+          appointment_time: string
+          doctor_id: string
+          doctor_name: string
+          duration_minutes: number
+          end_datetime: string
+          id: string
+          patient_id: string
+          patient_name: string
+          reason: string
+          start_datetime: string
+          status: string
+        }[]
       }
       get_user_role: {
         Args: Record<PropertyKey, never>

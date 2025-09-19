@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
-import { Plus, Calendar, Clock, User } from 'lucide-react';
+import { Plus, Calendar, Clock, User, CalendarDays } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 export interface Appointment {
   id: string;
@@ -34,6 +35,7 @@ export default function Appointments() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const { toast } = useToast();
+  const location = useLocation();
 
   useEffect(() => {
     fetchAppointments();
@@ -97,6 +99,11 @@ export default function Appointments() {
     });
   };
 
+  const handleNewAppointment = () => {
+    setSelectedAppointment(null);
+    setIsDialogOpen(true);
+  };
+
   if (loading) {
     return <div>Loading appointments...</div>;
   }
@@ -105,13 +112,37 @@ export default function Appointments() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Appointment Scheduling</h1>
-          <p className="text-muted-foreground">Manage patient appointments and schedules</p>
+          <h1 className="text-3xl font-bold text-foreground">Appointments</h1>
+          <p className="text-muted-foreground">Manage patient appointments and scheduling</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Schedule Appointment
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-muted rounded-lg p-1">
+            <Link to="/appointments">
+              <Button 
+                variant={location.pathname === '/appointments' ? 'default' : 'ghost'} 
+                size="sm"
+                className="gap-2"
+              >
+                <User className="h-4 w-4" />
+                List View
+              </Button>
+            </Link>
+            <Link to="/appointments/calendar">
+              <Button 
+                variant={location.pathname === '/appointments/calendar' ? 'default' : 'ghost'} 
+                size="sm"
+                className="gap-2"
+              >
+                <CalendarDays className="h-4 w-4" />
+                Calendar View
+              </Button>
+            </Link>
+          </div>
+          <Button onClick={handleNewAppointment} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Appointment
+          </Button>
+        </div>
       </div>
 
       {/* Appointments List */}
