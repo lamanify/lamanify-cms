@@ -90,7 +90,7 @@ export function Sidebar({ userProfile }: SidebarProps) {
                   "w-full justify-start font-normal",
                   isActive 
                     ? "bg-primary text-primary-foreground" 
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    : "text-sidebar-foreground hover:bg-slate-800 hover:text-white"
                 )}
                 asChild
               >
