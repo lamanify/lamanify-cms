@@ -11,7 +11,8 @@ import {
   Settings,
   Home,
   Clock,
-  Monitor
+  Monitor,
+  TrendingUp
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Queue Management', href: '/queue', icon: Clock },
   { name: 'Queue Display', href: '/display', icon: Monitor },
   { name: 'Appointments', href: '/appointments', icon: Calendar },
+  { name: 'Analytics', href: '/analytics', icon: TrendingUp },
   { name: 'Consultation Waiting', href: '/consultation-waiting', icon: FileText },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
