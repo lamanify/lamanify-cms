@@ -111,7 +111,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
   const getStatusColor = (status: string, waitTime: number, isPriority = false) => {
     if (isPriority) return 'bg-queue-priority text-queue-priority-foreground';
-    if (status === 'completed') return 'bg-lime-100 text-lime-800';
+    if (status === 'completed') return 'bg-gray-600 text-gray-100';
     if (status === 'waiting') return 'bg-red-100 text-red-800';
     if (status === 'dispensary') return 'bg-orange-500 text-white';
     if (status === 'in_consultation') return 'bg-info text-info-foreground';
@@ -198,12 +198,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
             onClick={() => handlePatientClick(entry)}
             className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
               entry.status === 'completed' ? 'bg-gray-100' :
-              entry.status === 'waiting' ? 'bg-red-50' :
-              entry.status === 'in_consultation' 
-                ? 'border-info bg-info/5 shadow-sm' 
-                : isPriority
-                ? 'border-queue-priority bg-queue-priority/5 shadow-sm'
-                : 'border-border'
+              'bg-white'
             }`}
           >
             <div className="flex items-center space-x-6 flex-1">
@@ -212,7 +207,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
-                      <div className="text-2xl font-bold text-primary flex items-center gap-1">
+                      <div className={`text-2xl font-bold flex items-center gap-1 ${entry.status === 'completed' ? 'text-gray-500' : 'text-primary'}`}>
                         {entry.queue_number}
                         <ChevronDown className="h-4 w-4" />
                       </div>
@@ -298,20 +293,28 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                 
                 {/* Payment Method and Doctor Assignment */}
                 <div className="flex items-center flex-wrap gap-2 mt-2">
-                  {entry.payment_method && (
-                    <div className="flex items-center gap-1">
-                      <CreditCard className="h-3 w-3 text-blue-500" />
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded border border-blue-200">
-                        {getPaymentMethodDisplay(entry.payment_method)}
-                      </span>
-                    </div>
-                  )}
+                   {entry.payment_method && (
+                     <div className="flex items-center gap-1">
+                       <CreditCard className={`h-3 w-3 ${entry.status === 'completed' ? 'text-gray-500' : 'text-blue-500'}`} />
+                       <span className={`text-xs px-2 py-1 rounded border ${
+                         entry.status === 'completed' 
+                           ? 'bg-gray-200 text-gray-600 border-gray-300' 
+                           : 'bg-blue-100 text-blue-800 border-blue-200'
+                       }`}>
+                         {getPaymentMethodDisplay(entry.payment_method)}
+                       </span>
+                     </div>
+                   )}
                   
-                  {entry.assigned_doctor_id && entry.doctor && (
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded border border-purple-200">
-                      Dr. {entry.doctor.first_name} {entry.doctor.last_name}
-                    </span>
-                  )}
+                   {entry.assigned_doctor_id && entry.doctor && (
+                     <span className={`text-xs px-2 py-1 rounded border ${
+                       entry.status === 'completed' 
+                         ? 'bg-gray-200 text-gray-600 border-gray-300' 
+                         : 'bg-purple-100 text-purple-800 border-purple-200'
+                     }`}>
+                       Dr. {entry.doctor.first_name} {entry.doctor.last_name}
+                     </span>
+                   )}
                 </div>
                 
                 {/* Visit Notes */}
