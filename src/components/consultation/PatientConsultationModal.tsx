@@ -573,7 +573,7 @@ export function PatientConsultationModal({
                 <TabsContent value="treatment" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
                   {/* Medicine/Services Header */}
                   <div>
-                    <div className="bg-slate-800 text-white p-3 rounded-t-lg flex items-center justify-between">
+                    <div className="text-white p-3 rounded-t-lg flex items-center justify-between bg-stone-950">
                       <h3 className="font-medium text-sm">Insert your medicine, services and documents here</h3>
                       <Button variant="secondary" size="sm" className="bg-white text-accent-foreground hover:bg-white/90" onClick={() => {
                       setEditingItem(null);
