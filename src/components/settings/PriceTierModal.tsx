@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -50,16 +50,36 @@ interface PriceTierModalProps {
 }
 
 export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: PriceTierModalProps) {
-  const [selectedMethods, setSelectedMethods] = useState<string[]>(editingTier?.payment_methods || []);
+  const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
 
   const form = useForm<PriceTierFormData>({
     resolver: zodResolver(priceTierSchema),
     defaultValues: {
-      tier_name: editingTier?.tier_name || '',
-      description: editingTier?.description || '',
-      payment_methods: editingTier?.payment_methods || []
+      tier_name: '',
+      description: '',
+      payment_methods: []
     }
   });
+
+  // Update form and selected methods when editingTier changes
+  useEffect(() => {
+    if (editingTier) {
+      const methods = editingTier.payment_methods || [];
+      setSelectedMethods(methods);
+      form.reset({
+        tier_name: editingTier.tier_name,
+        description: editingTier.description || '',
+        payment_methods: methods
+      });
+    } else {
+      setSelectedMethods([]);
+      form.reset({
+        tier_name: '',
+        description: '',
+        payment_methods: []
+      });
+    }
+  }, [editingTier, form]);
 
   const handlePaymentMethodToggle = (methodId: string) => {
     const newMethods = selectedMethods.includes(methodId)
@@ -85,8 +105,22 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
   };
 
   const handleCancel = () => {
-    form.reset();
-    setSelectedMethods(editingTier?.payment_methods || []);
+    if (editingTier) {
+      const methods = editingTier.payment_methods || [];
+      setSelectedMethods(methods);
+      form.reset({
+        tier_name: editingTier.tier_name,
+        description: editingTier.description || '',
+        payment_methods: methods
+      });
+    } else {
+      setSelectedMethods([]);
+      form.reset({
+        tier_name: '',
+        description: '',
+        payment_methods: []
+      });
+    }
     onOpenChange(false);
   };
 
