@@ -9,11 +9,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
+import { usePanels } from '@/hooks/usePanels';
 
 const priceTierSchema = z.object({
   tier_name: z.string().min(1, 'Tier name is required'),
   description: z.string().optional(),
-  payment_methods: z.array(z.string()).min(1, 'At least one payment method must be selected')
+  payment_methods: z.array(z.string()).min(1, 'At least one payment method must be selected'),
+  panel_ids: z.array(z.string()).optional().default([])
 });
 
 type PriceTierFormData = z.infer<typeof priceTierSchema>;
@@ -45,19 +47,23 @@ interface PriceTierModalProps {
     tier_name: string;
     description?: string;
     payment_methods?: string[];
+    panel_ids?: string[];
   } | null;
-  onSubmit: (data: { tier_name: string; description?: string; payment_methods: string[] }) => Promise<boolean>;
+  onSubmit: (data: { tier_name: string; description?: string; payment_methods: string[]; panel_ids: string[] }) => Promise<boolean>;
 }
 
 export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: PriceTierModalProps) {
   const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
+  const [selectedPanels, setSelectedPanels] = useState<string[]>([]);
+  const { panels, loading: panelsLoading } = usePanels();
 
   const form = useForm<PriceTierFormData>({
     resolver: zodResolver(priceTierSchema),
     defaultValues: {
       tier_name: '',
       description: '',
-      payment_methods: []
+      payment_methods: [],
+      panel_ids: []
     }
   });
 
@@ -65,18 +71,23 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
   useEffect(() => {
     if (editingTier) {
       const methods = editingTier.payment_methods || [];
+      const panelIds = editingTier.panel_ids || [];
       setSelectedMethods(methods);
+      setSelectedPanels(panelIds);
       form.reset({
         tier_name: editingTier.tier_name,
         description: editingTier.description || '',
-        payment_methods: methods
+        payment_methods: methods,
+        panel_ids: panelIds
       });
     } else {
       setSelectedMethods([]);
+      setSelectedPanels([]);
       form.reset({
         tier_name: '',
         description: '',
-        payment_methods: []
+        payment_methods: [],
+        panel_ids: []
       });
     }
   }, [editingTier, form]);
@@ -90,16 +101,27 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
     form.setValue('payment_methods', newMethods);
   };
 
+  const handlePanelToggle = (panelId: string) => {
+    const newPanels = selectedPanels.includes(panelId)
+      ? selectedPanels.filter(id => id !== panelId)
+      : [...selectedPanels, panelId];
+    
+    setSelectedPanels(newPanels);
+    form.setValue('panel_ids', newPanels);
+  };
+
   const handleSubmit = async (data: PriceTierFormData) => {
     const success = await onSubmit({
       tier_name: data.tier_name,
       description: data.description,
-      payment_methods: selectedMethods
+      payment_methods: selectedMethods,
+      panel_ids: selectedPanels
     });
 
     if (success) {
       form.reset();
       setSelectedMethods([]);
+      setSelectedPanels([]);
       onOpenChange(false);
     }
   };
@@ -107,18 +129,23 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
   const handleCancel = () => {
     if (editingTier) {
       const methods = editingTier.payment_methods || [];
+      const panelIds = editingTier.panel_ids || [];
       setSelectedMethods(methods);
+      setSelectedPanels(panelIds);
       form.reset({
         tier_name: editingTier.tier_name,
         description: editingTier.description || '',
-        payment_methods: methods
+        payment_methods: methods,
+        panel_ids: panelIds
       });
     } else {
       setSelectedMethods([]);
+      setSelectedPanels([]);
       form.reset({
         tier_name: '',
         description: '',
-        payment_methods: []
+        payment_methods: [],
+        panel_ids: []
       });
     }
     onOpenChange(false);
@@ -188,16 +215,14 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
                     </FormItem>
                   )}
                 />
-              </div>
 
-              {/* Right Column - Payment Method Selection */}
-              <div className="space-y-4">
+                {/* Payment Methods Section */}
                 <FormField
                   control={form.control}
                   name="payment_methods"
                   render={() => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Payment method</FormLabel>
+                      <FormLabel className="text-sm font-medium">Payment Methods</FormLabel>
                       
                       <div className="space-y-3 mt-3">
                         {/* General Payment Methods */}
@@ -256,6 +281,57 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
                             </div>
                           ))}
                         </div>
+                      </div>
+                      
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Right Column - Panel Selection */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="panel_ids"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Associated Panels</FormLabel>
+                      <div className="text-xs text-muted-foreground mb-3">
+                        Select panels that will use this pricing tier. If no panels are selected, this tier can be used for self-pay or custom pricing.
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 max-h-80 overflow-y-auto">
+                        {panelsLoading ? (
+                          <div className="text-sm text-muted-foreground">Loading panels...</div>
+                        ) : panels.length === 0 ? (
+                          <div className="text-sm text-muted-foreground">
+                            No panels available. Create panels first in Panel Management.
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {panels.map((panel) => (
+                              <div key={panel.id} className="flex items-start space-x-2">
+                                <Checkbox
+                                  id={`panel-${panel.id}`}
+                                  checked={selectedPanels.includes(panel.id)}
+                                  onCheckedChange={() => handlePanelToggle(panel.id)}
+                                />
+                                <div className="grid gap-1 leading-none">
+                                  <label
+                                    htmlFor={`panel-${panel.id}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                  >
+                                    {panel.panel_name}
+                                  </label>
+                                  <p className="text-xs text-muted-foreground">
+                                    Code: {panel.panel_code} • Status: {panel.default_status}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       
                       <FormMessage />

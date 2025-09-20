@@ -10,6 +10,7 @@ export interface PriceTier {
   updated_at: string;
   created_by?: string;
   payment_methods?: string[];
+  panel_ids?: string[];
 }
 
 export interface TierPaymentMethod {
@@ -30,12 +31,17 @@ export function usePriceTiers() {
       setLoading(true);
       const { data: tiers, error: tiersError } = await supabase
         .from('price_tiers')
-        .select('*')
+        .select(`
+          *,
+          panels_price_tiers (
+            panel_id
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (tiersError) throw tiersError;
 
-      // Extract payment methods from description field
+      // Extract payment methods from description field and get panel associations
       const tiersWithMethods = (tiers || []).map(tier => {
         let paymentMethods: string[] = [];
         let cleanDescription = tier.description || '';
@@ -50,10 +56,14 @@ export function usePriceTiers() {
           }
         }
 
+        // Get associated panel IDs
+        const panelIds = tier.panels_price_tiers?.map((ppt: any) => ppt.panel_id) || [];
+
         return {
           ...tier,
           description: cleanDescription,
-          payment_methods: paymentMethods
+          payment_methods: paymentMethods,
+          panel_ids: panelIds
         };
       });
 
@@ -74,6 +84,7 @@ export function usePriceTiers() {
     tier_name: string;
     description?: string;
     payment_methods: string[];
+    panel_ids: string[];
   }) => {
     try {
       // Store payment methods in the description for now, until we implement the new structure
@@ -101,6 +112,20 @@ export function usePriceTiers() {
         .single();
 
       if (tierError) throw tierError;
+
+      // Create panel associations
+      if (tierData.panel_ids.length > 0) {
+        const panelRelations = tierData.panel_ids.map(panelId => ({
+          panel_id: panelId,
+          tier_id: tier.id
+        }));
+
+        const { error: panelError } = await supabase
+          .from('panels_price_tiers')
+          .insert(panelRelations);
+
+        if (panelError) throw panelError;
+      }
       
       // Refresh the list
       await fetchPriceTiers();
@@ -125,6 +150,7 @@ export function usePriceTiers() {
     tier_name?: string;
     description?: string;
     payment_methods?: string[];
+    panel_ids?: string[];
   }) => {
     try {
       // Handle payment methods in description
@@ -148,6 +174,31 @@ export function usePriceTiers() {
         .eq('id', id);
 
       if (tierError) throw tierError;
+
+      // Update panel associations if provided
+      if (tierData.panel_ids !== undefined) {
+        // Delete existing panel associations
+        const { error: deleteError } = await supabase
+          .from('panels_price_tiers')
+          .delete()
+          .eq('tier_id', id);
+
+        if (deleteError) throw deleteError;
+
+        // Create new panel associations
+        if (tierData.panel_ids.length > 0) {
+          const panelRelations = tierData.panel_ids.map(panelId => ({
+            panel_id: panelId,
+            tier_id: id
+          }));
+
+          const { error: panelError } = await supabase
+            .from('panels_price_tiers')
+            .insert(panelRelations);
+
+          if (panelError) throw panelError;
+        }
+      }
       
       // Refresh the list
       await fetchPriceTiers();

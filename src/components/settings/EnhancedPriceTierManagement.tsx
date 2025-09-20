@@ -16,7 +16,7 @@ export function EnhancedPriceTierManagement() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [tierToDelete, setTierToDelete] = useState<string | null>(null);
 
-  const handleSubmit = async (data: { tier_name: string; description?: string; payment_methods: string[] }) => {
+  const handleSubmit = async (data: { tier_name: string; description?: string; payment_methods: string[]; panel_ids: string[] }) => {
     let success = false;
     
     if (editingTier) {
