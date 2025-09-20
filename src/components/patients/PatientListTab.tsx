@@ -306,11 +306,9 @@ export function PatientListTab() {
               />
             </div>
             <div className="flex items-center space-x-2">
-              <SidebarTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
-                </Button>
+              <SidebarTrigger className="h-9 px-3" variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
               </SidebarTrigger>
               <PatientViewToggle 
                 viewMode={viewMode} 
