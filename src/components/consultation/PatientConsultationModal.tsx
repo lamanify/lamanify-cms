@@ -891,7 +891,7 @@ export function PatientConsultationModal({
                 variant: "destructive"
               });
             }
-          }} className="bg-primary hover:bg-primary/90 h-9 text-sm">
+          }} className="bg-primary hover:bg-slate-800 hover:text-white h-9 text-sm">
                 Consultation Completed
               </Button>}
           </div>
