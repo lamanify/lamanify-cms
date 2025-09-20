@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_resources: {
+        Row: {
+          appointment_id: string
+          created_at: string | null
+          id: string
+          resource_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string | null
+          id?: string
+          resource_id: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string | null
+          id?: string
+          resource_id?: string
+        }
+        Relationships: []
+      }
+      appointment_waitlist: {
+        Row: {
+          contact_preference: string | null
+          created_at: string | null
+          created_by: string | null
+          doctor_id: string | null
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          patient_id: string
+          preferred_date_end: string | null
+          preferred_date_start: string | null
+          preferred_time_end: string | null
+          preferred_time_start: string | null
+          priority: string | null
+          service_type: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          contact_preference?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          doctor_id?: string | null
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          preferred_date_end?: string | null
+          preferred_date_start?: string | null
+          preferred_time_end?: string | null
+          preferred_time_start?: string | null
+          priority?: string | null
+          service_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          contact_preference?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          doctor_id?: string | null
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          preferred_date_end?: string | null
+          preferred_date_start?: string | null
+          preferred_time_end?: string | null
+          preferred_time_start?: string | null
+          priority?: string | null
+          service_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_date: string
@@ -23,9 +101,14 @@ export type Database = {
           doctor_id: string
           duration_minutes: number | null
           id: string
+          is_series_parent: boolean | null
           notes: string | null
+          occurrence_number: number | null
           patient_id: string
           reason: string | null
+          recurrence_end_date: string | null
+          recurrence_id: string | null
+          recurrence_pattern: Json | null
           status: string | null
           updated_at: string | null
         }
@@ -37,9 +120,14 @@ export type Database = {
           doctor_id: string
           duration_minutes?: number | null
           id?: string
+          is_series_parent?: boolean | null
           notes?: string | null
+          occurrence_number?: number | null
           patient_id: string
           reason?: string | null
+          recurrence_end_date?: string | null
+          recurrence_id?: string | null
+          recurrence_pattern?: Json | null
           status?: string | null
           updated_at?: string | null
         }
@@ -51,9 +139,14 @@ export type Database = {
           doctor_id?: string
           duration_minutes?: number | null
           id?: string
+          is_series_parent?: boolean | null
           notes?: string | null
+          occurrence_number?: number | null
           patient_id?: string
           reason?: string | null
+          recurrence_end_date?: string | null
+          recurrence_id?: string | null
+          recurrence_pattern?: Json | null
           status?: string | null
           updated_at?: string | null
         }
@@ -1349,6 +1442,48 @@ export type Database = {
         }
         Relationships: []
       }
+      resources: {
+        Row: {
+          availability_schedule: Json | null
+          capacity: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          location: string | null
+          name: string
+          status: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          availability_schedule?: Json | null
+          capacity?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          status?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          availability_schedule?: Json | null
+          capacity?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          status?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       service_pricing: {
         Row: {
           created_at: string
@@ -1608,9 +1743,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_resource_availability: {
+        Args: {
+          p_appointment_date: string
+          p_appointment_time: string
+          p_duration_minutes: number
+          p_exclude_appointment_id?: string
+          p_resource_id: string
+        }
+        Returns: boolean
+      }
       check_tier_eligibility: {
         Args: { p_patient_id: string; p_tier_id: string }
         Returns: boolean
+      }
+      create_recurring_appointments: {
+        Args: { p_base_appointment_id: string; p_recurrence_pattern: Json }
+        Returns: string[]
       }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
@@ -1644,6 +1793,19 @@ export type Database = {
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      process_waitlist_for_slot: {
+        Args: {
+          p_appointment_date: string
+          p_appointment_time: string
+          p_doctor_id: string
+          p_duration_minutes: number
+        }
+        Returns: {
+          contact_info: Json
+          patient_id: string
+          waitlist_id: string
+        }[]
       }
     }
     Enums: {

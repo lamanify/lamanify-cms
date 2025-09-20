@@ -8,6 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/pages/Appointments';
+import { RecurringAppointmentModal } from './RecurringAppointmentModal';
+import { ResourceSelectionModal } from './ResourceSelectionModal';
+import { useResources } from '@/hooks/useResources';
+import { Button as UIButton } from '@/components/ui/button';
+import { Repeat, MapPin, Plus } from 'lucide-react';
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -20,6 +25,11 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave }: A
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
+  const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [showResourceModal, setShowResourceModal] = useState(false);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [newAppointmentId, setNewAppointmentId] = useState<string | null>(null);
+  const { assignResourceToAppointment } = useResources();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -108,16 +118,31 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave }: A
 
         if (error) throw error;
 
+        // Update resource assignments
+        if (selectedResources.length > 0) {
+          await assignResourceToAppointment(appointment.id, selectedResources);
+        }
+
         toast({
           title: "Success",
           description: "Appointment updated successfully",
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('appointments')
-          .insert(formData);
+          .insert(formData)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Assign resources to new appointment
+        if (selectedResources.length > 0 && data) {
+          await assignResourceToAppointment(data.id, selectedResources);
+        }
+
+        // Store new appointment ID for recurring appointments
+        setNewAppointmentId(data?.id || null);
 
         toast({
           title: "Success",
@@ -273,16 +298,65 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave }: A
             />
           </div>
 
-          <DialogFooter>
+          <div className="space-y-2">
+            <Label>Resources</Label>
+            <div className="flex items-center gap-2">
+              <UIButton
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowResourceModal(true)}
+                className="flex items-center gap-2"
+              >
+                <MapPin className="h-4 w-4" />
+                Select Resources ({selectedResources.length})
+              </UIButton>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? 'Saving...' : appointment ? 'Update Appointment' : 'Schedule Appointment'}
             </Button>
+            {!appointment && newAppointmentId && (
+              <UIButton
+                type="button"
+                variant="secondary"
+                onClick={() => setShowRecurringModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Repeat className="h-4 w-4" />
+                Make Recurring
+              </UIButton>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <RecurringAppointmentModal
+        open={showRecurringModal}
+        onOpenChange={setShowRecurringModal}
+        appointmentId={newAppointmentId || ''}
+        onSuccess={() => {
+          onSave();
+          setShowRecurringModal(false);
+          onOpenChange(false);
+        }}
+      />
+
+      <ResourceSelectionModal
+        open={showResourceModal}
+        onOpenChange={setShowResourceModal}
+        selectedResources={selectedResources}
+        onResourcesChange={setSelectedResources}
+        appointmentDate={formData.appointment_date}
+        appointmentTime={formData.appointment_time}
+        durationMinutes={formData.duration_minutes}
+        excludeAppointmentId={appointment?.id}
+      />
     </Dialog>
   );
 }

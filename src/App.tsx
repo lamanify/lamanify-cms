@@ -17,6 +17,8 @@ import Settings from "@/pages/Settings";
 import ClinicSettings from '@/pages/ClinicSettings';
 import AuthPage from "@/components/auth/AuthPage";
 import CalendarView from "@/pages/CalendarView";
+import ResourceManagement from "@/pages/ResourceManagement";
+import { WaitlistManager } from "@/components/appointments/WaitlistManager";
 import ResetPassword from "@/pages/ResetPassword";
 import PublicBooking from "@/pages/PublicBooking";
 import NotFound from "./pages/NotFound";
@@ -39,6 +41,8 @@ const App = () => (
           <Route path="/display" element={<QueueDisplay />} />
           <Route path="/appointments" element={<AppLayout><Appointments /></AppLayout>} />
           <Route path="/appointments/calendar" element={<AppLayout><CalendarView /></AppLayout>} />
+          <Route path="/appointments/waitlist" element={<AppLayout><WaitlistManager /></AppLayout>} />
+          <Route path="/resources" element={<AppLayout><ResourceManagement /></AppLayout>} />
           <Route path="/consultations" element={<AppLayout><Consultations /></AppLayout>} />
           <Route path="/consultation-waiting" element={<AppLayout><ConsultationWaitingList /></AppLayout>} />
           <Route path="/consultation/:sessionId" element={<AppLayout><ConsultationInterface /></AppLayout>} />
