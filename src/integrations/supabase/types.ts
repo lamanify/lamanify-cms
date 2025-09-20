@@ -2077,6 +2077,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_patient_reliability_score: {
+        Args: { p_patient_id: string }
+        Returns: number
+      }
       check_appointment_overlap: {
         Args: {
           p_appointment_date: string
@@ -2104,6 +2108,10 @@ export type Database = {
       create_recurring_appointments: {
         Args: { p_base_appointment_id: string; p_recurrence_pattern: Json }
         Returns: string[]
+      }
+      generate_check_in_link: {
+        Args: { p_appointment_id: string }
+        Returns: string
       }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
@@ -2150,6 +2158,10 @@ export type Database = {
           patient_id: string
           waitlist_id: string
         }[]
+      }
+      update_patient_reliability: {
+        Args: { p_patient_id: string }
+        Returns: undefined
       }
     }
     Enums: {
