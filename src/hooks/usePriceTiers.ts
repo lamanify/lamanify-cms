@@ -35,11 +35,27 @@ export function usePriceTiers() {
 
       if (tiersError) throw tiersError;
 
-      // For now, set payment_methods as empty array since we're not using the junction table yet
-      const tiersWithMethods = (tiers || []).map(tier => ({
-        ...tier,
-        payment_methods: [] as string[]
-      }));
+      // Extract payment methods from description field
+      const tiersWithMethods = (tiers || []).map(tier => {
+        let paymentMethods: string[] = [];
+        let cleanDescription = tier.description || '';
+        
+        // Extract payment methods from description if it exists
+        if (tier.description) {
+          const paymentMethodsMatch = tier.description.match(/Payment Methods: ([^\n]+)/);
+          if (paymentMethodsMatch) {
+            paymentMethods = paymentMethodsMatch[1].split(', ').map(method => method.trim());
+            // Remove the payment methods line from description
+            cleanDescription = tier.description.replace(/Payment Methods: [^\n]+\n?/g, '').trim();
+          }
+        }
+
+        return {
+          ...tier,
+          description: cleanDescription,
+          payment_methods: paymentMethods
+        };
+      });
 
       setPriceTiers(tiersWithMethods);
     } catch (error) {
@@ -60,17 +76,26 @@ export function usePriceTiers() {
     payment_methods: string[];
   }) => {
     try {
-      // For now, we'll use a simplified approach with the existing structure
-      // Create the tier with a default payment method (using the first method or 'general')
-      const defaultPaymentMethod = tierData.payment_methods.length > 0 ? tierData.payment_methods[0] : 'Self-Pay';
+      // Store payment methods in the description for now, until we implement the new structure
+      const paymentMethodsDescription = tierData.payment_methods.length > 0 
+        ? `Payment Methods: ${tierData.payment_methods.join(', ')}`
+        : '';
       
+      const finalDescription = tierData.description 
+        ? `${tierData.description}\n${paymentMethodsDescription}`
+        : paymentMethodsDescription;
+
       const { data: tier, error: tierError } = await supabase
         .from('price_tiers')
         .insert([{
           tier_name: tierData.tier_name,
-          description: tierData.description,
-          payment_method: defaultPaymentMethod as 'Self-Pay' | 'Insurance' | 'Corporate' | 'Government Panel',
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          description: finalDescription,
+          tier_type: 'general',
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          is_default_for_panel: false,
+          requires_verification: tierData.payment_methods.includes('panel'),
+          coverage_rules: {},
+          eligibility_rules: {}
         }])
         .select()
         .single();
@@ -102,12 +127,23 @@ export function usePriceTiers() {
     payment_methods?: string[];
   }) => {
     try {
+      // Handle payment methods in description
+      let finalDescription = tierData.description || '';
+      
+      if (tierData.payment_methods && tierData.payment_methods.length > 0) {
+        const paymentMethodsDescription = `Payment Methods: ${tierData.payment_methods.join(', ')}`;
+        finalDescription = tierData.description 
+          ? `${tierData.description}\n${paymentMethodsDescription}`
+          : paymentMethodsDescription;
+      }
+
       // Update the tier
       const { error: tierError } = await supabase
         .from('price_tiers')
         .update({
           tier_name: tierData.tier_name,
-          description: tierData.description
+          description: finalDescription,
+          requires_verification: tierData.payment_methods?.includes('panel') || false
         })
         .eq('id', id);
 
