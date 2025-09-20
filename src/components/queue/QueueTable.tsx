@@ -102,10 +102,17 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
     }
   };
 
-  const getWaitTime = (checkedInAt: string) => {
-    const now = new Date();
-    const checkedIn = new Date(checkedInAt);
-    const diffMinutes = Math.floor((now.getTime() - checkedIn.getTime()) / (1000 * 60));
+  const getWaitTime = (entry: any) => {
+    const checkedIn = new Date(entry.checked_in_at);
+    let endTime: Date;
+    
+    if (entry.status === 'completed' && entry.consultation_completed_at) {
+      endTime = new Date(entry.consultation_completed_at);
+    } else {
+      endTime = new Date();
+    }
+    
+    const diffMinutes = Math.floor((endTime.getTime() - checkedIn.getTime()) / (1000 * 60));
     return diffMinutes;
   };
 
@@ -189,7 +196,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
       )}
       
       {displayQueue.map((entry) => {
-        const waitTime = getWaitTime(entry.checked_in_at);
+        const waitTime = getWaitTime(entry);
         const isPriority = entry.status === 'urgent' || entry.status.includes('urgent');
         
         return (
