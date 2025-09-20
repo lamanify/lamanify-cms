@@ -629,7 +629,7 @@ export function PatientConsultationModal({
 
                 <TabsContent value="history" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
                   {/* Patient History Header */}
-                  <div className="bg-slate-800 text-white p-3 rounded-t-lg">
+                  <div className="text-white p-3 rounded-t-lg bg-slate-950">
                     <h3 className="font-medium text-sm">Patient History - Complete Medical Timeline</h3>
                   </div>
                   <div className="border border-t-0 rounded-b-lg p-4">
