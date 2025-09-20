@@ -483,13 +483,13 @@ export function PatientConsultationModal({
             <div className="flex-1 flex flex-col">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
                  <TabsList className="w-full justify-start rounded-none border-b bg-background">
-                    <TabsTrigger value="consultation" className="data-[state=active]:bg-accent data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
+                    <TabsTrigger value="consultation" className="data-[state=active]:bg-[#e9204f] data-[state=active]:text-white hover:bg-[#e9204f] hover:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-600">
                       Consultation
                     </TabsTrigger>
-                    <TabsTrigger value="treatment" className="bg-[#e9204f] text-neutral-50">
+                    <TabsTrigger value="treatment" className="data-[state=active]:bg-[#e9204f] data-[state=active]:text-white hover:bg-[#e9204f] hover:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-600">
                      Treatment & Billing
                    </TabsTrigger>
-                   <TabsTrigger value="history" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
+                   <TabsTrigger value="history" className="data-[state=active]:bg-[#e9204f] data-[state=active]:text-white hover:bg-[#e9204f] hover:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-600">
                      Patient History
                    </TabsTrigger>
                  </TabsList>
