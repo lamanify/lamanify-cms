@@ -18,6 +18,7 @@ import ClinicSettings from '@/pages/ClinicSettings';
 import AuthPage from "@/components/auth/AuthPage";
 import CalendarView from "@/pages/CalendarView";
 import ResetPassword from "@/pages/ResetPassword";
+import PublicBooking from "@/pages/PublicBooking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/book" element={<PublicBooking />} />
           <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/patients" element={<AppLayout><Patients /></AppLayout>} />
           <Route path="/queue" element={<AppLayout><Queue /></AppLayout>} />
