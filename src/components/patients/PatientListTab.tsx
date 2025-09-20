@@ -3,11 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Users } from 'lucide-react';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Plus, Search, Users, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Patient } from '@/pages/Patients';
 import { PatientViewToggle } from './PatientViewToggle';
-import { AdvancedFilterPanel } from './AdvancedFilterPanel';
+import { FilterSidebar } from './FilterSidebar';
 import { PatientDataTable } from './PatientDataTable';
 import { EnhancedPatientCard } from './EnhancedPatientCard';
 import { BulkActionToolbar } from './BulkActionToolbar';
@@ -65,8 +66,8 @@ export function PatientListTab() {
   const [filters, setFilters] = useState<FilterCriteria>({
     searchTerm: '',
     ageRange: [0, 120],
-    gender: '',
-    visitFrequency: '',
+    gender: 'all',
+    visitFrequency: 'all',
     dateRange: { start: '', end: '' },
     diagnosis: '',
     amountSpentRange: [0, 100000]
@@ -181,12 +182,12 @@ export function PatientListTab() {
     );
 
     // Apply gender filter
-    if (filters.gender) {
+    if (filters.gender && filters.gender !== 'all') {
       filtered = filtered.filter(patient => patient.gender === filters.gender);
     }
 
     // Apply visit frequency filter
-    if (filters.visitFrequency) {
+    if (filters.visitFrequency && filters.visitFrequency !== 'all') {
       filtered = filtered.filter(patient => patient.visit_frequency === filters.visitFrequency);
     }
 
@@ -272,110 +273,122 @@ export function PatientListTab() {
   }
 
   return (
-    <div className="flex flex-col space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Users className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-semibold">Patient Management</h1>
-          <Badge variant="secondary" className="ml-2">
-            {processedPatients.length} patients
-          </Badge>
-        </div>
-        <Button onClick={handleNewPatient}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Patient
-        </Button>
-      </div>
-
-      {/* Search and Controls */}
-      <div className="flex items-center justify-between space-x-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search patients by name, phone, or patient ID..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setFilters(prev => ({ ...prev, searchTerm: e.target.value }));
-            }}
-            className="pl-10"
-          />
-        </div>
-        <PatientViewToggle 
-          viewMode={viewMode} 
-          onViewModeChange={setViewMode} 
-        />
-      </div>
-
-      {/* Advanced Filters */}
-      <AdvancedFilterPanel
-        filters={filters}
-        onFiltersChange={setFilters}
-        patientCount={processedPatients.length}
-        totalPatients={patients.length}
-      />
-
-      {/* Bulk Action Toolbar */}
-      {selectedPatients.length > 0 && (
-        <BulkActionToolbar
-          selectedCount={selectedPatients.length}
-          selectedPatients={selectedPatients}
-          onAction={(action) => {
-            toast.success(`${action} action triggered for ${selectedPatients.length} patients`);
-          }}
-        />
-      )}
-
-      {/* Patient Display */}
-      {processedPatients.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Users className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No patients found</h3>
-            <p className="text-muted-foreground mb-4">
-              {patients.length === 0 ? "Get started by adding your first patient." : "Try adjusting your filters."}
-            </p>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <div className="flex-1 flex flex-col space-y-6 p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Users className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-semibold">Patient Management</h1>
+              <Badge variant="secondary" className="ml-2">
+                {processedPatients.length} patients
+              </Badge>
+            </div>
             <Button onClick={handleNewPatient}>
               <Plus className="h-4 w-4 mr-2" />
               Add Patient
             </Button>
-          </CardContent>
-        </Card>
-      ) : viewMode === 'card' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {processedPatients.map((patient) => (
-          <EnhancedPatientCard
-            key={patient.id}
-            patients={[patient]}
-            selectedPatients={selectedPatients}
-            onPatientSelect={handlePatientSelect}
-            onPatientClick={handlePatientClick}
-            onSelectAll={() => {}}
-          />
-          ))}
-        </div>
-      ) : (
-        <PatientDataTable
-          patients={processedPatients}
-          selectedPatients={selectedPatients}
-          onPatientSelect={handlePatientSelect}
-          onSelectAll={handleSelectAll}
-          onPatientClick={handlePatientClick}
-          columns={columns}
-          onColumnsChange={setColumns}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-        />
-      )}
+          </div>
 
-      {/* Patient Modal */}
-      <UnifiedPatientModal
-        open={showPatientModal}
-        onOpenChange={setShowPatientModal}
-        patient={selectedPatient}
-        onSave={handlePatientSaved}
-      />
-    </div>
+          {/* Search and Controls */}
+          <div className="flex items-center justify-between space-x-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search patients by name, phone, or patient ID..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setFilters(prev => ({ ...prev, searchTerm: e.target.value }));
+                }}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <SidebarTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                </Button>
+              </SidebarTrigger>
+              <PatientViewToggle 
+                viewMode={viewMode} 
+                onViewModeChange={setViewMode} 
+              />
+            </div>
+          </div>
+
+          {/* Bulk Action Toolbar */}
+          {selectedPatients.length > 0 && (
+            <BulkActionToolbar
+              selectedCount={selectedPatients.length}
+              selectedPatients={selectedPatients}
+              onAction={(action) => {
+                toast.success(`${action} action triggered for ${selectedPatients.length} patients`);
+              }}
+            />
+          )}
+
+          {/* Patient Display */}
+          {processedPatients.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Users className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No patients found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {patients.length === 0 ? "Get started by adding your first patient." : "Try adjusting your filters."}
+                </p>
+                <Button onClick={handleNewPatient}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Patient
+                </Button>
+              </CardContent>
+            </Card>
+          ) : viewMode === 'card' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {processedPatients.map((patient) => (
+              <EnhancedPatientCard
+                key={patient.id}
+                patients={[patient]}
+                selectedPatients={selectedPatients}
+                onPatientSelect={handlePatientSelect}
+                onPatientClick={handlePatientClick}
+                onSelectAll={() => {}}
+              />
+              ))}
+            </div>
+          ) : (
+            <PatientDataTable
+              patients={processedPatients}
+              selectedPatients={selectedPatients}
+              onPatientSelect={handlePatientSelect}
+              onSelectAll={handleSelectAll}
+              onPatientClick={handlePatientClick}
+              columns={columns}
+              onColumnsChange={setColumns}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
+          )}
+
+          {/* Patient Modal */}
+          <UnifiedPatientModal
+            open={showPatientModal}
+            onOpenChange={setShowPatientModal}
+            patient={selectedPatient}
+            onSave={handlePatientSaved}
+          />
+        </div>
+
+        {/* Filter Sidebar */}
+        <FilterSidebar
+          filters={filters}
+          onFiltersChange={setFilters}
+          patientCount={processedPatients.length}
+          totalPatients={patients.length}
+        />
+      </div>
+    </SidebarProvider>
   );
 }
