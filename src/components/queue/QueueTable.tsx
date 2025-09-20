@@ -111,12 +111,13 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
   const getStatusColor = (status: string, waitTime: number, isPriority = false) => {
     if (isPriority) return 'bg-queue-priority text-queue-priority-foreground';
-    if (status === 'completed') return 'bg-success text-success-foreground';
+    if (status === 'completed') return 'bg-lime-100 text-lime-800';
+    if (status === 'waiting') return 'bg-red-100 text-red-800';
     if (status === 'dispensary') return 'bg-orange-500 text-white';
     if (status === 'in_consultation') return 'bg-info text-info-foreground';
     if (status === 'cancelled') return 'bg-destructive text-destructive-foreground';
     
-    // Wait time based colors for waiting patients
+    // Wait time based colors for other statuses
     if (waitTime >= 45) return 'bg-queue-urgent text-destructive-foreground';
     if (waitTime >= 20) return 'bg-queue-waiting text-warning-foreground';
     return 'bg-queue-new text-success-foreground';
@@ -196,6 +197,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
             key={entry.id}
             onClick={() => handlePatientClick(entry)}
             className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
+              entry.status === 'completed' ? 'bg-gray-100' :
+              entry.status === 'waiting' ? 'bg-red-50' :
               entry.status === 'in_consultation' 
                 ? 'border-info bg-info/5 shadow-sm' 
                 : isPriority

@@ -130,7 +130,7 @@ export function useQueue() {
         .from('patient_queue')
         .select('*')
         .eq('queue_date', today)
-        .order('queue_number');
+        .order('created_at', { ascending: false });
 
       if (queueError) throw queueError;
       
