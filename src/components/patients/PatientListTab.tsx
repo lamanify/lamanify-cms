@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Plus, Search, Users, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Patient } from '@/pages/Patients';
@@ -76,6 +75,7 @@ export function PatientListTab() {
   const [showPatientModal, setShowPatientModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<EnhancedPatient | null>(null);
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
+  const [showFilterSidebar, setShowFilterSidebar] = useState(false);
   
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -273,9 +273,8 @@ export function PatientListTab() {
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="flex min-h-screen w-full">
-        <div className="flex-1 flex flex-col space-y-6 p-6">
+    <div className="flex min-h-screen w-full">
+      <div className="flex-1 flex flex-col space-y-6 p-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -306,9 +305,14 @@ export function PatientListTab() {
               />
             </div>
             <div className="flex items-center space-x-2">
-              <SidebarTrigger className="h-9 px-3" variant="outline">
+              <Button 
+                variant="outline" 
+                className="h-9 px-3"
+                onClick={() => setShowFilterSidebar(true)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
                 Filter
-              </SidebarTrigger>
+              </Button>
               <PatientViewToggle 
                 viewMode={viewMode} 
                 onViewModeChange={setViewMode} 
@@ -379,13 +383,15 @@ export function PatientListTab() {
         </div>
 
         {/* Filter Sidebar */}
-        <FilterSidebar
-          filters={filters}
-          onFiltersChange={setFilters}
-          patientCount={processedPatients.length}
-          totalPatients={patients.length}
-        />
+        {showFilterSidebar && (
+          <FilterSidebar
+            filters={filters}
+            onFiltersChange={setFilters}
+            patientCount={processedPatients.length}
+            totalPatients={patients.length}
+            onClose={() => setShowFilterSidebar(false)}
+          />
+        )}
       </div>
-    </SidebarProvider>
   );
 }

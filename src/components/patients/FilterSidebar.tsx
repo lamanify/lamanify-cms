@@ -28,9 +28,10 @@ interface FilterSidebarProps {
   onFiltersChange: (filters: FilterCriteria) => void;
   patientCount: number;
   totalPatients: number;
+  onClose: () => void;
 }
 
-export function FilterSidebar({ filters, onFiltersChange, patientCount, totalPatients }: FilterSidebarProps) {
+export function FilterSidebar({ filters, onFiltersChange, patientCount, totalPatients, onClose }: FilterSidebarProps) {
   const [localFilters, setLocalFilters] = useState(filters);
 
   const updateFilter = (key: keyof FilterCriteria, value: any) => {
@@ -94,7 +95,9 @@ export function FilterSidebar({ filters, onFiltersChange, patientCount, totalPat
               <FilterX className="h-4 w-4 mr-1" />
               Clear All
             </Button>
-            <SidebarTrigger />
+            <Button variant="outline" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </SidebarHeader>
