@@ -21,22 +21,12 @@ const priceTierSchema = z.object({
 type PriceTierFormData = z.infer<typeof priceTierSchema>;
 
 const PAYMENT_METHODS = [
-  { id: 'credit_card', label: 'Credit Card', category: 'general' },
-  { id: 'voucher', label: 'Voucher', category: 'general' },
-  { id: 'e_wallet', label: 'E Wallet', category: 'general' },
-  { id: 'qr_pay', label: 'QR pay', category: 'general' },
-  { id: 'cash', label: 'Cash', category: 'general' },
-  { id: 'card', label: 'Card', category: 'general' },
-  { id: 'panel', label: 'Panel', category: 'panel_header' },
-  { id: 'pm_care', label: 'PM Care', category: 'panel' },
-  { id: 'pm_care_pnb', label: 'PM Care - PNB', category: 'panel' },
-  { id: 'madani', label: 'Madani', category: 'panel' },
-  { id: 'nestle', label: 'Nestle', category: 'panel' },
-  { id: 'pmcare', label: 'PMCare', category: 'panel' },
-  { id: 'medkad', label: 'MedKad', category: 'panel' },
-  { id: 'aia', label: 'AIA', category: 'panel' },
-  { id: 'koperasi_guru', label: 'Koperasi Guru Malaysia', category: 'panel' },
-  { id: 'etiqa', label: 'Etiqa', category: 'panel' }
+  { id: 'credit_card', label: 'Credit Card' },
+  { id: 'voucher', label: 'Voucher' },
+  { id: 'e_wallet', label: 'E Wallet' },
+  { id: 'qr_pay', label: 'QR Pay' },
+  { id: 'cash', label: 'Cash' },
+  { id: 'card', label: 'Card' }
 ];
 
 interface PriceTierModalProps {
@@ -161,9 +151,6 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
     onOpenChange(false);
   };
 
-  const generalMethods = PAYMENT_METHODS.filter(m => m.category === 'general');
-  const panelHeader = PAYMENT_METHODS.filter(m => m.category === 'panel_header');
-  const panelMethods = PAYMENT_METHODS.filter(m => m.category === 'panel');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -235,47 +222,9 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
                       <FormLabel className="text-sm font-medium">Payment Methods</FormLabel>
                       
                       <div className="space-y-3 mt-3">
-                        {/* General Payment Methods */}
+                        {/* Payment Methods */}
                         <div className="space-y-2">
-                          {generalMethods.map((method) => (
-                            <div key={method.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={method.id}
-                                checked={selectedMethods.includes(method.id)}
-                                onCheckedChange={() => handlePaymentMethodToggle(method.id)}
-                              />
-                              <label
-                                htmlFor={method.id}
-                                className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                {method.label}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Panel Header */}
-                        <div className="space-y-2 pt-2">
-                          {panelHeader.map((method) => (
-                            <div key={method.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={method.id}
-                                checked={selectedMethods.includes(method.id)}
-                                onCheckedChange={() => handlePaymentMethodToggle(method.id)}
-                              />
-                              <label
-                                htmlFor={method.id}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                {method.label}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Panel Options */}
-                        <div className="space-y-2 pl-6">
-                          {panelMethods.map((method) => (
+                          {PAYMENT_METHODS.map((method) => (
                             <div key={method.id} className="flex items-center space-x-2">
                               <Checkbox
                                 id={method.id}
