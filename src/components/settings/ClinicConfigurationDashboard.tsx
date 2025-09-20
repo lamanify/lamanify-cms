@@ -24,9 +24,10 @@ import { EnhancedServiceManagement } from './EnhancedServiceManagement';
 import { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 import { EnhancedPackageManagement } from './EnhancedPackageManagement';
 import { DocumentTemplatesPage } from './DocumentTemplatesPage';
+import { PanelManagement } from './PanelManagement';
 import { useAuth } from '@/hooks/useAuth';
 
-type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications' | 'packages' | 'templates';
+type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'panels' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications' | 'packages' | 'templates';
 
 const settingCategories = [
   {
@@ -42,6 +43,13 @@ const settingCategories = [
     description: 'User roles, permissions, and staff configuration',
     icon: Users,
     color: 'bg-green-500',
+  },
+  {
+    id: 'panels' as const,
+    title: 'Panel Management',
+    description: 'Manage corporate, TPA, and insurance panels for billing',
+    icon: Shield,
+    color: 'bg-emerald-500',
   },
   {
     id: 'system' as const,
@@ -116,6 +124,8 @@ export function ClinicConfigurationDashboard() {
         return <BasicInfoSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'staff':
         return <EnhancedStaffSettings />;
+      case 'panels':
+        return <PanelManagement />;
       case 'system':
         return <SystemSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'payment':

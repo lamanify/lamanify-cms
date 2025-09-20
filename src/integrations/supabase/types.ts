@@ -719,6 +719,87 @@ export type Database = {
         }
         Relationships: []
       }
+      panels: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_status: string | null
+          id: string
+          manual_remarks: string | null
+          panel_code: string
+          panel_name: string
+          person_in_charge_name: string | null
+          person_in_charge_phone: string | null
+          updated_at: string
+          verification_method: string | null
+          verification_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_status?: string | null
+          id?: string
+          manual_remarks?: string | null
+          panel_code: string
+          panel_name: string
+          person_in_charge_name?: string | null
+          person_in_charge_phone?: string | null
+          updated_at?: string
+          verification_method?: string | null
+          verification_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_status?: string | null
+          id?: string
+          manual_remarks?: string | null
+          panel_code?: string
+          panel_name?: string
+          person_in_charge_name?: string | null
+          person_in_charge_phone?: string | null
+          updated_at?: string
+          verification_method?: string | null
+          verification_url?: string | null
+        }
+        Relationships: []
+      }
+      panels_price_tiers: {
+        Row: {
+          created_at: string
+          id: string
+          panel_id: string
+          tier_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          panel_id: string
+          tier_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          panel_id?: string
+          tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panels_price_tiers_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "panels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panels_price_tiers_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "price_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_activities: {
         Row: {
           activity_date: string
