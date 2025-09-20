@@ -504,25 +504,26 @@ export function PatientConsultationModal({
               </div>
 
                   {/* Consultation Notes */}
-                  <div className="text-white p-3 rounded-t-lg bg-slate-950">
-                    <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
-                  </div>
-                  <div className="border border-t-0 rounded-b-lg p-3 relative">
-                     <Textarea placeholder="Type your consultation notes here" value={consultationNotes} onChange={e => setConsultationNotes(e.target.value)} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
-                     
-                     {/* Overlay notification when consultation hasn't started */}
-                     {consultationStatus === 'waiting' && (
-                       <div className="absolute inset-0 bg-black/60 rounded-b-lg flex items-center justify-center z-10">
-                         <div className="bg-white rounded-lg p-4 shadow-lg border max-w-xs text-center">
-                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                             <span className="text-blue-600 text-lg">💡</span>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="text-white p-3 bg-slate-950">
+                      <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
+                    </div>
+                    <div className="p-3 relative">
+                       <Textarea placeholder="Type your consultation notes here" value={consultationNotes} onChange={e => setConsultationNotes(e.target.value)} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
+                       
+                       {/* Overlay notification when consultation hasn't started */}
+                       {consultationStatus === 'waiting' && (
+                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                           <div className="bg-white rounded-lg p-4 shadow-lg border max-w-xs text-center">
+                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                               <span className="text-blue-600 text-lg">💡</span>
+                             </div>
+                             <p className="text-sm text-gray-700 font-medium">
+                               Click the "Start Consultation" button to start writing consultation notes
+                             </p>
                            </div>
-                           <p className="text-sm text-gray-700 font-medium">
-                             Click the "Start Consultation" button to start writing consultation notes
-                           </p>
                          </div>
-                       </div>
-                     )}
+                       )}
                     
                     {/* Formatting Toolbar */}
                     <div className="flex items-center justify-between">
@@ -549,6 +550,7 @@ export function PatientConsultationModal({
                           <Save className="h-3 w-3 mr-1" />
                           {isDraftSaved ? "Draft Saved" : "Save"}
                         </Button>
+                      </div>
                       </div>
                     </div>
                   </div>
