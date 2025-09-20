@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Clock, AlertTriangle, User, MapPin, CreditCard } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Phone, Clock, AlertTriangle, User, MapPin, CreditCard, ChevronDown } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { PatientConsultationModal } from '@/components/consultation/PatientConsultationModal';
 import { DispensaryModal } from '@/components/queue/DispensaryModal';
@@ -205,16 +206,35 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
             <div className="flex items-center space-x-6 flex-1">
               {/* Queue Number and Status */}
               <div className="flex items-center space-x-3">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">
-                    {entry.queue_number}
-                  </div>
-                  <Badge 
-                    className={`text-xs ${getStatusColor(entry.status, waitTime, isPriority)}`}
-                  >
-                    {getStatusLabel(entry.status)}
-                  </Badge>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
+                      <div className="text-2xl font-bold text-primary flex items-center gap-1">
+                        {entry.queue_number}
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
+                      <Badge 
+                        className={`text-xs ${getStatusColor(entry.status, waitTime, isPriority)}`}
+                      >
+                        {getStatusLabel(entry.status)}
+                      </Badge>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48">
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'waiting'); }}>
+                      Waiting
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'in_consultation'); }}>
+                      Serving/Consultation
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'dispensary'); }}>
+                      Dispensary
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'completed'); }}>
+                      Completed
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Patient Info */}
