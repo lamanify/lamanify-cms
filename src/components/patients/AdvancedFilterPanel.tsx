@@ -7,17 +7,29 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { FilterCriteria } from './UnifiedPatientHub';
-import { Search, X, Calendar, Users, Activity, DollarSign } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-
+import { Search, X, Calendar, Users, Activity, DollarSign } from 'lucide-react';
 interface AdvancedFilterPanelProps {
   filters: FilterCriteria;
   onFiltersChange: (filters: FilterCriteria) => void;
-  patients: any[]; // For getting available options
+  patientCount: number;
+  totalPatients: number;
 }
 
-export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: AdvancedFilterPanelProps) {
+interface FilterCriteria {
+  searchTerm: string;
+  ageRange: [number, number];
+  gender: string;
+  visitFrequency: string;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  diagnosis: string;
+  amountSpentRange: [number, number];
+}
+
+export function AdvancedFilterPanel({ filters, onFiltersChange, patientCount, totalPatients }: AdvancedFilterPanelProps) {
   const [localFilters, setLocalFilters] = useState(filters);
 
   const updateFilter = (key: keyof FilterCriteria, value: any) => {
@@ -28,27 +40,26 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: Adva
 
   const clearFilters = () => {
     const clearedFilters: FilterCriteria = {
-      search: '',
+      searchTerm: '',
       ageRange: [0, 120],
-      gender: [],
-      registrationDate: {},
-      lastVisitDate: {},
+      gender: '',
+      visitFrequency: '',
+      dateRange: { start: '', end: '' },
       diagnosis: '',
-      tags: [],
-      tier: [],
-      paymentStatus: [],
-      visitFrequency: []
+      amountSpentRange: [0, 100000]
     };
     setLocalFilters(clearedFilters);
     onFiltersChange(clearedFilters);
   };
 
   const activeFiltersCount = Object.entries(localFilters).filter(([key, value]) => {
-    if (key === 'search') return value !== '';
+    if (key === 'searchTerm') return value !== '';
     if (key === 'ageRange') return value[0] !== 0 || value[1] !== 120;
-    if (Array.isArray(value)) return value.length > 0;
-    if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
-    return value !== '';
+    if (key === 'diagnosis') return value !== '';
+    if (key === 'gender') return value !== '';
+    if (key === 'visitFrequency') return value !== '';
+    if (key === 'amountSpentRange') return value[0] !== 0 || value[1] !== 100000;
+    return false;
   }).length;
 
   const genderOptions = [
@@ -96,8 +107,8 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: Adva
           <CardContent className="space-y-3">
             <Input
               placeholder="Name, ID, phone, email..."
-              value={localFilters.search}
-              onChange={(e) => updateFilter('search', e.target.value)}
+              value={localFilters.searchTerm}
+              onChange={(e) => updateFilter('searchTerm', e.target.value)}
             />
           </CardContent>
         </Card>
@@ -131,25 +142,19 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: Adva
             
             <div>
               <Label className="text-xs font-medium text-muted-foreground">Gender</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {genderOptions.map((option) => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`gender-${option.value}`}
-                      checked={localFilters.gender.includes(option.value)}
-                      onCheckedChange={(checked) => {
-                        const newGenders = checked
-                          ? [...localFilters.gender, option.value]
-                          : localFilters.gender.filter(g => g !== option.value);
-                        updateFilter('gender', newGenders);
-                      }}
-                    />
-                    <Label htmlFor={`gender-${option.value}`} className="text-xs">
+              <Select value={localFilters.gender} onValueChange={(value) => updateFilter('gender', value)}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All</SelectItem>
+                  {genderOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
                       {option.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -165,47 +170,41 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: Adva
           <CardContent className="space-y-4">
             <div>
               <Label className="text-xs font-medium text-muted-foreground">Visit Frequency</Label>
-              <div className="space-y-2 mt-2">
-                {visitFrequencyOptions.map((option) => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`frequency-${option.value}`}
-                      checked={localFilters.visitFrequency.includes(option.value)}
-                      onCheckedChange={(checked) => {
-                        const newFrequencies = checked
-                          ? [...localFilters.visitFrequency, option.value]
-                          : localFilters.visitFrequency.filter(f => f !== option.value);
-                        updateFilter('visitFrequency', newFrequencies);
-                      }}
-                    />
-                    <Label htmlFor={`frequency-${option.value}`} className="text-xs">
+              <Select value={localFilters.visitFrequency} onValueChange={(value) => updateFilter('visitFrequency', value)}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All</SelectItem>
+                  {visitFrequencyOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
                       {option.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
-              <Label className="text-xs font-medium text-muted-foreground">Last Visit Date</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Date Range</Label>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <Input
                   type="date"
                   placeholder="From"
-                  value={localFilters.lastVisitDate.from || ''}
-                  onChange={(e) => updateFilter('lastVisitDate', { 
-                    ...localFilters.lastVisitDate, 
-                    from: e.target.value 
+                  value={localFilters.dateRange.start}
+                  onChange={(e) => updateFilter('dateRange', { 
+                    ...localFilters.dateRange, 
+                    start: e.target.value 
                   })}
                   className="text-xs"
                 />
                 <Input
                   type="date"
                   placeholder="To"
-                  value={localFilters.lastVisitDate.to || ''}
-                  onChange={(e) => updateFilter('lastVisitDate', { 
-                    ...localFilters.lastVisitDate, 
-                    to: e.target.value 
+                  value={localFilters.dateRange.end}
+                  onChange={(e) => updateFilter('dateRange', { 
+                    ...localFilters.dateRange, 
+                    end: e.target.value 
                   })}
                   className="text-xs"
                 />
@@ -234,51 +233,20 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: Adva
             </div>
             
             <div>
-              <Label className="text-xs font-medium text-muted-foreground">Payment Status</Label>
-              <div className="space-y-2 mt-2">
-                {['paid', 'pending', 'partial', 'overdue'].map((status) => (
-                  <div key={status} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`payment-${status}`}
-                      checked={localFilters.paymentStatus.includes(status)}
-                      onCheckedChange={(checked) => {
-                        const newStatuses = checked
-                          ? [...localFilters.paymentStatus, status]
-                          : localFilters.paymentStatus.filter(s => s !== status);
-                        updateFilter('paymentStatus', newStatuses);
-                      }}
-                    />
-                    <Label htmlFor={`payment-${status}`} className="text-xs capitalize">
-                      {status}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground">Registration Date</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <Input
-                  type="date"
-                  placeholder="From"
-                  value={localFilters.registrationDate.from || ''}
-                  onChange={(e) => updateFilter('registrationDate', { 
-                    ...localFilters.registrationDate, 
-                    from: e.target.value 
-                  })}
-                  className="text-xs"
+              <Label className="text-xs font-medium text-muted-foreground">Amount Spent Range</Label>
+              <div className="px-2 py-4">
+                <Slider
+                  value={localFilters.amountSpentRange}
+                  onValueChange={(value) => updateFilter('amountSpentRange', value)}
+                  max={100000}
+                  min={0}
+                  step={100}
+                  className="w-full"
                 />
-                <Input
-                  type="date"
-                  placeholder="To"
-                  value={localFilters.registrationDate.to || ''}
-                  onChange={(e) => updateFilter('registrationDate', { 
-                    ...localFilters.registrationDate, 
-                    to: e.target.value 
-                  })}
-                  className="text-xs"
-                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>${localFilters.amountSpentRange[0]}</span>
+                  <span>${localFilters.amountSpentRange[1]}</span>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -291,12 +259,12 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: Adva
           <Separator className="mb-4" />
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-muted-foreground">Active filters:</span>
-            {localFilters.search && (
+            {localFilters.searchTerm && (
               <Badge variant="outline" className="gap-1">
-                Search: "{localFilters.search}"
+                Search: "{localFilters.searchTerm}"
                 <X 
                   className="h-3 w-3 cursor-pointer" 
-                  onClick={() => updateFilter('search', '')}
+                  onClick={() => updateFilter('searchTerm', '')}
                 />
               </Badge>
             )}
@@ -309,24 +277,27 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patients }: Adva
                 />
               </Badge>
             )}
-            {localFilters.gender.map(gender => (
-              <Badge key={gender} variant="outline" className="gap-1">
-                {gender}
+            {localFilters.gender && (
+              <Badge variant="outline" className="gap-1">
+                Gender: {localFilters.gender}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
-                  onClick={() => updateFilter('gender', localFilters.gender.filter(g => g !== gender))}
+                  onClick={() => updateFilter('gender', '')}
                 />
               </Badge>
-            ))}
-            {localFilters.visitFrequency.map(freq => (
-              <Badge key={freq} variant="outline" className="gap-1">
-                {freq}
+            )}
+            {localFilters.visitFrequency && (
+              <Badge variant="outline" className="gap-1">
+                Frequency: {localFilters.visitFrequency}
                 <X 
                   className="h-3 w-3 cursor-pointer" 
-                  onClick={() => updateFilter('visitFrequency', localFilters.visitFrequency.filter(f => f !== freq))}
+                  onClick={() => updateFilter('visitFrequency', '')}
                 />
               </Badge>
-            ))}
+            )}
+            <Badge variant="secondary">
+              Showing {patientCount} of {totalPatients} patients
+            </Badge>
           </div>
         </div>
       )}

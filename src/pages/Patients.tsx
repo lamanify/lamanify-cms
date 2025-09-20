@@ -1,4 +1,4 @@
-import { UnifiedPatientHub } from '@/components/patients/UnifiedPatientHub';
+import { PatientManagementTabs } from '@/components/patients/PatientManagementTabs';
 
 export interface Patient {
   id: string;
@@ -24,5 +24,5 @@ export interface Patient {
 }
 
 export default function Patients() {
-  return <UnifiedPatientHub />;
+  return <PatientManagementTabs />;
 }

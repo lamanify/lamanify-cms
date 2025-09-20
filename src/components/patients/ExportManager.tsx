@@ -6,7 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ColumnConfig } from './UnifiedPatientHub';
+interface ColumnConfig {
+  key: string;
+  label: string;
+  visible: boolean;
+  sortable: boolean;
+}
 import { Download, FileText, Table, Users, Calendar, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';

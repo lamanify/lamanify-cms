@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ColumnConfig } from './UnifiedPatientHub';
+interface ColumnConfig {
+  key: string;
+  label: string;
+  visible: boolean;
+  sortable: boolean;
+}
 import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Settings, Eye, Phone, Mail, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
