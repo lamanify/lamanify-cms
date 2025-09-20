@@ -21,7 +21,6 @@ import { useServices } from '@/hooks/useServices';
 import { useTierPricing } from '@/hooks/useTierPricing';
 import { useHeaderSettings } from '@/hooks/useHeaderSettings';
 import { usePayments } from '@/hooks/usePayments';
-
 interface TreatmentItem {
   id: string;
   item_type: 'medication' | 'service';
@@ -43,15 +42,18 @@ interface TreatmentItem {
     description?: string;
   };
 }
-
 interface DispensaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   queueEntry: QueueEntry | null;
   onStatusChange: (queueId: string, status: string) => void;
 }
-
-export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }: DispensaryModalProps) {
+export function DispensaryModal({
+  isOpen,
+  onClose,
+  queueEntry,
+  onStatusChange
+}: DispensaryModalProps) {
   const [treatmentItems, setTreatmentItems] = useState<TreatmentItem[]>([]);
   const [consultationNotes, setConsultationNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -69,7 +71,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   // Edit state management
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<TreatmentItem>>({});
-  
+
   // Invoice edit mode state
   const [isEditingInvoice, setIsEditingInvoice] = useState(false);
   const [addItemMode, setAddItemMode] = useState<'medication' | 'service' | null>(null);
@@ -82,40 +84,54 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     frequency?: string;
     duration?: number;
     notes?: string;
-  }>({ quantity: 1, rate: 0 });
+  }>({
+    quantity: 1,
+    rate: 0
+  });
   const [originalItems, setOriginalItems] = useState<TreatmentItem[]>([]);
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const {
+    toast
+  } = useToast();
+  const {
+    sessionData,
+    refreshSessionData,
+    saveSessionData
+  } = useQueueSessionSync(queueEntry?.id || null);
+  const {
+    medications
+  } = useMedications();
+  const {
+    services
+  } = useServices();
+  const {
+    getPatientTier,
+    getMedicationWithTierPricing,
+    getServiceWithTierPricing
+  } = useTierPricing();
+  const {
+    headerSettings
+  } = useHeaderSettings();
 
-  const { toast } = useToast();
-  const { sessionData, refreshSessionData, saveSessionData } = useQueueSessionSync(queueEntry?.id || null);
-  const { medications } = useMedications();
-  const { services } = useServices();
-  const { getPatientTier, getMedicationWithTierPricing, getServiceWithTierPricing } = useTierPricing();
-  const { headerSettings } = useHeaderSettings();
-  
   // Initialize payments hook with current visit ID
-  const { 
-    payments, 
-    summary, 
-    loading: paymentsLoading, 
-    addPayment, 
+  const {
+    payments,
+    summary,
+    loading: paymentsLoading,
+    addPayment,
     deletePayment,
     refresh: refreshPayments
   } = usePayments(currentVisitId || undefined);
-
   const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
-  
+
   // Calculate adjustments total
   const adjustmentsTotal = adjustments.reduce((sum, adj) => {
-    const adjustmentAmount = adj.amountType === 'percentage' 
-      ? (totalAmount * adj.amount) / 100 
-      : adj.amount;
+    const adjustmentAmount = adj.amountType === 'percentage' ? totalAmount * adj.amount / 100 : adj.amount;
     return sum + (adj.type === 'add' ? adjustmentAmount : -adjustmentAmount);
   }, 0);
-  
+
   // Final total after adjustments
   const finalTotal = Math.max(0, totalAmount + adjustmentsTotal);
-
   useEffect(() => {
     if (isOpen && queueEntry) {
       refreshSessionData();
@@ -129,43 +145,36 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   useEffect(() => {
     const createOrGetVisit = async () => {
       if (!queueEntry || !isOpen) return;
-
       try {
         // Check if a visit already exists for this queue entry
-        const { data: existingVisit, error: visitError } = await supabase
-          .from('patient_visits')
-          .select('id')
-          .eq('queue_id', queueEntry.id)
-          .maybeSingle();
-
+        const {
+          data: existingVisit,
+          error: visitError
+        } = await supabase.from('patient_visits').select('id').eq('queue_id', queueEntry.id).maybeSingle();
         if (visitError) {
           console.error('Error checking for existing visit:', visitError);
           return;
         }
-
         if (existingVisit) {
           // Use existing visit
           setCurrentVisitId(existingVisit.id);
         } else {
           // Create new visit
-          const { data: newVisit, error: createError } = await supabase
-            .from('patient_visits')
-            .insert({
-              patient_id: queueEntry.patient_id,
-              queue_id: queueEntry.id,
-              doctor_id: queueEntry.assigned_doctor_id,
-              visit_date: new Date().toISOString().split('T')[0],
-              total_amount: 0,
-              payment_status: 'pending'
-            })
-            .select('id')
-            .single();
-
+          const {
+            data: newVisit,
+            error: createError
+          } = await supabase.from('patient_visits').insert({
+            patient_id: queueEntry.patient_id,
+            queue_id: queueEntry.id,
+            doctor_id: queueEntry.assigned_doctor_id,
+            visit_date: new Date().toISOString().split('T')[0],
+            total_amount: 0,
+            payment_status: 'pending'
+          }).select('id').single();
           if (createError) {
             console.error('Error creating visit:', createError);
             return;
           }
-
           if (newVisit) {
             setCurrentVisitId(newVisit.id);
           }
@@ -174,7 +183,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
         console.error('Error in createOrGetVisit:', error);
       }
     };
-
     createOrGetVisit();
   }, [queueEntry, isOpen]);
 
@@ -182,37 +190,31 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   useEffect(() => {
     const updateVisitTotal = async () => {
       if (!currentVisitId || treatmentItems.length === 0) return;
-
       try {
         const totalAmount = treatmentItems.reduce((sum, item) => sum + item.total_amount, 0);
         const finalTotal = totalAmount + adjustmentsTotal;
-
-        await supabase
-          .from('patient_visits')
-          .update({ 
-            total_amount: finalTotal,
-            session_data: {
-              prescribed_items: treatmentItems.map(item => ({
-                type: item.item_type,
-                name: item.item_type === 'medication' ? item.medication?.name || '' : item.service?.name || '',
-                quantity: item.quantity,
-                dosage: item.dosage_instructions,
-                frequency: item.frequency,
-                duration: item.duration_days?.toString(),
-                price: item.total_amount,
-                instructions: item.notes,
-                rate: item.rate
-              })),
-              consultation_notes: consultationNotes,
-              adjustments: adjustments
-            }
-          })
-          .eq('id', currentVisitId);
+        await supabase.from('patient_visits').update({
+          total_amount: finalTotal,
+          session_data: {
+            prescribed_items: treatmentItems.map(item => ({
+              type: item.item_type,
+              name: item.item_type === 'medication' ? item.medication?.name || '' : item.service?.name || '',
+              quantity: item.quantity,
+              dosage: item.dosage_instructions,
+              frequency: item.frequency,
+              duration: item.duration_days?.toString(),
+              price: item.total_amount,
+              instructions: item.notes,
+              rate: item.rate
+            })),
+            consultation_notes: consultationNotes,
+            adjustments: adjustments
+          }
+        }).eq('id', currentVisitId);
       } catch (error) {
         console.error('Error updating visit total:', error);
       }
     };
-
     updateVisitTotal();
   }, [currentVisitId, treatmentItems, consultationNotes, adjustments, adjustmentsTotal]);
 
@@ -232,15 +234,19 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           rate: item.rate,
           total_amount: item.rate * item.quantity,
           notes: item.instructions,
-          medication: item.type === 'medication' ? { name: item.name } : undefined,
-          service: item.type === 'service' ? { name: item.name } : undefined,
+          medication: item.type === 'medication' ? {
+            name: item.name
+          } : undefined,
+          service: item.type === 'service' ? {
+            name: item.name
+          } : undefined
         }));
         setTreatmentItems(convertedItems);
       }
       if (sessionData.consultation_notes) {
         setConsultationNotes(sessionData.consultation_notes);
       }
-      
+
       // For now, we'll generate a visit ID from queue entry if needed
       // This can be enhanced later when visit tracking is fully implemented
     } else if (isOpen) {
@@ -259,18 +265,12 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     const newAdjustment = {
       id: Date.now().toString(),
       ...adjustment,
-      description: `${adjustment.type === 'add' ? 'Addition' : 'Discount'} - ${
-        adjustment.amountType === 'fixed' 
-          ? `RM${adjustment.amount.toFixed(2)}` 
-          : `${adjustment.amount}%`
-      }`
+      description: `${adjustment.type === 'add' ? 'Addition' : 'Discount'} - ${adjustment.amountType === 'fixed' ? `RM${adjustment.amount.toFixed(2)}` : `${adjustment.amount}%`}`
     };
-    
     setAdjustments(prev => [...prev, newAdjustment]);
-    
     toast({
       title: "Adjustment Added",
-      description: newAdjustment.description,
+      description: newAdjustment.description
     });
   };
 
@@ -279,41 +279,39 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     setAdjustments(prev => prev.filter(adj => adj.id !== adjustmentId));
     toast({
       title: "Adjustment Removed",
-      description: "The adjustment has been removed from the invoice",
+      description: "The adjustment has been removed from the invoice"
     });
   };
 
   // Complete and finalize patient visit
   const handleCompleteVisit = async () => {
     if (!queueEntry) return;
-
     setLoading(true);
     try {
       // Calculate outstanding amount for information
       const outstandingAmount = finalTotal - summary.total_paid;
-      
+
       // Update queue status to completed (allow completion even with outstanding balance)
       onStatusChange(queueEntry.id, 'completed');
-      
+
       // Show appropriate success message based on payment status
       if (outstandingAmount > 0) {
         toast({
           title: "Visit Completed",
-          description: `Visit completed with outstanding balance of RM${outstandingAmount.toFixed(2)}`,
+          description: `Visit completed with outstanding balance of RM${outstandingAmount.toFixed(2)}`
         });
       } else {
         toast({
           title: "Visit Completed",
-          description: "Patient visit has been marked as completed",
+          description: "Patient visit has been marked as completed"
         });
       }
-      
       onClose();
     } catch (error: any) {
       toast({
         title: "Error completing visit",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -323,7 +321,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
   // Print medication label functionality
   const handlePrintLabel = (medicationItem: TreatmentItem) => {
     if (!queueEntry?.patient || !headerSettings) return;
-
     const labelHTML = `
       <!DOCTYPE html>
       <html>
@@ -397,7 +394,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
         </body>
       </html>
     `;
-
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(labelHTML);
@@ -420,21 +416,19 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
       notes: item.notes || ''
     });
   };
-
   const handleSaveEdit = async () => {
     if (!editingItemId || !editFormData.quantity || !editFormData.rate) {
       toast({
         title: "Error",
         description: "Please fill in required fields (quantity and rate)",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       // Calculate new total amount
       const newTotalAmount = editFormData.quantity! * editFormData.rate!;
-      
+
       // Update the treatment item
       const updatedItems = treatmentItems.map(item => {
         if (item.id === editingItemId) {
@@ -451,7 +445,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
         }
         return item;
       });
-
       setTreatmentItems(updatedItems);
 
       // Update session data with the new prescribed items
@@ -467,7 +460,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           instructions: item.notes || '',
           rate: item.rate
         }));
-
         await saveSessionData({
           prescribed_items: updatedSessionItems
         });
@@ -476,21 +468,19 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
       // Reset edit state
       setEditingItemId(null);
       setEditFormData({});
-      
       toast({
         title: "Item Updated",
-        description: "Treatment item updated successfully",
+        description: "Treatment item updated successfully"
       });
     } catch (error) {
       console.error('Error updating item:', error);
       toast({
         title: "Error",
         description: "Failed to update item",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleCancelEdit = () => {
     setEditingItemId(null);
     setEditFormData({});
@@ -501,18 +491,19 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     setIsEditingInvoice(true);
     setOriginalItems([...treatmentItems]);
   };
-
   const handleCancelEditInvoice = () => {
     setIsEditingInvoice(false);
     setAddItemMode(null);
     setSearchQuery('');
     setSelectedItem(null);
-    setNewItemData({ quantity: 1, rate: 0 });
+    setNewItemData({
+      quantity: 1,
+      rate: 0
+    });
     setTreatmentItems([...originalItems]);
     setEditingItemId(null);
     setEditFormData({});
   };
-
   const handleSaveEditInvoice = async () => {
     try {
       // Update session data with all changes
@@ -528,49 +519,46 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
           instructions: item.notes || '',
           rate: item.rate
         }));
-
         await saveSessionData({
           prescribed_items: updatedSessionItems
         });
       }
-
       setIsEditingInvoice(false);
       setAddItemMode(null);
       setSearchQuery('');
       setSelectedItem(null);
-      setNewItemData({ quantity: 1, rate: 0 });
+      setNewItemData({
+        quantity: 1,
+        rate: 0
+      });
       setEditingItemId(null);
       setEditFormData({});
-
       toast({
         title: "Invoice Updated",
-        description: "Invoice changes saved successfully",
+        description: "Invoice changes saved successfully"
       });
     } catch (error) {
       console.error('Error saving invoice changes:', error);
       toast({
         title: "Error",
         description: "Failed to save invoice changes",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleRemoveItem = (itemId: string) => {
     const updatedItems = treatmentItems.filter(item => item.id !== itemId);
     setTreatmentItems(updatedItems);
   };
-
   const handleAddNewItem = async () => {
     if (!selectedItem || !newItemData.quantity || !newItemData.rate) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     const newItem: TreatmentItem = {
       id: `new-${Date.now()}`,
       item_type: addItemMode!,
@@ -584,36 +572,30 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
       [addItemMode === 'medication' ? 'medication_id' : 'service_id']: selectedItem.id,
       [addItemMode === 'medication' ? 'medication' : 'service']: {
         name: selectedItem.name,
-        ...(addItemMode === 'service' ? { description: selectedItem.description } : {})
+        ...(addItemMode === 'service' ? {
+          description: selectedItem.description
+        } : {})
       }
     };
-
     setTreatmentItems(prev => [...prev, newItem]);
-    
+
     // Reset add item form
     setAddItemMode(null);
     setSelectedItem(null);
     setSearchQuery('');
-    setNewItemData({ quantity: 1, rate: 0 });
-
+    setNewItemData({
+      quantity: 1,
+      rate: 0
+    });
     toast({
       title: "Item Added",
-      description: "New item added to invoice",
+      description: "New item added to invoice"
     });
   };
 
   // Filter medications and services based on search
-  const filteredMedications = medications.filter(med =>
-    med.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (med.brand_name && med.brand_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (med.generic_name && med.generic_name.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const filteredServices = services.filter(service =>
-    service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (service.description && service.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
+  const filteredMedications = medications.filter(med => med.name.toLowerCase().includes(searchQuery.toLowerCase()) || med.brand_name && med.brand_name.toLowerCase().includes(searchQuery.toLowerCase()) || med.generic_name && med.generic_name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredServices = services.filter(service => service.name.toLowerCase().includes(searchQuery.toLowerCase()) || service.description && service.description.toLowerCase().includes(searchQuery.toLowerCase()));
   const getItemDisplayName = (item: TreatmentItem) => {
     if (item.item_type === 'medication') {
       return item.medication?.name || 'Unknown Medication';
@@ -621,7 +603,6 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
       return item.service?.name || 'Unknown Service';
     }
   };
-
   const getItemInstructions = (item: TreatmentItem) => {
     if (item.item_type === 'medication') {
       const parts = [];
@@ -632,20 +613,15 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
     }
     return item.service?.description || '';
   };
-
   if (!queueEntry) return null;
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+  return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl h-[95vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>
             Dispensary - {queueEntry.patient?.first_name} {queueEntry.patient?.last_name}
-            {queueEntry.patient?.patient_id && (
-              <span className="text-muted-foreground ml-2">
+            {queueEntry.patient?.patient_id && <span className="text-muted-foreground ml-2">
                 (ID: {queueEntry.patient.patient_id})
-              </span>
-            )}
+              </span>}
           </DialogTitle>
         </DialogHeader>
 
@@ -657,80 +633,60 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Treatment Items</h3>
                 <div className="flex gap-2">
-                  {!isEditingInvoice ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowInvoicePreview(true)}
-                      >
+                  {!isEditingInvoice ? <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setShowInvoicePreview(true)}>
                         <FileTextIcon className="h-4 w-4 mr-2" />
                         View Invoice
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setOriginalItems([...treatmentItems]);
-                          setIsEditingInvoice(true);
-                        }}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => {
+                    setOriginalItems([...treatmentItems]);
+                    setIsEditingInvoice(true);
+                  }}>
                         <EditIcon className="h-4 w-4 mr-2" />
                         Edit Invoice
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setTreatmentItems(originalItems);
-                          setIsEditingInvoice(false);
-                          setAddItemMode(null);
-                          setEditingItemId(null);
-                        }}
-                      >
+                    </div> : <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {
+                    setTreatmentItems(originalItems);
+                    setIsEditingInvoice(false);
+                    setAddItemMode(null);
+                    setEditingItemId(null);
+                  }}>
                         <XIcon className="h-4 w-4 mr-2" />
                         Cancel
                       </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          // Save changes to session
-                          if (sessionData) {
-                            // Convert treatmentItems back to prescribed_items format
-                            const prescribedItems = treatmentItems.map(item => ({
-                              type: item.item_type,
-                              name: item.item_type === 'medication' ? item.medication?.name || '' : item.service?.name || '',
-                              quantity: item.quantity,
-                              dosage: item.dosage_instructions,
-                              frequency: item.frequency,
-                              duration: item.duration_days?.toString(),
-                              price: item.total_amount,
-                              instructions: item.notes,
-                              rate: item.rate
-                            }));
-                            
-                            saveSessionData({
-                              ...sessionData,
-                              prescribed_items: prescribedItems
-                            });
-                          }
-                          setIsEditingInvoice(false);
-                          setAddItemMode(null);
-                          setEditingItemId(null);
-                          toast({
-                            title: "Invoice Updated",
-                            description: "Treatment items have been updated successfully",
-                          });
-                        }}
-                      >
+                      <Button size="sm" onClick={() => {
+                    // Save changes to session
+                    if (sessionData) {
+                      // Convert treatmentItems back to prescribed_items format
+                      const prescribedItems = treatmentItems.map(item => ({
+                        type: item.item_type,
+                        name: item.item_type === 'medication' ? item.medication?.name || '' : item.service?.name || '',
+                        quantity: item.quantity,
+                        dosage: item.dosage_instructions,
+                        frequency: item.frequency,
+                        duration: item.duration_days?.toString(),
+                        price: item.total_amount,
+                        instructions: item.notes,
+                        rate: item.rate
+                      }));
+                      saveSessionData({
+                        ...sessionData,
+                        prescribed_items: prescribedItems
+                      });
+                    }
+                    setIsEditingInvoice(false);
+                    setAddItemMode(null);
+                    setEditingItemId(null);
+                    toast({
+                      title: "Invoice Updated",
+                      description: "Treatment items have been updated successfully"
+                    });
+                  }}>
                         <SaveIcon className="h-4 w-4 mr-2" />
                         Save Changes
                       </Button>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
 
@@ -747,23 +703,17 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 </div>
 
                 <div className="divide-y">
-                  {treatmentItems.map((item) => (
-                    <div key={item.id} className="px-4 py-3">
+                  {treatmentItems.map(item => <div key={item.id} className="px-4 py-3">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-4">
                           <div className="font-medium">
-                            {item.item_type === 'medication' 
-                              ? item.medication?.name 
-                              : item.service?.name
-                            }
+                            {item.item_type === 'medication' ? item.medication?.name : item.service?.name}
                           </div>
-                          {item.dosage_instructions && (
-                            <div className="text-sm text-muted-foreground">
+                          {item.dosage_instructions && <div className="text-sm text-muted-foreground">
                               {item.dosage_instructions}
                               {item.frequency && ` - ${item.frequency}`}
                               {item.duration_days && ` (${item.duration_days} days)`}
-                            </div>
-                          )}
+                            </div>}
                         </div>
                         <div className="col-span-2">
                           <span className="font-medium">{item.quantity}</span>
@@ -776,50 +726,30 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                         </div>
                         <div className="col-span-2">
                           <div className="flex items-center gap-1">
-                            {item.item_type === 'medication' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePrintLabel(item)}
-                                title="Print Medication Label"
-                              >
+                            {item.item_type === 'medication' && <Button variant="outline" size="sm" onClick={() => handlePrintLabel(item)} title="Print Medication Label">
                                 <PrinterIcon className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {isEditingInvoice && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingItemId(item.id);
-                                    setEditFormData(item);
-                                  }}
-                                >
+                              </Button>}
+                            {isEditingInvoice && <>
+                                <Button variant="outline" size="sm" onClick={() => {
+                            setEditingItemId(item.id);
+                            setEditFormData(item);
+                          }}>
                                   <EditIcon className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setTreatmentItems(prev => prev.filter(i => i.id !== item.id));
-                                  }}
-                                >
+                                <Button variant="outline" size="sm" onClick={() => {
+                            setTreatmentItems(prev => prev.filter(i => i.id !== item.id));
+                          }}>
                                   <TrashIcon className="h-4 w-4" />
                                 </Button>
-                              </>
-                            )}
+                              </>}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    </div>)}
 
-                  {treatmentItems.length === 0 && (
-                    <div className="px-4 py-8 text-center text-muted-foreground">
+                  {treatmentItems.length === 0 && <div className="px-4 py-8 text-center text-muted-foreground">
                       No treatment items found. Items will appear here from the consultation session.
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
             </div>
@@ -827,31 +757,15 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
             {/* Consultation Notes */}
             <div className="space-y-2">
               <Label htmlFor="consultation-notes">Consultation Notes</Label>
-              <Textarea
-                id="consultation-notes"
-                value={consultationNotes}
-                onChange={(e) => setConsultationNotes(e.target.value)}
-                placeholder="Additional notes from consultation..."
-                rows={4}
-                readOnly
-                className="bg-muted/50"
-              />
+              <Textarea id="consultation-notes" value={consultationNotes} onChange={e => setConsultationNotes(e.target.value)} placeholder="Additional notes from consultation..." rows={4} readOnly className="bg-muted/50" />
             </div>
 
             {/* Payment History */}
-            {currentVisitId && (
-              <PaymentHistory
-                payments={payments}
-                summary={{
-                  ...summary,
-                  total_amount: finalTotal,
-                  amount_due: Math.max(0, finalTotal - summary.total_paid)
-                }}
-                onDeletePayment={deletePayment}
-                loading={paymentsLoading}
-                patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'}
-              />
-            )}
+            {currentVisitId && <PaymentHistory payments={payments} summary={{
+            ...summary,
+            total_amount: finalTotal,
+            amount_due: Math.max(0, finalTotal - summary.total_paid)
+          }} onDeletePayment={deletePayment} loading={paymentsLoading} patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'} />}
           </div>
 
           {/* Right Column - Checkout/Payment Menu */}
@@ -869,11 +783,7 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Record payment</h3>
                 
-                <Button 
-                  variant="link" 
-                  className="h-auto p-0 text-primary"
-                  onClick={() => setShowPaymentModal(true)}
-                >
+                <Button variant="link" className="h-auto p-0 text-primary" onClick={() => setShowPaymentModal(true)}>
                   <PlusIcon className="h-4 w-4 mr-1" />
                   Add payment
                 </Button>
@@ -885,26 +795,17 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Adjustments</h3>
-                  <Button 
-                    variant="link" 
-                    className="h-auto p-0 text-primary"
-                    onClick={() => setShowAdjustmentModal(true)}
-                  >
+                  <Button variant="link" className="h-auto p-0 text-primary" onClick={() => setShowAdjustmentModal(true)}>
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add Adjustment
                   </Button>
                 </div>
 
                 {/* Adjustments List */}
-                {adjustments.length > 0 && (
-                  <div className="space-y-2">
-                    {adjustments.map((adjustment) => {
-                      const adjustmentAmount = adjustment.amountType === 'percentage' 
-                        ? (totalAmount * adjustment.amount) / 100 
-                        : adjustment.amount;
-                      
-                      return (
-                        <div key={adjustment.id} className="flex items-center justify-between bg-background p-2 rounded">
+                {adjustments.length > 0 && <div className="space-y-2">
+                    {adjustments.map(adjustment => {
+                  const adjustmentAmount = adjustment.amountType === 'percentage' ? totalAmount * adjustment.amount / 100 : adjustment.amount;
+                  return <div key={adjustment.id} className="flex items-center justify-between bg-background p-2 rounded">
                           <div className="flex-1">
                             <div className="text-sm font-medium">{adjustment.description}</div>
                             <div className="text-xs text-muted-foreground">
@@ -915,19 +816,13 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                             <span className={`font-medium ${adjustment.type === 'add' ? 'text-green-600' : 'text-red-600'}`}>
                               {adjustment.type === 'add' ? '+' : '-'}RM{adjustmentAmount.toFixed(2)}
                             </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeAdjustment(adjustment.id)}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => removeAdjustment(adjustment.id)}>
                               <XIcon className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        </div>;
+                })}
+                  </div>}
               </div>
 
               <Separator />
@@ -939,14 +834,12 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                   <span className="font-medium">RM {totalAmount.toFixed(2)}</span>
                 </div>
                 
-                {adjustments.length > 0 && (
-                  <div className="flex justify-between">
+                {adjustments.length > 0 && <div className="flex justify-between">
                     <span>Adjustments</span>
                     <span className={`font-medium ${adjustmentsTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {adjustmentsTotal >= 0 ? '+' : ''}RM {adjustmentsTotal.toFixed(2)}
                     </span>
-                  </div>
-                )}
+                  </div>}
                 
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Total</span>
@@ -966,19 +859,13 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                 </div>
               </div>
 
-              {finalTotal - summary.total_paid === 0 && finalTotal > 0 && (
-                <Badge className="w-full justify-center bg-success text-success-foreground">
+              {finalTotal - summary.total_paid === 0 && finalTotal > 0 && <Badge className="w-full justify-center bg-success text-success-foreground bg-green-50">
                   Fully Paid
-                </Badge>
-              )}
+                </Badge>}
 
               {/* Action Buttons */}
               <div className="space-y-2">
-                <Button 
-                  className="w-full" 
-                  onClick={handleCompleteVisit}
-                  disabled={loading}
-                >
+                <Button className="w-full" onClick={handleCompleteVisit} disabled={loading}>
                   {loading ? 'Processing...' : 'Complete Visit'}
                 </Button>
                 
@@ -988,65 +875,37 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
         </div>
 
         {/* Adjustment Modal */}
-        <AdjustmentModal
-          isOpen={showAdjustmentModal}
-          onClose={() => setShowAdjustmentModal(false)}
-          onConfirm={handleAdjustmentConfirm}
-          currentTotal={totalAmount}
-        />
+        <AdjustmentModal isOpen={showAdjustmentModal} onClose={() => setShowAdjustmentModal(false)} onConfirm={handleAdjustmentConfirm} currentTotal={totalAmount} />
 
         {/* Payment Modal */}
-        {queueEntry && (
-          <PaymentModal
-            isOpen={showPaymentModal}
-            onClose={() => setShowPaymentModal(false)}
-            onPaymentAdded={addPayment}
-            summary={{
-              ...summary,
-              total_amount: finalTotal,
-              amount_due: Math.max(0, finalTotal - summary.total_paid)
-            }}
-            visitId={currentVisitId || undefined}
-            patientId={queueEntry.patient_id}
-            patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'}
-          />
-        )}
+        {queueEntry && <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onPaymentAdded={addPayment} summary={{
+        ...summary,
+        total_amount: finalTotal,
+        amount_due: Math.max(0, finalTotal - summary.total_paid)
+      }} visitId={currentVisitId || undefined} patientId={queueEntry.patient_id} patientName={queueEntry.patient ? `${queueEntry.patient.first_name} ${queueEntry.patient.last_name}` : 'Unknown Patient'} />}
 
         {/* Invoice Preview Modal */}
-        {showInvoicePreview && (
-          <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
+        {showInvoicePreview && <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto print:max-w-none print:max-h-none print:shadow-none">
               <DialogHeader className="print:hidden">
                 <DialogTitle>Invoice Preview</DialogTitle>
               </DialogHeader>
               
               <div className="print-invoice-content">
-                <PrintInvoice
-                  queueEntry={queueEntry}
-                  treatmentItems={treatmentItems}
-                  payments={[]}
-                  consultationNotes={consultationNotes}
-                  totalAmount={finalTotal}
-                  totalPaid={summary.total_paid}
-                  amountDue={Math.max(0, finalTotal - summary.total_paid)}
-                />
+                <PrintInvoice queueEntry={queueEntry} treatmentItems={treatmentItems} payments={[]} consultationNotes={consultationNotes} totalAmount={finalTotal} totalPaid={summary.total_paid} amountDue={Math.max(0, finalTotal - summary.total_paid)} />
               </div>
               
               <div className="flex justify-end gap-2 mt-4 print:hidden">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowInvoicePreview(false)}
-                >
+                <Button variant="outline" onClick={() => setShowInvoicePreview(false)}>
                   Close
                 </Button>
-                <Button
-                  onClick={() => {
-                    // Hide the modal temporarily and open print-specific window
-                    const printContent = document.querySelector('.print-invoice-content');
-                    if (printContent) {
-                      const printWindow = window.open('', '_blank');
-                      if (printWindow) {
-                        printWindow.document.write(`
+                <Button onClick={() => {
+              // Hide the modal temporarily and open print-specific window
+              const printContent = document.querySelector('.print-invoice-content');
+              if (printContent) {
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                  printWindow.document.write(`
                           <!DOCTYPE html>
                           <html>
                           <head>
@@ -1101,19 +960,16 @@ export function DispensaryModal({ isOpen, onClose, queueEntry, onStatusChange }:
                           </body>
                           </html>
                         `);
-                        printWindow.document.close();
-                      }
-                    }
-                  }}
-                >
+                  printWindow.document.close();
+                }
+              }
+            }}>
                   <PrinterIcon className="h-4 w-4 mr-2" />
                   Print Invoice
                 </Button>
               </div>
             </DialogContent>
-          </Dialog>
-        )}
+          </Dialog>}
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 }
