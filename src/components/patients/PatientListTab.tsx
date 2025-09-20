@@ -273,7 +273,7 @@ export function PatientListTab() {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="flex min-h-screen w-full">
         <div className="flex-1 flex flex-col space-y-6 p-6">
           {/* Header */}
@@ -307,8 +307,7 @@ export function PatientListTab() {
             </div>
             <div className="flex items-center space-x-2">
               <SidebarTrigger className="h-9 px-3" variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
+                Filter
               </SidebarTrigger>
               <PatientViewToggle 
                 viewMode={viewMode} 
