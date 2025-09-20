@@ -42,8 +42,8 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patientCount, to
     const clearedFilters: FilterCriteria = {
       searchTerm: '',
       ageRange: [0, 120],
-      gender: '',
-      visitFrequency: '',
+      gender: 'all',
+      visitFrequency: 'all',
       dateRange: { start: '', end: '' },
       diagnosis: '',
       amountSpentRange: [0, 100000]
@@ -56,8 +56,8 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patientCount, to
     if (key === 'searchTerm') return value !== '';
     if (key === 'ageRange') return value[0] !== 0 || value[1] !== 120;
     if (key === 'diagnosis') return value !== '';
-    if (key === 'gender') return value !== '';
-    if (key === 'visitFrequency') return value !== '';
+    if (key === 'gender') return value !== '' && value !== 'all';
+    if (key === 'visitFrequency') return value !== '' && value !== 'all';
     if (key === 'amountSpentRange') return value[0] !== 0 || value[1] !== 100000;
     return false;
   }).length;
@@ -147,7 +147,7 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patientCount, to
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {genderOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -175,7 +175,7 @@ export function AdvancedFilterPanel({ filters, onFiltersChange, patientCount, to
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {visitFrequencyOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
