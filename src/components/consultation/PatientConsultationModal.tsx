@@ -504,7 +504,7 @@ export function PatientConsultationModal({
               </div>
 
                   {/* Consultation Notes */}
-                  <div className="bg-slate-800 text-white p-3 rounded-t-lg">
+                  <div className="text-white p-3 rounded-t-lg bg-slate-950">
                     <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
                   </div>
                   <div className="border border-t-0 rounded-b-lg p-3">
