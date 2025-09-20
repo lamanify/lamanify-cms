@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_check_in_links: {
+        Row: {
+          appointment_id: string
+          check_in_completed: boolean | null
+          created_at: string
+          expires_at: string
+          forms_completed: boolean | null
+          id: string
+          patient_id: string
+          secure_token: string
+          used_at: string | null
+        }
+        Insert: {
+          appointment_id: string
+          check_in_completed?: boolean | null
+          created_at?: string
+          expires_at: string
+          forms_completed?: boolean | null
+          id?: string
+          patient_id: string
+          secure_token: string
+          used_at?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          check_in_completed?: boolean | null
+          created_at?: string
+          expires_at?: string
+          forms_completed?: boolean | null
+          id?: string
+          patient_id?: string
+          secure_token?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       appointment_resources: {
         Row: {
           appointment_id: string
@@ -96,12 +132,19 @@ export type Database = {
         Row: {
           appointment_date: string
           appointment_time: string
+          cancellation_fee: number | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string | null
           created_by: string | null
+          digital_check_in_status: string | null
           doctor_id: string
           duration_minutes: number | null
+          follow_up_scheduled: boolean | null
           id: string
           is_series_parent: boolean | null
+          no_show_marked_at: string | null
           notes: string | null
           occurrence_number: number | null
           patient_id: string
@@ -115,12 +158,19 @@ export type Database = {
         Insert: {
           appointment_date: string
           appointment_time: string
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
           created_by?: string | null
+          digital_check_in_status?: string | null
           doctor_id: string
           duration_minutes?: number | null
+          follow_up_scheduled?: boolean | null
           id?: string
           is_series_parent?: boolean | null
+          no_show_marked_at?: string | null
           notes?: string | null
           occurrence_number?: number | null
           patient_id: string
@@ -134,12 +184,19 @@ export type Database = {
         Update: {
           appointment_date?: string
           appointment_time?: string
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
           created_by?: string | null
+          digital_check_in_status?: string | null
           doctor_id?: string
           duration_minutes?: number | null
+          follow_up_scheduled?: boolean | null
           id?: string
           is_series_parent?: boolean | null
+          no_show_marked_at?: string | null
           notes?: string | null
           occurrence_number?: number | null
           patient_id?: string
@@ -243,6 +300,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cancellation_policies: {
+        Row: {
+          auto_restriction_enabled: boolean | null
+          cancellation_window_hours: number
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          late_cancellation_fee: number | null
+          max_no_shows_before_restriction: number | null
+          no_show_fee: number | null
+          policy_name: string
+          restriction_duration_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          auto_restriction_enabled?: boolean | null
+          cancellation_window_hours?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          late_cancellation_fee?: number | null
+          max_no_shows_before_restriction?: number | null
+          no_show_fee?: number | null
+          policy_name: string
+          restriction_duration_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          auto_restriction_enabled?: boolean | null
+          cancellation_window_hours?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          late_cancellation_fee?: number | null
+          max_no_shows_before_restriction?: number | null
+          no_show_fee?: number | null
+          policy_name?: string
+          restriction_duration_days?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       clinic_header_settings: {
         Row: {
@@ -529,6 +631,54 @@ export type Database = {
           status?: string | null
           template_name?: string
           template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      follow_up_campaigns: {
+        Row: {
+          appointment_duration_minutes: number | null
+          appointment_reason: string | null
+          campaign_name: string
+          created_at: string
+          created_by: string | null
+          follow_up_days: number
+          follow_up_type: string
+          id: string
+          is_active: boolean | null
+          message_template: string | null
+          trigger_condition: string
+          trigger_criteria: Json | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_duration_minutes?: number | null
+          appointment_reason?: string | null
+          campaign_name: string
+          created_at?: string
+          created_by?: string | null
+          follow_up_days: number
+          follow_up_type: string
+          id?: string
+          is_active?: boolean | null
+          message_template?: string | null
+          trigger_condition: string
+          trigger_criteria?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_duration_minutes?: number | null
+          appointment_reason?: string | null
+          campaign_name?: string
+          created_at?: string
+          created_by?: string | null
+          follow_up_days?: number
+          follow_up_type?: string
+          id?: string
+          is_active?: boolean | null
+          message_template?: string | null
+          trigger_condition?: string
+          trigger_criteria?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -1031,6 +1181,47 @@ export type Database = {
           },
         ]
       }
+      patient_form_submissions: {
+        Row: {
+          appointment_id: string
+          form_data: Json
+          form_id: string
+          id: string
+          ip_address: unknown | null
+          patient_id: string
+          submitted_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          appointment_id: string
+          form_data: Json
+          form_id: string
+          id?: string
+          ip_address?: unknown | null
+          patient_id: string
+          submitted_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          form_data?: Json
+          form_id?: string
+          id?: string
+          ip_address?: unknown | null
+          patient_id?: string
+          submitted_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "pre_consultation_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_queue: {
         Row: {
           assigned_doctor_id: string | null
@@ -1090,6 +1281,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      patient_reliability_scores: {
+        Row: {
+          completed_appointments: number | null
+          created_at: string
+          id: string
+          last_no_show_date: string | null
+          late_cancellations: number | null
+          no_shows: number | null
+          on_time_arrivals: number | null
+          patient_id: string
+          reliability_score: number | null
+          restriction_active: boolean | null
+          restriction_end_date: string | null
+          risk_level: string | null
+          total_appointments: number | null
+          updated_at: string
+        }
+        Insert: {
+          completed_appointments?: number | null
+          created_at?: string
+          id?: string
+          last_no_show_date?: string | null
+          late_cancellations?: number | null
+          no_shows?: number | null
+          on_time_arrivals?: number | null
+          patient_id: string
+          reliability_score?: number | null
+          restriction_active?: boolean | null
+          restriction_end_date?: string | null
+          risk_level?: string | null
+          total_appointments?: number | null
+          updated_at?: string
+        }
+        Update: {
+          completed_appointments?: number | null
+          created_at?: string
+          id?: string
+          last_no_show_date?: string | null
+          late_cancellations?: number | null
+          no_shows?: number | null
+          on_time_arrivals?: number | null
+          patient_id?: string
+          reliability_score?: number | null
+          restriction_active?: boolean | null
+          restriction_end_date?: string | null
+          risk_level?: string | null
+          total_appointments?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       patient_visits: {
         Row: {
@@ -1160,6 +1402,11 @@ export type Database = {
           phone: string | null
           preferred_name: string | null
           referral_source: string | null
+          reliability_score: number | null
+          restriction_active: boolean | null
+          restriction_end_date: string | null
+          restriction_reason: string | null
+          risk_level: string | null
           secondary_phone: string | null
           tier_assigned_at: string | null
           tier_assigned_by: string | null
@@ -1186,6 +1433,11 @@ export type Database = {
           phone?: string | null
           preferred_name?: string | null
           referral_source?: string | null
+          reliability_score?: number | null
+          restriction_active?: boolean | null
+          restriction_end_date?: string | null
+          restriction_reason?: string | null
+          risk_level?: string | null
           secondary_phone?: string | null
           tier_assigned_at?: string | null
           tier_assigned_by?: string | null
@@ -1212,6 +1464,11 @@ export type Database = {
           phone?: string | null
           preferred_name?: string | null
           referral_source?: string | null
+          reliability_score?: number | null
+          restriction_active?: boolean | null
+          restriction_end_date?: string | null
+          restriction_reason?: string | null
+          risk_level?: string | null
           secondary_phone?: string | null
           tier_assigned_at?: string | null
           tier_assigned_by?: string | null
@@ -1307,6 +1564,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pre_consultation_forms: {
+        Row: {
+          appointment_types: string[] | null
+          created_at: string
+          created_by: string | null
+          form_description: string | null
+          form_fields: Json
+          form_name: string
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_types?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          form_description?: string | null
+          form_fields: Json
+          form_name: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_types?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          form_description?: string | null
+          form_fields?: Json
+          form_name?: string
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       price_tiers: {
         Row: {
@@ -1438,6 +1734,54 @@ export type Database = {
           queue_id?: string
           session_data?: Json
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recall_campaigns: {
+        Row: {
+          appointments_booked: number | null
+          campaign_name: string
+          campaign_status: string | null
+          created_at: string
+          created_by: string | null
+          executed_at: string | null
+          id: string
+          message_template: string
+          patients_contacted: number | null
+          patients_targeted: number | null
+          scheduled_date: string | null
+          target_criteria: Json
+          updated_at: string
+        }
+        Insert: {
+          appointments_booked?: number | null
+          campaign_name: string
+          campaign_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          executed_at?: string | null
+          id?: string
+          message_template: string
+          patients_contacted?: number | null
+          patients_targeted?: number | null
+          scheduled_date?: string | null
+          target_criteria: Json
+          updated_at?: string
+        }
+        Update: {
+          appointments_booked?: number | null
+          campaign_name?: string
+          campaign_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          executed_at?: string | null
+          id?: string
+          message_template?: string
+          patients_contacted?: number | null
+          patients_targeted?: number | null
+          scheduled_date?: string | null
+          target_criteria?: Json
           updated_at?: string
         }
         Relationships: []
