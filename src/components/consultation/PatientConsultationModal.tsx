@@ -486,7 +486,7 @@ export function PatientConsultationModal({
                     <TabsTrigger value="consultation" className="data-[state=active]:bg-accent data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
                       Consultation
                     </TabsTrigger>
-                    <TabsTrigger value="treatment" className="data-[state=active]:bg-accent data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
+                    <TabsTrigger value="treatment" className="bg-[#e9204f] text-neutral-50">
                      Treatment & Billing
                    </TabsTrigger>
                    <TabsTrigger value="history" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-800 data-[state=inactive]:bg-white">
