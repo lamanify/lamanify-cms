@@ -111,18 +111,28 @@ export function PriceTierModal({ open, onOpenChange, editingTier, onSubmit }: Pr
   };
 
   const handleSubmit = async (data: PriceTierFormData) => {
-    const success = await onSubmit({
-      tier_name: data.tier_name,
-      description: data.description,
-      payment_methods: selectedMethods,
-      panel_ids: selectedPanels
-    });
+    console.log('Form submitted with data:', data);
+    console.log('Selected methods:', selectedMethods);
+    console.log('Selected panels:', selectedPanels);
+    
+    try {
+      const success = await onSubmit({
+        tier_name: data.tier_name,
+        description: data.description,
+        payment_methods: selectedMethods,
+        panel_ids: selectedPanels
+      });
 
-    if (success) {
-      form.reset();
-      setSelectedMethods([]);
-      setSelectedPanels([]);
-      onOpenChange(false);
+      console.log('Submit result:', success);
+
+      if (success) {
+        form.reset();
+        setSelectedMethods([]);
+        setSelectedPanels([]);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
     }
   };
 

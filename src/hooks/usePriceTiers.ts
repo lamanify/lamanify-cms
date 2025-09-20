@@ -86,6 +86,8 @@ export function usePriceTiers() {
     payment_methods: string[];
     panel_ids: string[];
   }) => {
+    console.log('Creating price tier with data:', tierData);
+    
     try {
       // Store payment methods in the description for now, until we implement the new structure
       const paymentMethodsDescription = tierData.payment_methods.length > 0 
@@ -95,6 +97,8 @@ export function usePriceTiers() {
       const finalDescription = tierData.description 
         ? `${tierData.description}\n${paymentMethodsDescription}`
         : paymentMethodsDescription;
+
+      console.log('Final description:', finalDescription);
 
       const { data: tier, error: tierError } = await supabase
         .from('price_tiers')
@@ -111,10 +115,16 @@ export function usePriceTiers() {
         .select()
         .single();
 
-      if (tierError) throw tierError;
+      if (tierError) {
+        console.error('Tier creation error:', tierError);
+        throw tierError;
+      }
+
+      console.log('Tier created:', tier);
 
       // Create panel associations
       if (tierData.panel_ids.length > 0) {
+        console.log('Creating panel associations for:', tierData.panel_ids);
         const panelRelations = tierData.panel_ids.map(panelId => ({
           panel_id: panelId,
           tier_id: tier.id
@@ -124,7 +134,10 @@ export function usePriceTiers() {
           .from('panels_price_tiers')
           .insert(panelRelations);
 
-        if (panelError) throw panelError;
+        if (panelError) {
+          console.error('Panel association error:', panelError);
+          throw panelError;
+        }
       }
       
       // Refresh the list
