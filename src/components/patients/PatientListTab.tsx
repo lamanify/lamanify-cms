@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Plus, Search, Users, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Patient } from '@/pages/Patients';
@@ -384,13 +385,15 @@ export function PatientListTab() {
 
         {/* Filter Sidebar */}
         {showFilterSidebar && (
-          <FilterSidebar
-            filters={filters}
-            onFiltersChange={setFilters}
-            patientCount={processedPatients.length}
-            totalPatients={patients.length}
-            onClose={() => setShowFilterSidebar(false)}
-          />
+          <SidebarProvider defaultOpen={true}>
+            <FilterSidebar
+              filters={filters}
+              onFiltersChange={setFilters}
+              patientCount={processedPatients.length}
+              totalPatients={patients.length}
+              onClose={() => setShowFilterSidebar(false)}
+            />
+          </SidebarProvider>
         )}
       </div>
   );
