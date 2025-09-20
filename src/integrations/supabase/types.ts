@@ -767,20 +767,32 @@ export type Database = {
       panels_price_tiers: {
         Row: {
           created_at: string
+          effective_from: string | null
+          effective_until: string | null
           id: string
+          is_default_tier: boolean | null
           panel_id: string
+          priority_order: number | null
           tier_id: string
         }
         Insert: {
           created_at?: string
+          effective_from?: string | null
+          effective_until?: string | null
           id?: string
+          is_default_tier?: boolean | null
           panel_id: string
+          priority_order?: number | null
           tier_id: string
         }
         Update: {
           created_at?: string
+          effective_from?: string | null
+          effective_until?: string | null
           id?: string
+          is_default_tier?: boolean | null
           panel_id?: string
+          priority_order?: number | null
           tier_id?: string
         }
         Relationships: [
@@ -1205,28 +1217,43 @@ export type Database = {
       }
       price_tiers: {
         Row: {
+          coverage_rules: Json | null
           created_at: string
           created_by: string | null
           description: string | null
+          eligibility_rules: Json | null
           id: string
+          is_default_for_panel: boolean | null
+          max_claim_amount: number | null
+          requires_verification: boolean | null
           tier_name: string
           tier_type: string | null
           updated_at: string
         }
         Insert: {
+          coverage_rules?: Json | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          eligibility_rules?: Json | null
           id?: string
+          is_default_for_panel?: boolean | null
+          max_claim_amount?: number | null
+          requires_verification?: boolean | null
           tier_name: string
           tier_type?: string | null
           updated_at?: string
         }
         Update: {
+          coverage_rules?: Json | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          eligibility_rules?: Json | null
           id?: string
+          is_default_for_panel?: boolean | null
+          max_claim_amount?: number | null
+          requires_verification?: boolean | null
           tier_name?: string
           tier_type?: string | null
           updated_at?: string
@@ -1363,6 +1390,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tier_assignment_log: {
+        Row: {
+          assigned_by: string
+          assignment_method: string
+          assignment_reason: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_tier_id: string | null
+          patient_id: string
+          previous_tier_id: string | null
+        }
+        Insert: {
+          assigned_by: string
+          assignment_method?: string
+          assignment_reason?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_tier_id?: string | null
+          patient_id: string
+          previous_tier_id?: string | null
+        }
+        Update: {
+          assigned_by?: string
+          assignment_method?: string
+          assignment_reason?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_tier_id?: string | null
+          patient_id?: string
+          previous_tier_id?: string | null
+        }
+        Relationships: []
       }
       tier_payment_methods: {
         Row: {
@@ -1545,6 +1608,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_tier_eligibility: {
+        Args: { p_patient_id: string; p_tier_id: string }
+        Returns: boolean
+      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1569,6 +1636,10 @@ export type Database = {
           start_datetime: string
           status: string
         }[]
+      }
+      get_default_tier_for_panel: {
+        Args: { p_panel_id: string }
+        Returns: string
       }
       get_user_role: {
         Args: Record<PropertyKey, never>
