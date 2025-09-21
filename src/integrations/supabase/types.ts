@@ -250,6 +250,9 @@ export type Database = {
           panel_reference_number: string | null
           patient_id: string
           payment_method: string | null
+          relationship_to_patient: string | null
+          staff_ic_passport: string | null
+          staff_name: string | null
           status: string | null
           submission_date: string | null
           updated_at: string | null
@@ -272,6 +275,9 @@ export type Database = {
           panel_reference_number?: string | null
           patient_id: string
           payment_method?: string | null
+          relationship_to_patient?: string | null
+          staff_ic_passport?: string | null
+          staff_name?: string | null
           status?: string | null
           submission_date?: string | null
           updated_at?: string | null
@@ -294,6 +300,9 @@ export type Database = {
           panel_reference_number?: string | null
           patient_id?: string
           payment_method?: string | null
+          relationship_to_patient?: string | null
+          staff_ic_passport?: string | null
+          staff_name?: string | null
           status?: string | null
           submission_date?: string | null
           updated_at?: string | null
