@@ -867,6 +867,7 @@ export type Database = {
       }
       medications: {
         Row: {
+          average_cost: number | null
           brand_name: string | null
           category: string | null
           contraindications: string[] | null
@@ -888,6 +889,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          average_cost?: number | null
           brand_name?: string | null
           category?: string | null
           contraindications?: string[] | null
@@ -909,6 +911,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          average_cost?: number | null
           brand_name?: string | null
           category?: string | null
           contraindications?: string[] | null
@@ -2225,6 +2228,8 @@ export type Database = {
       stock_movements: {
         Row: {
           batch_number: string | null
+          cost_per_unit_after: number | null
+          cost_per_unit_before: number | null
           created_at: string
           created_by: string
           expiry_date: string | null
@@ -2244,6 +2249,8 @@ export type Database = {
         }
         Insert: {
           batch_number?: string | null
+          cost_per_unit_after?: number | null
+          cost_per_unit_before?: number | null
           created_at?: string
           created_by: string
           expiry_date?: string | null
@@ -2263,6 +2270,8 @@ export type Database = {
         }
         Update: {
           batch_number?: string | null
+          cost_per_unit_after?: number | null
+          cost_per_unit_before?: number | null
           created_at?: string
           created_by?: string
           expiry_date?: string | null
@@ -2528,9 +2537,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      medication_cost_history: {
+        Row: {
+          batch_number: string | null
+          cost_per_unit_after: number | null
+          cost_per_unit_before: number | null
+          created_at: string | null
+          created_by_name: string | null
+          expiry_date: string | null
+          id: string | null
+          medication_id: string | null
+          medication_name: string | null
+          movement_type: string | null
+          new_stock: number | null
+          notes: string | null
+          previous_stock: number | null
+          quantity: number | null
+          total_cost: number | null
+          unit_cost: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_moving_average_cost: {
+        Args: {
+          p_medication_id: string
+          p_new_quantity: number
+          p_new_unit_cost: number
+        }
+        Returns: number
+      }
       calculate_patient_reliability_score: {
         Args: { p_patient_id: string }
         Returns: number
