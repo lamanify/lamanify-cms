@@ -2106,6 +2106,108 @@ export type Database = {
           },
         ]
       }
+      stock_movements: {
+        Row: {
+          batch_number: string | null
+          created_at: string
+          created_by: string
+          expiry_date: string | null
+          id: string
+          medication_id: string
+          movement_type: string
+          new_stock: number
+          notes: string | null
+          previous_stock: number
+          quantity: number
+          reason: string
+          reference_number: string | null
+          supplier_name: string | null
+          total_cost: number | null
+          unit_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          batch_number?: string | null
+          created_at?: string
+          created_by: string
+          expiry_date?: string | null
+          id?: string
+          medication_id: string
+          movement_type: string
+          new_stock?: number
+          notes?: string | null
+          previous_stock?: number
+          quantity: number
+          reason: string
+          reference_number?: string | null
+          supplier_name?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          batch_number?: string | null
+          created_at?: string
+          created_by?: string
+          expiry_date?: string | null
+          id?: string
+          medication_id?: string
+          movement_type?: string
+          new_stock?: number
+          notes?: string | null
+          previous_stock?: number
+          quantity?: number
+          reason?: string
+          reference_number?: string | null
+          supplier_name?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          phone: string | null
+          supplier_name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          supplier_name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          supplier_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tier_assignment_log: {
         Row: {
           assigned_by: string
