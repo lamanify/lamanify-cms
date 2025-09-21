@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useMedications } from './useMedications';
 
+// Local type definitions until Supabase types are regenerated
 export interface StockMovement {
   id: string;
   medication_id: string;
@@ -49,7 +50,8 @@ export function useStockMovements() {
   const fetchStockMovements = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      // Using type assertion to bypass TypeScript errors until types are regenerated
+      const { data, error } = await (supabase as any)
         .from('stock_movements')
         .select(`
           *,
@@ -132,7 +134,7 @@ export function useStockMovements() {
       const totalCost = unitCost * movementData.quantity;
 
       // Create stock movement record
-      const { error: movementError } = await supabase
+      const { error: movementError } = await (supabase as any)
         .from('stock_movements')
         .insert([{
           medication_id: movementData.medication_id,
@@ -204,7 +206,7 @@ export function useStockMovements() {
 
   const getStockHistory = async (medicationId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('stock_movements')
         .select(`
           *,
