@@ -11,11 +11,12 @@ import {
   FileText,
   Settings
 } from 'lucide-react';
+import { ExpiryAlertsPanel } from './ExpiryAlertsPanel';
 import { StockMovementManager } from './StockMovementManager';
 import { StockReceiptForm } from './StockReceiptForm';
 import { ExpiryTrackingManager } from './ExpiryTrackingManager';
-import { ExpiryAlertsPanel } from './ExpiryAlertsPanel';
 import { BatchInventoryManager } from './BatchInventoryManager';
+import { PurchaseOrderDashboard } from './PurchaseOrderDashboard';
 import { EnhancedMedicationManagement } from '../settings/EnhancedMedicationManagement';
 import { EnhancedServiceManagement } from '../settings/EnhancedServiceManagement';
 
@@ -34,10 +35,11 @@ export function InventoryDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="medications">Medications</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
+          <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
           <TabsTrigger value="stock-movements">Stock Movements</TabsTrigger>
           <TabsTrigger value="receive-stock">Receive Stock</TabsTrigger>
           <TabsTrigger value="expiry-tracking">Expiry Tracking</TabsTrigger>
@@ -189,6 +191,10 @@ export function InventoryDashboard() {
 
         <TabsContent value="services">
           <EnhancedServiceManagement />
+        </TabsContent>
+
+        <TabsContent value="purchase-orders">
+          <PurchaseOrderDashboard />
         </TabsContent>
 
         <TabsContent value="stock-movements">
