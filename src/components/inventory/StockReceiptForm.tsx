@@ -315,10 +315,12 @@ export function StockReceiptForm() {
                             {medications.map((medication) => (
                               <SelectItem key={medication.id} value={medication.id}>
                                 <div className="flex flex-col">
-                                  <span>{medication.name}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    Current stock: {medication.stock_level || 0}
-                                  </span>
+                                   <span>{medication.name}</span>
+                                   <span className="text-xs text-muted-foreground">
+                                     Stock: {medication.stock_level || 0} | 
+                                     {medication.cost_price ? ` List: $${medication.cost_price.toFixed(2)}` : ''} |
+                                     {medication.average_cost ? ` Avg: $${medication.average_cost.toFixed(4)}` : ' No avg cost'}
+                                   </span>
                                 </div>
                               </SelectItem>
                             ))}

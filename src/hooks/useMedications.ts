@@ -42,6 +42,7 @@ export interface DosageTemplate {
 export interface MedicationWithPricing extends Medication {
   pricing: { [tierId: string]: number };
   dosage_template?: DosageTemplate;
+  average_cost?: number;
 }
 
 export function useMedications() {
@@ -78,7 +79,8 @@ export function useMedications() {
         return {
           ...cleanMedication,
           pricing,
-          dosage_template: undefined
+          dosage_template: undefined,
+          average_cost: cleanMedication.average_cost || 0
         } as MedicationWithPricing;
       }) || [];
 

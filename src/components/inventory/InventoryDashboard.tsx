@@ -17,6 +17,8 @@ import { StockReceiptForm } from './StockReceiptForm';
 import { ExpiryTrackingManager } from './ExpiryTrackingManager';
 import { BatchInventoryManager } from './BatchInventoryManager';
 import { PurchaseOrderDashboard } from './PurchaseOrderDashboard';
+import { CostHistoryManager } from './CostHistoryManager';
+import { InventoryValueCalculator } from './InventoryValueCalculator';
 import { EnhancedMedicationManagement } from '../settings/EnhancedMedicationManagement';
 import { EnhancedServiceManagement } from '../settings/EnhancedServiceManagement';
 
@@ -116,31 +118,14 @@ export function InventoryDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-blue-600" />
-                  Inventory Summary
+                  Inventory Valuation
                 </CardTitle>
                 <CardDescription>
-                  Current inventory overview
+                  Real-time inventory value using moving average costs
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total Medications</span>
-                    <span className="font-medium">0</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total Services</span>
-                    <span className="font-medium">0</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Inventory Value</span>
-                    <span className="font-medium">RM 0.00</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Active Suppliers</span>
-                    <span className="font-medium">0</span>
-                  </div>
-                </div>
+                <InventoryValueCalculator />
               </CardContent>
             </Card>
           </div>
@@ -153,7 +138,7 @@ export function InventoryDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
                 <Button 
                   variant="outline" 
                   className="h-20 flex-col gap-2"
@@ -180,6 +165,8 @@ export function InventoryDashboard() {
                   <Clock className="h-6 w-6" />
                   <span>Stock Adjustment</span>
                 </Button>
+
+                <CostHistoryManager />
               </div>
             </CardContent>
           </Card>

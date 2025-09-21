@@ -301,16 +301,21 @@ export function MedicationManagement() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          {priceTiers.map((tier) => (
-                            <div key={tier.id} className="text-sm">
-                              <span className="text-muted-foreground">{tier.tier_name}:</span>
-                              <span className="ml-2 font-medium">
-                                RM {medication.pricing[tier.id]?.toFixed(2) || '0.00'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                         <div className="space-y-1">
+                           {priceTiers.map((tier) => (
+                             <div key={tier.id} className="text-sm">
+                               <span className="text-muted-foreground">{tier.tier_name}:</span>
+                               <span className="ml-2 font-medium">
+                                 RM {medication.pricing[tier.id]?.toFixed(2) || '0.00'}
+                               </span>
+                             </div>
+                           ))}
+                           {medication.average_cost && medication.average_cost > 0 && (
+                             <div className="text-xs text-blue-600 font-medium border-t pt-1">
+                               Avg Cost: RM {medication.average_cost.toFixed(4)}
+                             </div>
+                           )}
+                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
