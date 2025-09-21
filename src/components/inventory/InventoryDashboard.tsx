@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 import { StockMovementManager } from './StockMovementManager';
 import { StockReceiptForm } from './StockReceiptForm';
+import { ExpiryTrackingManager } from './ExpiryTrackingManager';
+import { ExpiryAlertsPanel } from './ExpiryAlertsPanel';
+import { BatchInventoryManager } from './BatchInventoryManager';
 import { EnhancedMedicationManagement } from '../settings/EnhancedMedicationManagement';
 import { EnhancedServiceManagement } from '../settings/EnhancedServiceManagement';
 
@@ -31,12 +34,14 @@ export function InventoryDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="medications">Medications</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="stock-movements">Stock Movements</TabsTrigger>
           <TabsTrigger value="receive-stock">Receive Stock</TabsTrigger>
+          <TabsTrigger value="expiry-tracking">Expiry Tracking</TabsTrigger>
+          <TabsTrigger value="batch-management">Batch Management</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -96,44 +101,14 @@ export function InventoryDashboard() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-orange-600" />
-                  Stock Alerts
-                </CardTitle>
-                <CardDescription>
-                  Items requiring immediate attention
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
-                    <div>
-                      <p className="font-medium text-red-800">Out of Stock Items</p>
-                      <p className="text-sm text-red-600">Requires immediate restocking</p>
-                    </div>
-                    <div className="text-2xl font-bold text-red-600">0</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
-                    <div>
-                      <p className="font-medium text-orange-800">Low Stock Items</p>
-                      <p className="text-sm text-orange-600">Below reorder point</p>
-                    </div>
-                    <div className="text-2xl font-bold text-orange-600">0</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-                    <div>
-                      <p className="font-medium text-yellow-800">Expiring Soon</p>
-                      <p className="text-sm text-yellow-600">Within 30 days</p>
-                    </div>
-                    <div className="text-2xl font-bold text-yellow-600">0</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ExpiryAlertsPanel 
+              compact={true}
+              onViewDetails={(alertType) => {
+                if (alertType === 'critical') {
+                  setActiveTab('expiry-tracking');
+                }
+              }}
+            />
 
             <Card>
               <CardHeader>
@@ -222,6 +197,14 @@ export function InventoryDashboard() {
 
         <TabsContent value="receive-stock">
           <StockReceiptForm />
+        </TabsContent>
+
+        <TabsContent value="expiry-tracking">
+          <ExpiryTrackingManager />
+        </TabsContent>
+
+        <TabsContent value="batch-management">
+          <BatchInventoryManager />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">
