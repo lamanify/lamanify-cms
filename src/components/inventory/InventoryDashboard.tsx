@@ -19,6 +19,8 @@ import { BatchInventoryManager } from './BatchInventoryManager';
 import { PurchaseOrderDashboard } from './PurchaseOrderDashboard';
 import { CostHistoryManager } from './CostHistoryManager';
 import { InventoryValueCalculator } from './InventoryValueCalculator';
+import { InventoryAnalyticsDashboard } from './InventoryAnalyticsDashboard';
+import { InventoryReportsManager } from './InventoryReportsManager';
 import { EnhancedMedicationManagement } from '../settings/EnhancedMedicationManagement';
 import { EnhancedServiceManagement } from '../settings/EnhancedServiceManagement';
 
@@ -37,7 +39,7 @@ export function InventoryDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="medications">Medications</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
@@ -46,6 +48,7 @@ export function InventoryDashboard() {
           <TabsTrigger value="receive-stock">Receive Stock</TabsTrigger>
           <TabsTrigger value="expiry-tracking">Expiry Tracking</TabsTrigger>
           <TabsTrigger value="batch-management">Batch Management</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -200,25 +203,12 @@ export function InventoryDashboard() {
           <BatchInventoryManager />
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Inventory Reports
-              </CardTitle>
-              <CardDescription>
-                Generate comprehensive inventory and stock analysis reports
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Advanced reporting features coming soon</p>
-                <p className="text-sm">Stock aging, valuation, turnover analysis, and more</p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="analytics">
+          <InventoryAnalyticsDashboard />
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <InventoryReportsManager />
         </TabsContent>
       </Tabs>
     </div>
