@@ -12,7 +12,8 @@ import {
   Home,
   Clock,
   Monitor,
-  TrendingUp
+  TrendingUp,
+  Receipt
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Analytics', href: '/analytics', icon: TrendingUp },
   { name: 'Consultation Waiting', href: '/consultation-waiting', icon: FileText },
   { name: 'Billing', href: '/billing', icon: CreditCard },
+  { name: 'Panel Claims', href: '/panel-claims', icon: Receipt },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

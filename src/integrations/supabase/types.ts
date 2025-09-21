@@ -235,6 +235,10 @@ export type Database = {
         Row: {
           amount: number
           appointment_id: string | null
+          claim_notes: string | null
+          claim_number: string | null
+          claim_status: string | null
+          claim_submitted_by: string | null
           created_at: string | null
           created_by: string | null
           description: string
@@ -242,14 +246,21 @@ export type Database = {
           id: string
           invoice_number: string
           paid_date: string | null
+          panel_id: string | null
+          panel_reference_number: string | null
           patient_id: string
           payment_method: string | null
           status: string | null
+          submission_date: string | null
           updated_at: string | null
         }
         Insert: {
           amount: number
           appointment_id?: string | null
+          claim_notes?: string | null
+          claim_number?: string | null
+          claim_status?: string | null
+          claim_submitted_by?: string | null
           created_at?: string | null
           created_by?: string | null
           description: string
@@ -257,14 +268,21 @@ export type Database = {
           id?: string
           invoice_number: string
           paid_date?: string | null
+          panel_id?: string | null
+          panel_reference_number?: string | null
           patient_id: string
           payment_method?: string | null
           status?: string | null
+          submission_date?: string | null
           updated_at?: string | null
         }
         Update: {
           amount?: number
           appointment_id?: string | null
+          claim_notes?: string | null
+          claim_number?: string | null
+          claim_status?: string | null
+          claim_submitted_by?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string
@@ -272,9 +290,12 @@ export type Database = {
           id?: string
           invoice_number?: string
           paid_date?: string | null
+          panel_id?: string | null
+          panel_reference_number?: string | null
           patient_id?: string
           payment_method?: string | null
           status?: string | null
+          submission_date?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -286,10 +307,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "billing_claim_submitted_by_fkey"
+            columns: ["claim_submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "billing_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "panels"
             referencedColumns: ["id"]
           },
           {
@@ -961,6 +996,145 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      panel_claim_items: {
+        Row: {
+          billing_id: string
+          claim_amount: number
+          claim_id: string
+          created_at: string
+          id: string
+          item_amount: number
+          rejection_reason: string | null
+          status: string
+        }
+        Insert: {
+          billing_id: string
+          claim_amount: number
+          claim_id: string
+          created_at?: string
+          id?: string
+          item_amount: number
+          rejection_reason?: string | null
+          status?: string
+        }
+        Update: {
+          billing_id?: string
+          claim_amount?: number
+          claim_id?: string
+          created_at?: string
+          id?: string
+          item_amount?: number
+          rejection_reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claim_items_billing_id_fkey"
+            columns: ["billing_id"]
+            isOneToOne: false
+            referencedRelation: "billing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_claim_items_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panel_claims: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          billing_period_end: string
+          billing_period_start: string
+          claim_number: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          paid_amount: number | null
+          paid_at: string | null
+          panel_id: string
+          panel_reference_number: string | null
+          rejection_reason: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          total_amount: number
+          total_items: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          billing_period_end: string
+          billing_period_start: string
+          claim_number: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          panel_id: string
+          panel_reference_number?: string | null
+          rejection_reason?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_amount?: number
+          total_items?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          billing_period_end?: string
+          billing_period_start?: string
+          claim_number?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          panel_id?: string
+          panel_reference_number?: string | null
+          rejection_reason?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_amount?: number
+          total_items?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claims_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_claims_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "panels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_claims_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       panels: {
         Row: {
@@ -2111,6 +2285,10 @@ export type Database = {
       }
       generate_check_in_link: {
         Args: { p_appointment_id: string }
+        Returns: string
+      }
+      generate_claim_number: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       generate_invoice_number: {
