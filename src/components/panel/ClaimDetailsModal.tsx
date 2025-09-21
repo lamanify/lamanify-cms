@@ -12,6 +12,8 @@ import { FileText, Download, Edit, Check, X, Clock, DollarSign } from 'lucide-re
 import { format } from 'date-fns';
 import { PanelClaim, usePanelClaims } from '@/hooks/usePanelClaims';
 import { StatusConfirmationDialog } from './StatusConfirmationDialog';
+import { BillingItemEditor } from './BillingItemEditor';
+import { useBillingManagement } from '@/hooks/useBillingManagement';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClaimDetailsModalProps {
@@ -23,8 +25,10 @@ interface ClaimDetailsModalProps {
 
 export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }: ClaimDetailsModalProps) {
   const { fetchClaimDetails, updateClaimStatus, validateStatusTransition } = usePanelClaims();
+  const { fetchBillingItemsByClaimId, updateBillingItem } = useBillingManagement();
   const { toast } = useToast();
   const [claimDetails, setClaimDetails] = useState<PanelClaim | null>(null);
+  const [billingItems, setBillingItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(claim.notes || '');
@@ -43,11 +47,15 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
   const loadClaimDetails = async () => {
     setLoading(true);
     try {
-      const details = await fetchClaimDetails(claim.id);
+      const [details, billing] = await Promise.all([
+        fetchClaimDetails(claim.id),
+        fetchBillingItemsByClaimId(claim.id)
+      ]);
       if (details) {
         setClaimDetails(details);
         setNotes(details.notes || '');
       }
+      setBillingItems(billing);
     } catch (error) {
       console.error('Error loading claim details:', error);
     } finally {
@@ -252,8 +260,37 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
               </CardContent>
             </Card>
 
-            {/* Claim Items */}
-            {claimDetails?.claim_items && claimDetails.claim_items.length > 0 && (
+            {/* Enhanced Billing Items Section */}
+            {billingItems && billingItems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Billing Items</CardTitle>
+                  <CardDescription>
+                    Edit staff information and billing details for each item in this claim.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {billingItems.map((item) => (
+                      <BillingItemEditor
+                        key={item.id}
+                        billingItem={item}
+                        onUpdate={async (updatedItem) => {
+                          await updateBillingItem(updatedItem);
+                          // Refresh billing items after update
+                          const updatedBillingItems = await fetchBillingItemsByClaimId(claim.id);
+                          setBillingItems(updatedBillingItems);
+                        }}
+                        isEditable={displayClaim?.status !== 'paid'}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Legacy Claim Items Section (fallback) */}
+            {(!billingItems || billingItems.length === 0) && claimDetails?.claim_items && claimDetails.claim_items.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Claim Items</CardTitle>
