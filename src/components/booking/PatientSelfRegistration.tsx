@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PanelSelector } from '@/components/patients/PanelSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Search, UserPlus } from 'lucide-react';
@@ -17,6 +18,7 @@ interface PatientData {
   email?: string;
   date_of_birth: string;
   gender: string;
+  panel_id?: string;
   isExisting?: boolean;
 }
 
@@ -41,6 +43,7 @@ export function PatientSelfRegistration({ onSubmit }: PatientSelfRegistrationPro
     email: '',
     date_of_birth: '',
     gender: '',
+    panel_id: '',
   });
 
   const searchExistingPatient = async () => {
@@ -111,20 +114,46 @@ export function PatientSelfRegistration({ onSubmit }: PatientSelfRegistrationPro
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Create new patient
+      const { data: newPatient, error: insertError } = await supabase
         .from('patients')
-        .insert([newPatientData])
+        .insert({
+          first_name: newPatientData.first_name,
+          last_name: newPatientData.last_name,
+          phone: newPatientData.phone,
+          email: newPatientData.email || null,
+          date_of_birth: newPatientData.date_of_birth,
+          gender: newPatientData.gender.toLowerCase(),
+        })
         .select()
         .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // Auto-assign tier if panel is selected
+      if (newPatientData.panel_id) {
+        // Get default tier for this panel
+        const { data: panelTiers } = await supabase
+          .from('panels_price_tiers')
+          .select('tier_id, is_default_tier')
+          .eq('panel_id', newPatientData.panel_id)
+          .eq('is_default_tier', true)
+          .single();
+
+        if (panelTiers) {
+          await supabase
+            .from('patients')
+            .update({ assigned_tier_id: panelTiers.tier_id })
+            .eq('id', newPatient.id);
+        }
+      }
 
       toast({
         title: "Registration successful",
         description: "Your information has been saved successfully",
       });
 
-      onSubmit({ ...data, isExisting: false });
+      onSubmit({ ...newPatient, panel_id: newPatientData.panel_id, isExisting: false });
     } catch (error) {
       console.error('Error creating patient:', error);
       toast({
@@ -155,45 +184,43 @@ export function PatientSelfRegistration({ onSubmit }: PatientSelfRegistrationPro
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <div className="text-center text-muted-foreground mb-4">
-                  Enter your phone number to find your existing record
-                </div>
-                
                 <div className="space-y-2">
-                  <Label htmlFor="search-phone">Phone Number</Label>
+                  <Label htmlFor="search_phone">Enter your phone number</Label>
                   <div className="flex space-x-2">
                     <Input
-                      id="search-phone"
+                      id="search_phone"
                       type="tel"
-                      placeholder="Enter your phone number"
+                      placeholder="Phone number"
                       value={searchPhone}
                       onChange={(e) => setSearchPhone(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && searchExistingPatient()}
+                      className="flex-1"
                     />
                     <Button 
                       onClick={searchExistingPatient} 
                       disabled={searchLoading}
-                      variant="outline"
+                      className="flex items-center space-x-2"
                     >
-                      {searchLoading ? 'Searching...' : 'Search'}
+                      <Search className="w-4 h-4" />
+                      <span>{searchLoading ? 'Searching...' : 'Search'}</span>
                     </Button>
                   </div>
                 </div>
 
                 {foundPatient && (
-                  <Card className="bg-muted/50">
+                  <Card className="border-green-200 bg-green-50">
                     <CardContent className="pt-4">
-                      <div className="space-y-2">
-                        <h4 className="font-medium">Patient Found:</h4>
-                        <p><strong>Name:</strong> {foundPatient.first_name} {foundPatient.last_name}</p>
-                        <p><strong>Phone:</strong> {foundPatient.phone}</p>
-                        {foundPatient.email && <p><strong>Email:</strong> {foundPatient.email}</p>}
-                        <p><strong>Date of Birth:</strong> {foundPatient.date_of_birth}</p>
-                        <p><strong>Gender:</strong> {foundPatient.gender}</p>
+                      <h3 className="font-semibold text-green-800 mb-2">Patient Found!</h3>
+                      <div className="space-y-1 text-sm text-green-700">
+                        <p><span className="font-medium">Name:</span> {foundPatient.first_name} {foundPatient.last_name}</p>
+                        <p><span className="font-medium">Phone:</span> {foundPatient.phone}</p>
+                        <p><span className="font-medium">Email:</span> {foundPatient.email || 'Not provided'}</p>
+                        <p><span className="font-medium">Date of Birth:</span> {foundPatient.date_of_birth}</p>
                       </div>
                       <Button 
                         onClick={handleExistingPatientSubmit}
                         className="w-full mt-4"
+                        disabled={loading}
                       >
                         Continue with this information
                       </Button>
@@ -263,7 +290,7 @@ export function PatientSelfRegistration({ onSubmit }: PatientSelfRegistrationPro
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="gender">Gender *</Label>
+                    <Label>Gender *</Label>
                     <Select
                       value={newPatientData.gender}
                       onValueChange={(value) => setNewPatientData({ ...newPatientData, gender: value })}
@@ -272,12 +299,23 @@ export function PatientSelfRegistration({ onSubmit }: PatientSelfRegistrationPro
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <PanelSelector
+                    selectedPanelId={newPatientData.panel_id}
+                    onPanelSelect={(panelId) => {
+                      setNewPatientData({ ...newPatientData, panel_id: panelId || '' });
+                    }}
+                    showLabel={true}
+                  />
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>

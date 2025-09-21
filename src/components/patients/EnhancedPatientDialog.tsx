@@ -20,6 +20,7 @@ import { usePatientActivities } from '@/hooks/usePatientActivities';
 import { Patient } from '@/pages/Patients';
 import { generatePatientId } from '@/lib/patientIdGenerator';
 import { PatientTierSelector } from './PatientTierSelector';
+import { PanelSelector } from './PanelSelector';
 import { Calendar, AlertCircle, User, Activity, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -63,7 +64,9 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
     allergies: '',
     referral_source: '',
     visit_reason: '',
-    additional_notes: ''
+    additional_notes: '',
+    panel_id: '',
+    selected_tier_id: ''
   });
 
   useEffect(() => {
@@ -86,7 +89,9 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
           allergies: patient.allergies || '',
           referral_source: patient.referral_source || '',
           visit_reason: patient.visit_reason || '',
-          additional_notes: patient.additional_notes || ''
+          additional_notes: patient.additional_notes || '',
+          panel_id: '',
+          selected_tier_id: patient.assigned_tier_id || ''
         });
       } else {
         // New patient mode - reset form
@@ -106,7 +111,9 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
           allergies: '',
           referral_source: '',
           visit_reason: '',
-          additional_notes: ''
+          additional_notes: '',
+          panel_id: '',
+          selected_tier_id: ''
         });
       }
       setErrors({});
@@ -284,7 +291,9 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
       allergies: selectedPatient.allergies || '',
       referral_source: selectedPatient.referral_source || '',
       visit_reason: selectedPatient.visit_reason || '',
-      additional_notes: selectedPatient.additional_notes || ''
+      additional_notes: selectedPatient.additional_notes || '',
+      panel_id: '',
+      selected_tier_id: selectedPatient.assigned_tier_id || ''
     });
   };
 
@@ -578,18 +587,50 @@ export function EnhancedPatientDialog({ open, onOpenChange, patient, onSave }: E
                           </div>
                         </div>
 
-                        <div>
-                          <Label htmlFor="additional_notes">Additional Notes (Optional)</Label>
-                          <Textarea
-                            id="additional_notes"
-                            placeholder="Any additional information..."
-                            value={formData.additional_notes}
-                            onChange={(e) => setFormData({ ...formData, additional_notes: e.target.value })}
-                            rows={2}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
+                         <div>
+                           <Label htmlFor="additional_notes">Additional Notes (Optional)</Label>
+                           <Textarea
+                             id="additional_notes"
+                             placeholder="Any additional information..."
+                             value={formData.additional_notes}
+                             onChange={(e) => setFormData({ ...formData, additional_notes: e.target.value })}
+                             rows={2}
+                           />
+                         </div>
+                       </CardContent>
+                     </Card>
+
+                     {/* Panel & Pricing */}
+                     <Card>
+                       <CardHeader>
+                         <CardTitle>Panel & Pricing Information</CardTitle>
+                       </CardHeader>
+                       <CardContent className="space-y-4">
+                         <PanelSelector
+                           selectedPanelId={formData.panel_id}
+                           onPanelSelect={(panelId, tierIds) => {
+                             setFormData({ ...formData, panel_id: panelId || '' });
+                           }}
+                           onTierAssigned={(tierId) => {
+                             setFormData({ ...formData, selected_tier_id: tierId });
+                           }}
+                         />
+                         
+                         {patient && (
+                           <div className="pt-4 border-t">
+                             <PatientTierSelector
+                               patientId={patient.id}
+                               currentTierId={formData.selected_tier_id}
+                               patientName={`${formData.first_name} ${formData.last_name}`}
+                               onTierAssigned={() => {
+                                 // Refetch patient data to get updated tier
+                                 onSave();
+                               }}
+                             />
+                           </div>
+                         )}
+                       </CardContent>
+                     </Card>
                   </form>
                 </TabsContent>
 

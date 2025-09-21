@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQueue } from '@/hooks/useQueue';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { PanelSelector } from '@/components/patients/PanelSelector';
 import { generatePatientId } from '@/lib/patientIdGenerator';
 import { 
   User, 
@@ -73,6 +74,9 @@ interface QuickRegisterData {
   urgencyLevel: 'normal' | 'urgent' | 'emergency';
   preferredDoctorId: string;
   
+  // Panel & Pricing
+  panelId: string;
+  
   // Photo
   photoFile: File | null;
   photoPreview: string;
@@ -127,13 +131,14 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
     allergies: '',
     medicalConditions: '',
     insuranceInfo: '',
-        visitReason: '',
-        visitDetails: '',
-        paymentMethod: '',
-        urgencyLevel: 'normal',
-        preferredDoctorId: '',
-        photoFile: null,
-        photoPreview: ''
+    visitReason: '',
+    visitDetails: '',
+    paymentMethod: '',
+    urgencyLevel: 'normal',
+    preferredDoctorId: '',
+    panelId: '',
+    photoFile: null,
+    photoPreview: ''
   });
 
   useEffect(() => {
@@ -355,6 +360,24 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
 
       if (patientError) throw patientError;
 
+      // Auto-assign tier if panel is selected
+      if (formData.panelId && formData.paymentMethod === 'panel') {
+        // Get default tier for this panel
+        const { data: panelTiers } = await supabase
+          .from('panels_price_tiers')
+          .select('tier_id, is_default_tier')
+          .eq('panel_id', formData.panelId)
+          .eq('is_default_tier', true)
+          .single();
+
+        if (panelTiers) {
+          await supabase
+            .from('patients')
+            .update({ assigned_tier_id: panelTiers.tier_id })
+            .eq('id', patient.id);
+        }
+      }
+
       // Add to queue
       const queueResult = await addToQueue(patient.id, formData.preferredDoctorId === "none" ? undefined : formData.preferredDoctorId);
       console.log('Queue addition successful:', queueResult);
@@ -376,7 +399,8 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
             preferred_doctor: formData.preferredDoctorId,
             has_photo: !!formData.photoFile,
             insurance_info: formData.insuranceInfo,
-            id_type: idType
+            id_type: idType,
+            panel_id: formData.panelId
           }
         });
 
@@ -403,13 +427,14 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
         allergies: '',
         medicalConditions: '',
         insuranceInfo: '',
-    visitReason: '',
-    visitDetails: '',
-    paymentMethod: '',
-    urgencyLevel: 'normal',
-    preferredDoctorId: '',
-    photoFile: null,
-    photoPreview: ''
+        visitReason: '',
+        visitDetails: '',
+        paymentMethod: '',
+        urgencyLevel: 'normal',
+        preferredDoctorId: '',
+        panelId: '',
+        photoFile: null,
+        photoPreview: ''
       });
       setIdType('');
       setShowIdField(false);
@@ -570,6 +595,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
                   paymentMethod: '',
                   urgencyLevel: 'normal',
                   preferredDoctorId: '',
+                  panelId: '',
                   photoFile: null,
                   photoPreview: ''
                 });
@@ -1037,10 +1063,11 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
                     <SelectTrigger className={errors.paymentMethod ? 'border-destructive' : ''}>
                       <SelectValue placeholder="Select payment method" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      <SelectItem value="self_pay">Self Pay</SelectItem>
-                      <SelectItem value="insurance">Insurance</SelectItem>
-                      <SelectItem value="company">Company</SelectItem>
+                     <SelectContent className="bg-background border shadow-lg z-50">
+                       <SelectItem value="self_pay">Self Pay</SelectItem>
+                       <SelectItem value="insurance">Insurance</SelectItem>
+                       <SelectItem value="company">Company</SelectItem>
+                       <SelectItem value="panel">Panel</SelectItem>
                       <SelectItem value="government">Government</SelectItem>
                     </SelectContent>
                   </Select>
