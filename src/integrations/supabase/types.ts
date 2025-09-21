@@ -1136,6 +1136,59 @@ export type Database = {
           },
         ]
       }
+      panel_claims_audit: {
+        Row: {
+          change_reason: string | null
+          changed_at: string
+          changed_by: string | null
+          claim_id: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          new_data: Json | null
+          new_status: string
+          previous_data: Json | null
+          previous_status: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          claim_id: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          new_data?: Json | null
+          new_status: string
+          previous_data?: Json | null
+          previous_status?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          claim_id?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          new_data?: Json | null
+          new_status?: string
+          previous_data?: Json | null
+          previous_status?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claims_audit_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       panels: {
         Row: {
           created_at: string
@@ -2340,6 +2393,10 @@ export type Database = {
       update_patient_reliability: {
         Args: { p_patient_id: string }
         Returns: undefined
+      }
+      validate_claim_status_transition: {
+        Args: { new_status: string; old_status: string }
+        Returns: boolean
       }
     }
     Enums: {
