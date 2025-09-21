@@ -273,7 +273,10 @@ export function PanelClaimsDashboard() {
           claim={selectedClaim}
           open={!!selectedClaim}
           onOpenChange={(open) => !open && setSelectedClaim(null)}
-          onStatusChange={handleStatusChange}
+          onStatusChange={() => {
+            fetchClaims();
+            setSelectedClaim(null);
+          }}
         />
       )}
     </div>

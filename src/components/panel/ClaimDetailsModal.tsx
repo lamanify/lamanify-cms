@@ -11,20 +11,28 @@ import { Separator } from '@/components/ui/separator';
 import { FileText, Download, Edit, Check, X, Clock, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { PanelClaim, usePanelClaims } from '@/hooks/usePanelClaims';
+import { StatusConfirmationDialog } from './StatusConfirmationDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface ClaimDetailsModalProps {
   claim: PanelClaim;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onStatusChange: (claimId: string, status: PanelClaim['status']) => void;
+  onStatusChange?: () => void;
 }
 
 export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }: ClaimDetailsModalProps) {
-  const { fetchClaimDetails } = usePanelClaims();
+  const { fetchClaimDetails, updateClaimStatus, validateStatusTransition } = usePanelClaims();
+  const { toast } = useToast();
   const [claimDetails, setClaimDetails] = useState<PanelClaim | null>(null);
   const [loading, setLoading] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(claim.notes || '');
+  const [showStatusConfirmation, setShowStatusConfirmation] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    status: string;
+    currentStatus: string;
+  } | null>(null);
 
   useEffect(() => {
     if (open && claim.id) {
@@ -67,6 +75,54 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
       case 'rejected': return 'text-red-600';
       default: return 'text-muted-foreground';
     }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!claim) return;
+    
+    // Check if this requires confirmation (paid or rejected)
+    const requiresConfirmation = newStatus === 'paid' || newStatus === 'rejected';
+    
+    if (requiresConfirmation) {
+      setPendingStatusChange({ 
+        status: newStatus, 
+        currentStatus: displayClaim.status 
+      });
+      setShowStatusConfirmation(true);
+    } else {
+      // Validate transition first
+      const isValid = await validateStatusTransition(displayClaim.status, newStatus);
+      if (!isValid) {
+        toast({
+          title: "Invalid Status Change",
+          description: `Cannot change status from "${displayClaim.status}" to "${newStatus}"`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await updateClaimStatus(claim.id, newStatus as PanelClaim['status'], { notes });
+      onStatusChange?.();
+      loadClaimDetails();
+    }
+  };
+
+  const handleConfirmStatusChange = async (data: { reason?: string; paidAmount?: number }) => {
+    if (!claim || !pendingStatusChange) return;
+    
+    await updateClaimStatus(
+      claim.id, 
+      pendingStatusChange.status as PanelClaim['status'], 
+      { 
+        notes,
+        reason: data.reason,
+        paidAmount: data.paidAmount
+      }
+    );
+    
+    onStatusChange?.();
+    loadClaimDetails();
+    setPendingStatusChange(null);
   };
 
   const displayClaim = claimDetails || claim;
@@ -179,7 +235,7 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
                   <Label htmlFor="status">Change Status:</Label>
                   <Select
                     value={displayClaim.status}
-                    onValueChange={(value) => onStatusChange(displayClaim.id, value as PanelClaim['status'])}
+                    onValueChange={handleStatusChange}
                   >
                     <SelectTrigger className="w-48">
                       <SelectValue />
@@ -300,6 +356,18 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
           </div>
         </div>
       </DialogContent>
+      
+      {/* Status Confirmation Dialog */}
+      {pendingStatusChange && (
+        <StatusConfirmationDialog
+          open={showStatusConfirmation}
+          onOpenChange={setShowStatusConfirmation}
+          currentStatus={pendingStatusChange.currentStatus}
+          newStatus={pendingStatusChange.status}
+          claimAmount={claim?.total_amount || 0}
+          onConfirm={handleConfirmStatusChange}
+        />
+      )}
     </Dialog>
   );
 }

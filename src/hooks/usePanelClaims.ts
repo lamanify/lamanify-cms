@@ -194,17 +194,57 @@ export function usePanelClaims() {
   const updateClaimStatus = async (
     claimId: string, 
     status: PanelClaim['status'], 
-    updates?: Partial<PanelClaim>
+    updates?: Partial<PanelClaim & { reason?: string; paidAmount?: number }>
   ) => {
     try {
-      const updateData: any = { status, ...updates };
-      
+      setLoading(true);
+
+      // Get current claim to validate transition
+      const { data: currentClaim, error: fetchError } = await supabase
+        .from('panel_claims')
+        .select('status')
+        .eq('id', claimId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Validate status transition
+      const isValidTransition = await validateStatusTransition(currentClaim.status, status);
+      if (!isValidTransition) {
+        toast({
+          title: "Invalid Status Change",
+          description: `Cannot change status from "${currentClaim.status}" to "${status}"`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updateData: any = {
+        status,
+        updated_at: new Date().toISOString(),
+        ...updates,
+      };
+
+      // Handle rejection with reason
+      if (status === 'rejected' && updates?.reason) {
+        updateData.rejection_reason = updates.reason;
+      }
+
+      // Handle payment with amount validation
+      if (status === 'paid') {
+        updateData.paid_at = new Date().toISOString();
+        if (updates?.paidAmount) {
+          updateData.paid_amount = updates.paidAmount;
+        }
+      }
+
+      // Set timestamp fields based on status
       if (status === 'submitted') {
         updateData.submitted_at = new Date().toISOString();
+        updateData.submitted_by = (await supabase.auth.getUser()).data.user?.id;
       } else if (status === 'approved') {
         updateData.approved_at = new Date().toISOString();
-      } else if (status === 'paid') {
-        updateData.paid_at = new Date().toISOString();
+        updateData.approved_by = (await supabase.auth.getUser()).data.user?.id;
       }
 
       const { error } = await supabase
@@ -214,18 +254,39 @@ export function usePanelClaims() {
 
       if (error) throw error;
 
-      toast({
-        title: "Claim updated successfully",
-        description: `Claim status changed to ${status}.`,
-      });
-
+      // Refresh claims list
       await fetchClaims();
-    } catch (error: any) {
       toast({
-        title: "Error updating claim",
-        description: error.message,
+        title: "Success",
+        description: `Claim status updated to ${status}`,
+      });
+    } catch (error) {
+      console.error('Error updating claim status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update claim status",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateStatusTransition = async (
+    currentStatus: string,
+    newStatus: string
+  ): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('validate_claim_status_transition', {
+        old_status: currentStatus,
+        new_status: newStatus
+      });
+      
+      if (error) throw error;
+      return data as boolean;
+    } catch (error) {
+      console.error('Error validating status transition:', error);
+      return false;
     }
   };
 
@@ -264,6 +325,7 @@ export function usePanelClaims() {
     fetchClaimDetails,
     createClaim,
     updateClaimStatus,
+    validateStatusTransition,
     deleteClaim,
   };
 }
