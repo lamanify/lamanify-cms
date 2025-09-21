@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   Shield,
   Package,
-  FileText
+  FileText,
+  Globe
 } from 'lucide-react';
 import { BasicInfoSettings } from './BasicInfoSettings';
 import { StaffSettings } from './StaffSettings';
@@ -25,9 +26,10 @@ import { EnhancedMedicationManagement } from './EnhancedMedicationManagement';
 import { EnhancedPackageManagement } from './EnhancedPackageManagement';
 import { DocumentTemplatesPage } from './DocumentTemplatesPage';
 import { PanelManagement } from './PanelManagement';
+import { ClaimsIntegrationSettings } from './ClaimsIntegrationSettings';
 import { useAuth } from '@/hooks/useAuth';
 
-type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'panels' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications' | 'packages' | 'templates';
+type SettingCategory = 'dashboard' | 'basic_info' | 'staff' | 'panels' | 'system' | 'payment' | 'notifications' | 'price_tiers' | 'inventory_services' | 'services' | 'medications' | 'packages' | 'templates' | 'claims_integration';
 
 const settingCategories = [
   {
@@ -50,6 +52,13 @@ const settingCategories = [
     description: 'Manage corporate, TPA, and insurance panels for billing',
     icon: Shield,
     color: 'bg-emerald-500',
+  },
+  {
+    id: 'claims_integration' as const,
+    title: 'Claims Integration',
+    description: 'Configure API integrations with TPA and insurance providers',
+    icon: Globe,
+    color: 'bg-slate-500',
   },
   {
     id: 'system' as const,
@@ -142,6 +151,8 @@ export function ClinicConfigurationDashboard() {
         return <EnhancedPackageManagement />;
       case 'templates':
         return <DocumentTemplatesPage />;
+      case 'claims_integration':
+        return <ClaimsIntegrationSettings onBack={() => setActiveCategory('dashboard')} />;
       case 'notifications':
         return <NotificationSettings onBack={() => setActiveCategory('dashboard')} />;
       default:

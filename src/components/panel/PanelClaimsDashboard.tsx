@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertCircle, FileText, Plus, Search, Eye, Download } from 'lucide-react';
+import { AlertCircle, FileText, Plus, Search, Eye, Download, Send } from 'lucide-react';
 import { usePanelClaims, PanelClaim } from '@/hooks/usePanelClaims';
 import { usePanels } from '@/hooks/usePanels';
 import { CreateClaimModal } from './CreateClaimModal';
 import { ClaimDetailsModal } from './ClaimDetailsModal';
+import { PanelClaimsExportManager } from './PanelClaimsExportManager';
+import { ClaimsIntegrationManager } from './ClaimsIntegrationManager';
 import { format } from 'date-fns';
 
 export function PanelClaimsDashboard() {
@@ -21,6 +23,8 @@ export function PanelClaimsDashboard() {
   const [panelFilter, setPanelFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState<PanelClaim | null>(null);
+  const [selectedClaims, setSelectedClaims] = useState<string[]>([]);
+  const [showIntegrationManager, setShowIntegrationManager] = useState(false);
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = claim.claim_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,10 +143,24 @@ export function PanelClaimsDashboard() {
               <CardTitle>Panel Claims</CardTitle>
               <CardDescription>Manage and track panel insurance claims</CardDescription>
             </div>
-            <Button onClick={() => setShowCreateModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Claim
-            </Button>
+            <div className="flex gap-2">
+              <PanelClaimsExportManager
+                claims={claims}
+                filteredClaims={filteredClaims}
+                selectedClaims={selectedClaims}
+              />
+              <Button 
+                variant="outline" 
+                onClick={() => setShowIntegrationManager(true)}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                API Integration
+              </Button>
+              <Button onClick={() => setShowCreateModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Claim
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -279,6 +297,16 @@ export function PanelClaimsDashboard() {
           }}
         />
       )}
+      
+      {/* Integration Manager Modal */}
+      <Dialog open={showIntegrationManager} onOpenChange={setShowIntegrationManager}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Claims Integration Manager</DialogTitle>
+          </DialogHeader>
+          <ClaimsIntegrationManager />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
