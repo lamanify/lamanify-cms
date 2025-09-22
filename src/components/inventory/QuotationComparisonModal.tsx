@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, X, Eye, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface Quotation {
   id: string;
@@ -67,6 +68,7 @@ export const QuotationComparisonModal: React.FC<QuotationComparisonModalProps> =
   onClose,
   quotationRequestId
 }) => {
+  const { formatCurrency } = useCurrency();
   const [quotationRequest, setQuotationRequest] = useState<QuotationRequest | null>(null);
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -268,7 +270,7 @@ export const QuotationComparisonModal: React.FC<QuotationComparisonModalProps> =
                 <CardContent>
                   <div className="text-2xl font-bold">
                     {quotations.length > 0 
-                      ? `MYR ${Math.min(...quotations.map(q => q.total_amount)).toFixed(2)}`
+                      ? formatCurrency(Math.min(...quotations.map(q => q.total_amount)))
                       : 'N/A'}
                   </div>
                 </CardContent>
@@ -337,10 +339,10 @@ export const QuotationComparisonModal: React.FC<QuotationComparisonModalProps> =
                                           ? 'text-green-600' 
                                           : ''
                                       }`}>
-                                        MYR {quotationItem.unit_price.toFixed(2)}
+                                        {formatCurrency(quotationItem.unit_price)}
                                       </div>
                                       <div className="text-sm text-muted-foreground">
-                                        Total: MYR {quotationItem.total_price.toFixed(2)}
+                                        Total: {formatCurrency(quotationItem.total_price)}
                                       </div>
                                       {quotationItem.brand && (
                                         <div className="text-xs text-muted-foreground">
@@ -363,7 +365,7 @@ export const QuotationComparisonModal: React.FC<QuotationComparisonModalProps> =
                         <TableCell className="font-bold">Total Amount</TableCell>
                         {quotations.map((quotation) => (
                           <TableCell key={quotation.id} className="text-center font-bold">
-                            MYR {quotation.total_amount.toFixed(2)}
+                            {formatCurrency(quotation.total_amount)}
                           </TableCell>
                         ))}
                       </TableRow>

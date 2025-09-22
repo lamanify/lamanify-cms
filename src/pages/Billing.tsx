@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Plus, FileText } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface BillingRecord {
   id: string;
@@ -65,12 +66,7 @@ export default function Billing() {
     return variants[status] || 'outline';
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrency();
 
   if (loading) {
     return <div>Loading billing records...</div>;

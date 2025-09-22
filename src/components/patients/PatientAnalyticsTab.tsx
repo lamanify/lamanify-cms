@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PatientStatsPanel } from './PatientStatsPanel';
 import { ExportManager } from './ExportManager';
 import { toast } from 'sonner';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface AnalyticsData {
   totalPatients: number;
@@ -135,12 +136,7 @@ export function PatientAnalyticsTab() {
     fetchAnalyticsData();
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrency();
 
   if (loading) {
     return (

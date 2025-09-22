@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { generatePatientId } from '@/lib/patientIdGenerator';
+import { useCurrency } from '@/hooks/useCurrency';
 import { 
   X, 
   User, 
@@ -77,6 +78,7 @@ export function PatientRegistrationModal({
   onPatientRegistered,
   draftId
 }: PatientRegistrationModalProps) {
+  const { formatCurrency } = useCurrency();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -995,7 +997,7 @@ export function PatientRegistrationModal({
                             placeholder={
                               formData.paymentMethod === 'Insurance' ? 'e.g., Great Eastern, policy #12345' :
                               formData.paymentMethod === 'Company' ? 'e.g., ABC Corporation' :
-                              'e.g., Budget limit: RM500'
+                              `e.g., Budget limit: ${formatCurrency(500)}`
                             }
                             className="mt-1"
                           />

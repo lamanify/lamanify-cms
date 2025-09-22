@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { usePatientActivities } from '@/hooks/usePatientActivities';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /**
  * Auto Activity Logger - Utility functions for automatically logging patient activities
@@ -9,6 +10,7 @@ import { usePatientActivities } from '@/hooks/usePatientActivities';
 export function useAutoActivityLogger() {
   const { profile } = useAuth();
   const { createActivity } = usePatientActivities();
+  const { formatCurrency } = useCurrency();
 
   // Log consultation completion
   const logConsultationActivity = async (patientId: string, consultationData: {
@@ -87,7 +89,7 @@ Instructions: ${medicationData.instructions || 'Follow prescription'}`,
         patient_id: patientId,
         activity_type: 'payment',
         activity_date: new Date().toISOString(),
-        title: `Payment Received: RM ${paymentData.amount.toFixed(2)}`,
+        title: `Payment Received: ${formatCurrency(paymentData.amount)}`,
         content: `Payment Method: ${paymentData.payment_method}
 Invoice: ${paymentData.invoice_number || 'N/A'}
 Description: ${paymentData.description || 'Payment received'}`,

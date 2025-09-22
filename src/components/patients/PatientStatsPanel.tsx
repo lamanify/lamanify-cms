@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useCurrency } from '@/hooks/useCurrency';
 import { 
   Users, 
   TrendingUp, 
@@ -18,6 +19,7 @@ interface PatientStatsPanelProps {
 }
 
 export function PatientStatsPanel({ patients }: PatientStatsPanelProps) {
+  const { formatCurrency } = useCurrency();
   const stats = useMemo(() => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -98,12 +100,6 @@ export function PatientStatsPanel({ patients }: PatientStatsPanelProps) {
     };
   }, [patients]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">

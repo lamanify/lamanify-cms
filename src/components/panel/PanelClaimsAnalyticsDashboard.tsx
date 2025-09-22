@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { usePanels } from '@/hooks/usePanels';
+import { useCurrency } from '@/hooks/useCurrency';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -163,12 +164,7 @@ export const PanelClaimsAnalyticsDashboard = () => {
     return colors[status as keyof typeof colors] || '#6B7280';
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrency();
 
   const exportAnalytics = () => {
     // Implementation for exporting analytics

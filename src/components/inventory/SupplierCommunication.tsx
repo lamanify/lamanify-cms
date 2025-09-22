@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSupplierCommunication, SupplierCommunication as CommunicationType } from '@/hooks/useSupplierCommunication';
 import { usePurchaseOrders } from '@/hooks/usePurchaseOrders';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrency } from '@/hooks/useCurrency';
 import { 
   Mail, 
   Phone, 
@@ -58,6 +59,7 @@ const statusColors = {
 };
 
 export function SupplierCommunication({ supplierId, purchaseOrderId, quotationId }: SupplierCommunicationProps) {
+  const { formatCurrency } = useCurrency();
   const { 
     communications, 
     templates, 
@@ -124,7 +126,7 @@ export function SupplierCommunication({ supplierId, purchaseOrderId, quotationId
       order_date: purchaseOrder?.order_date ? format(new Date(purchaseOrder.order_date), 'MMM dd, yyyy') : 'N/A',
       delivery_date: purchaseOrder?.expected_delivery_date ? format(new Date(purchaseOrder.expected_delivery_date), 'MMM dd, yyyy') : 'N/A',
       expected_delivery_date: purchaseOrder?.expected_delivery_date ? format(new Date(purchaseOrder.expected_delivery_date), 'MMM dd, yyyy') : 'N/A',
-      total_amount: purchaseOrder?.total_amount ? `$${purchaseOrder.total_amount.toFixed(2)}` : '$0.00',
+      total_amount: purchaseOrder?.total_amount ? formatCurrency(purchaseOrder.total_amount) : formatCurrency(0),
       sender_name: 'Clinic Staff',
       clinic_name: 'Medical Clinic',
       item_list: 'Items to be provided'
