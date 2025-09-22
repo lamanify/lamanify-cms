@@ -17,6 +17,7 @@ import { StockReceiptForm } from './StockReceiptForm';
 import { ExpiryTrackingManager } from './ExpiryTrackingManager';
 import { BatchInventoryManager } from './BatchInventoryManager';
 import { PurchaseOrderDashboard } from './PurchaseOrderDashboard';
+import { EnhancedPurchaseOrderDashboard } from './EnhancedPurchaseOrderDashboard';
 import { CostHistoryManager } from './CostHistoryManager';
 import { InventoryValueCalculator } from './InventoryValueCalculator';
 import { InventoryAnalyticsDashboard } from './InventoryAnalyticsDashboard';
@@ -184,7 +185,7 @@ export function InventoryDashboard() {
         </TabsContent>
 
         <TabsContent value="purchase-orders">
-          <PurchaseOrderDashboard />
+          <EnhancedPurchaseOrderDashboard />
         </TabsContent>
 
         <TabsContent value="stock-movements">

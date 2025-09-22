@@ -35,6 +35,7 @@ export interface PurchaseOrder {
   supplier_id: string;
   order_date: string;
   expected_delivery_date?: string;
+  delivery_date?: string;
   status: 'draft' | 'pending' | 'approved' | 'ordered' | 'partially_received' | 'received' | 'cancelled';
   subtotal: number;
   tax_amount?: number;
@@ -43,6 +44,12 @@ export interface PurchaseOrder {
   requested_by?: string;
   approved_by?: string;
   approved_at?: string;
+  received_by?: string;
+  received_at?: string;
+  payment_status?: 'pending' | 'partial' | 'paid';
+  payment_terms?: string;
+  shipping_cost?: number;
+  tracking_number?: string;
   supplier?: Supplier;
   items?: PurchaseOrderItem[];
 }
@@ -69,9 +76,10 @@ export function usePurchaseOrders() {
       const transformedData = (data || []).map(po => ({
         ...po,
         status: po.status as PurchaseOrder['status'],
+        payment_status: po.payment_status as PurchaseOrder['payment_status'],
         supplier: po.supplier ? {
           ...po.supplier,
-          status: 'active' as const // Default to active since we don't have status field in DB yet
+          status: (po.supplier.status || 'active') as 'active' | 'inactive'
         } : undefined
       }));
       
