@@ -344,7 +344,7 @@ export function QuickRegisterForm({
       }
 
       // Add to queue
-      const queueResult = await addToQueue(patient.id, formData.preferredDoctorId === "none" ? undefined : formData.preferredDoctorId);
+      const queueResult = await addToQueue(patient.id, formData.preferredDoctorId && formData.preferredDoctorId !== "none" ? formData.preferredDoctorId : undefined);
       console.log('Queue addition successful:', queueResult);
 
       // Create registration activity
