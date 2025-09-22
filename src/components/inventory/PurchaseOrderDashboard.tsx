@@ -46,7 +46,7 @@ export function PurchaseOrderDashboard() {
     return <Icon className="h-4 w-4" />;
   };
 
-  const pendingOrders = purchaseOrders.filter(po => po.status === 'pending');
+  const pendingOrders = purchaseOrders.filter(po => po.status === 'pending_approval');
   const draftOrders = purchaseOrders.filter(po => po.status === 'draft');
   const approvedOrders = purchaseOrders.filter(po => po.status === 'approved');
 

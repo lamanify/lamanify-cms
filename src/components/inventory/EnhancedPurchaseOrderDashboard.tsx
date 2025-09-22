@@ -12,6 +12,7 @@ import { PurchaseOrderReceiving } from './PurchaseOrderReceiving';
 import { SupplierManagement } from './SupplierManagement';
 import { PurchaseOrderAuditTrail } from './PurchaseOrderAuditTrail';
 import { ProcurementAnalytics } from './ProcurementAnalytics';
+import { QuotationManager } from './QuotationManager';
 import { 
   FileText, 
   Package, 
@@ -76,7 +77,7 @@ export function EnhancedPurchaseOrderDashboard() {
 
   // Calculate analytics
   const totalValue = filteredPOs.reduce((sum, po) => sum + (po.total_amount || 0), 0);
-  const pendingApprovals = filteredPOs.filter(po => po.status === 'pending').length;
+  const pendingApprovals = filteredPOs.filter(po => po.status === 'pending_approval').length;
   const pendingReceipts = filteredPOs.filter(po => po.status === 'ordered').length;
   const partialReceipts = filteredPOs.filter(po => po.status === 'partially_received').length;
 
@@ -126,8 +127,9 @@ export function EnhancedPurchaseOrderDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="quotations">Quotations</TabsTrigger>
           <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
           <TabsTrigger value="receiving">Receiving</TabsTrigger>
           <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
@@ -226,7 +228,7 @@ export function EnhancedPurchaseOrderDashboard() {
                       <TableCell>${po.total_amount?.toFixed(2)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          {po.status === 'pending' && (
+                          {po.status === 'pending_approval' && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -252,6 +254,10 @@ export function EnhancedPurchaseOrderDashboard() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="quotations">
+          <QuotationManager />
         </TabsContent>
 
         <TabsContent value="purchase-orders" className="space-y-6">
@@ -355,7 +361,7 @@ export function EnhancedPurchaseOrderDashboard() {
                       <TableCell>${po.total_amount?.toFixed(2)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          {po.status === 'pending' && (
+                          {po.status === 'pending_approval' && (
                             <Button
                               size="sm"
                               variant="outline"

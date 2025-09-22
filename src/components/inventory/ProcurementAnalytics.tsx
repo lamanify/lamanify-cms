@@ -100,7 +100,7 @@ export function ProcurementAnalytics({ purchaseOrders, suppliers }: ProcurementA
     });
 
     // Performance metrics
-    const pendingApprovals = purchaseOrders.filter(po => po.status === 'pending').length;
+    const pendingApprovals = purchaseOrders.filter(po => po.status === 'pending_approval').length;
     const overduePOs = purchaseOrders.filter(po => {
       if (!po.expected_delivery_date || po.status === 'received' || po.status === 'cancelled') return false;
       return new Date(po.expected_delivery_date) < new Date();
