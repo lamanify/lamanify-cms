@@ -1187,6 +1187,131 @@ export type Database = {
           },
         ]
       }
+      panel_claims_approval_requests: {
+        Row: {
+          approval_notes: string | null
+          approved_by: string | null
+          claim_id: string
+          escalated_at: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          rejection_reason: string | null
+          request_amount: number
+          requested_at: string
+          requested_by: string | null
+          responded_at: string | null
+          status: string
+          workflow_id: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_by?: string | null
+          claim_id: string
+          escalated_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          rejection_reason?: string | null
+          request_amount: number
+          requested_at?: string
+          requested_by?: string | null
+          responded_at?: string | null
+          status?: string
+          workflow_id: string
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_by?: string | null
+          claim_id?: string
+          escalated_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          rejection_reason?: string | null
+          request_amount?: number
+          requested_at?: string
+          requested_by?: string | null
+          responded_at?: string | null
+          status?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claims_approval_requests_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_claims_approval_requests_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims_approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panel_claims_approval_workflows: {
+        Row: {
+          approval_order: number
+          approval_timeout_hours: number | null
+          auto_approve: boolean
+          created_at: string
+          created_by: string | null
+          escalation_role: Database["public"]["Enums"]["user_role"] | null
+          id: string
+          is_active: boolean
+          max_approval_amount: number | null
+          min_approval_amount: number
+          panel_id: string | null
+          required_role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          workflow_name: string
+        }
+        Insert: {
+          approval_order?: number
+          approval_timeout_hours?: number | null
+          auto_approve?: boolean
+          created_at?: string
+          created_by?: string | null
+          escalation_role?: Database["public"]["Enums"]["user_role"] | null
+          id?: string
+          is_active?: boolean
+          max_approval_amount?: number | null
+          min_approval_amount?: number
+          panel_id?: string | null
+          required_role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          workflow_name: string
+        }
+        Update: {
+          approval_order?: number
+          approval_timeout_hours?: number | null
+          auto_approve?: boolean
+          created_at?: string
+          created_by?: string | null
+          escalation_role?: Database["public"]["Enums"]["user_role"] | null
+          id?: string
+          is_active?: boolean
+          max_approval_amount?: number | null
+          min_approval_amount?: number
+          panel_id?: string | null
+          required_role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          workflow_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claims_approval_workflows_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "panels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       panel_claims_audit: {
         Row: {
           change_reason: string | null
@@ -1239,6 +1364,169 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      panel_claims_notifications: {
+        Row: {
+          claim_id: string | null
+          created_at: string
+          failed_reason: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          recipient_email: string | null
+          recipient_phone: string | null
+          recipient_type: string
+          retry_count: number | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          claim_id?: string | null
+          created_at?: string
+          failed_reason?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recipient_type: string
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          claim_id?: string | null
+          created_at?: string
+          failed_reason?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recipient_type?: string
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claims_notifications_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panel_claims_schedules: {
+        Row: {
+          auto_submit: boolean
+          billing_period_days: number
+          created_at: string
+          created_by: string | null
+          day_of_period: number | null
+          frequency: string
+          id: string
+          is_active: boolean
+          last_generated_at: string | null
+          next_generation_at: string | null
+          panel_id: string
+          schedule_name: string
+          template_settings: Json | null
+          updated_at: string
+        }
+        Insert: {
+          auto_submit?: boolean
+          billing_period_days?: number
+          created_at?: string
+          created_by?: string | null
+          day_of_period?: number | null
+          frequency: string
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_generation_at?: string | null
+          panel_id: string
+          schedule_name: string
+          template_settings?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          auto_submit?: boolean
+          billing_period_days?: number
+          created_at?: string
+          created_by?: string | null
+          day_of_period?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_generation_at?: string | null
+          panel_id?: string
+          schedule_name?: string
+          template_settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claims_schedules_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "panels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panel_claims_status_rules: {
+        Row: {
+          auto_execute: boolean
+          created_at: string
+          delay_hours: number | null
+          from_status: string
+          id: string
+          is_active: boolean
+          notification_enabled: boolean
+          rule_name: string
+          to_status: string
+          trigger_condition: Json
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          auto_execute?: boolean
+          created_at?: string
+          delay_hours?: number | null
+          from_status: string
+          id?: string
+          is_active?: boolean
+          notification_enabled?: boolean
+          rule_name: string
+          to_status: string
+          trigger_condition?: Json
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          auto_execute?: boolean
+          created_at?: string
+          delay_hours?: number | null
+          from_status?: string
+          id?: string
+          is_active?: boolean
+          notification_enabled?: boolean
+          rule_name?: string
+          to_status?: string
+          trigger_condition?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       panels: {
         Row: {
@@ -3476,6 +3764,10 @@ export type Database = {
           p_duration_minutes: number
           p_exclude_appointment_id?: string
         }
+        Returns: boolean
+      }
+      check_claim_needs_approval: {
+        Args: { p_amount: number; p_claim_id: string }
         Returns: boolean
       }
       check_po_requires_approval: {
