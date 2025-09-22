@@ -1944,9 +1944,50 @@ export type Database = {
           },
         ]
       }
+      purchase_order_audit: {
+        Row: {
+          change_reason: string | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          metadata: Json | null
+          new_data: Json | null
+          new_status: string
+          previous_data: Json | null
+          previous_status: string | null
+          purchase_order_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          new_status: string
+          previous_data?: Json | null
+          previous_status?: string | null
+          purchase_order_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          new_status?: string
+          previous_data?: Json | null
+          previous_status?: string | null
+          purchase_order_id?: string
+        }
+        Relationships: []
+      }
       purchase_order_items: {
         Row: {
+          batch_number: string | null
           created_at: string
+          expiry_date: string | null
           id: string
           item_name: string
           medication_id: string | null
@@ -1954,11 +1995,16 @@ export type Database = {
           purchase_order_id: string
           quantity_ordered: number
           quantity_received: number | null
+          received_date: string | null
+          received_quantity: number | null
+          received_unit_cost: number | null
           total_cost: number
           unit_cost: number
         }
         Insert: {
+          batch_number?: string | null
           created_at?: string
+          expiry_date?: string | null
           id?: string
           item_name: string
           medication_id?: string | null
@@ -1966,11 +2012,16 @@ export type Database = {
           purchase_order_id: string
           quantity_ordered: number
           quantity_received?: number | null
+          received_date?: string | null
+          received_quantity?: number | null
+          received_unit_cost?: number | null
           total_cost: number
           unit_cost: number
         }
         Update: {
+          batch_number?: string | null
           created_at?: string
+          expiry_date?: string | null
           id?: string
           item_name?: string
           medication_id?: string | null
@@ -1978,6 +2029,9 @@ export type Database = {
           purchase_order_id?: string
           quantity_ordered?: number
           quantity_received?: number | null
+          received_date?: string | null
+          received_quantity?: number | null
+          received_unit_cost?: number | null
           total_cost?: number
           unit_cost?: number
         }
@@ -2003,51 +2057,72 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           created_at: string
+          delivery_date: string | null
           expected_delivery_date: string | null
           id: string
           notes: string | null
           order_date: string
+          payment_status: string | null
+          payment_terms: string | null
           po_number: string
+          received_at: string | null
+          received_by: string | null
           requested_by: string | null
+          shipping_cost: number | null
           status: string
           subtotal: number
           supplier_id: string
           tax_amount: number | null
           total_amount: number
+          tracking_number: string | null
           updated_at: string
         }
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
+          delivery_date?: string | null
           expected_delivery_date?: string | null
           id?: string
           notes?: string | null
           order_date?: string
+          payment_status?: string | null
+          payment_terms?: string | null
           po_number: string
+          received_at?: string | null
+          received_by?: string | null
           requested_by?: string | null
+          shipping_cost?: number | null
           status?: string
           subtotal?: number
           supplier_id: string
           tax_amount?: number | null
           total_amount?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Update: {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
+          delivery_date?: string | null
           expected_delivery_date?: string | null
           id?: string
           notes?: string | null
           order_date?: string
+          payment_status?: string | null
+          payment_terms?: string | null
           po_number?: string
+          received_at?: string | null
+          received_by?: string | null
           requested_by?: string | null
+          shipping_cost?: number | null
           status?: string
           subtotal?: number
           supplier_id?: string
           tax_amount?: number | null
           total_amount?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2301,7 +2376,10 @@ export type Database = {
           id: string
           is_active: boolean
           notes: string | null
+          payment_terms: string | null
           phone: string | null
+          status: string | null
+          supplier_code: string | null
           supplier_name: string
           updated_at: string
         }
@@ -2314,7 +2392,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           notes?: string | null
+          payment_terms?: string | null
           phone?: string | null
+          status?: string | null
+          supplier_code?: string | null
           supplier_name: string
           updated_at?: string
         }
@@ -2327,7 +2408,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           notes?: string | null
+          payment_terms?: string | null
           phone?: string | null
+          status?: string | null
+          supplier_code?: string | null
           supplier_name?: string
           updated_at?: string
         }
@@ -2644,6 +2728,10 @@ export type Database = {
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      process_po_receipt: {
+        Args: { p_items: Json; p_po_id: string }
+        Returns: undefined
       }
       process_waitlist_for_slot: {
         Args: {
