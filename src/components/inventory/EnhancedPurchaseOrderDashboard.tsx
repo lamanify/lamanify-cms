@@ -15,6 +15,8 @@ import { ProcurementAnalytics } from './ProcurementAnalytics';
 import { QuotationManager } from './QuotationManager';
 import { DocumentManager } from './DocumentManager';
 import { SupplierCommunication } from './SupplierCommunication';
+import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
+import { ProcurementReports } from './ProcurementReports';
 import { 
   FileText, 
   Package, 
@@ -129,12 +131,15 @@ export function EnhancedPurchaseOrderDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="quotations">Quotations</TabsTrigger>
           <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
           <TabsTrigger value="receiving">Receiving</TabsTrigger>
           <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="communication">Communication</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="audit-trail">Audit Trail</TabsTrigger>
         </TabsList>
@@ -454,8 +459,12 @@ export function EnhancedPurchaseOrderDashboard() {
           <SupplierCommunication />
         </TabsContent>
 
+        <TabsContent value="reports">
+          <ProcurementReports />
+        </TabsContent>
+
         <TabsContent value="analytics">
-          <ProcurementAnalytics purchaseOrders={filteredPOs} suppliers={suppliers} />
+          <AdvancedAnalyticsDashboard />
         </TabsContent>
 
         <TabsContent value="audit-trail">
