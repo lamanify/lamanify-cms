@@ -1843,6 +1843,134 @@ export type Database = {
           },
         ]
       }
+      po_approval_workflows: {
+        Row: {
+          approval_sequence: number
+          auto_approve_below_threshold: boolean | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          escalation_hours: number | null
+          id: string
+          is_active: boolean | null
+          max_order_value: number | null
+          min_order_value: number
+          notification_emails: string[] | null
+          required_role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          workflow_name: string
+        }
+        Insert: {
+          approval_sequence?: number
+          auto_approve_below_threshold?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          escalation_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_order_value?: number | null
+          min_order_value?: number
+          notification_emails?: string[] | null
+          required_role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          workflow_name: string
+        }
+        Update: {
+          approval_sequence?: number
+          auto_approve_below_threshold?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          escalation_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_order_value?: number | null
+          min_order_value?: number
+          notification_emails?: string[] | null
+          required_role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          workflow_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_approval_workflows_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      po_templates: {
+        Row: {
+          auto_generate_day: number | null
+          auto_generate_frequency: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          next_generation_date: string | null
+          supplier_id: string
+          template_data: Json
+          template_name: string
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          auto_generate_day?: number | null
+          auto_generate_frequency?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          next_generation_date?: string | null
+          supplier_id: string
+          template_data?: Json
+          template_name: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          auto_generate_day?: number | null
+          auto_generate_frequency?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          next_generation_date?: string | null
+          supplier_id?: string
+          template_data?: Json
+          template_name?: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_templates_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pre_consultation_forms: {
         Row: {
           appointment_types: string[] | null
@@ -2668,6 +2796,81 @@ export type Database = {
         }
         Relationships: []
       }
+      reorder_suggestions: {
+        Row: {
+          average_consumption_daily: number | null
+          cost_estimate: number | null
+          created_at: string
+          current_stock: number
+          expires_at: string | null
+          id: string
+          last_order_date: string | null
+          last_order_quantity: number | null
+          lead_time_days: number | null
+          medication_id: string
+          minimum_stock_level: number
+          priority_level: string | null
+          reason: string | null
+          status: string | null
+          suggested_quantity: number
+          suggested_supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          average_consumption_daily?: number | null
+          cost_estimate?: number | null
+          created_at?: string
+          current_stock: number
+          expires_at?: string | null
+          id?: string
+          last_order_date?: string | null
+          last_order_quantity?: number | null
+          lead_time_days?: number | null
+          medication_id: string
+          minimum_stock_level: number
+          priority_level?: string | null
+          reason?: string | null
+          status?: string | null
+          suggested_quantity: number
+          suggested_supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          average_consumption_daily?: number | null
+          cost_estimate?: number | null
+          created_at?: string
+          current_stock?: number
+          expires_at?: string | null
+          id?: string
+          last_order_date?: string | null
+          last_order_quantity?: number | null
+          lead_time_days?: number | null
+          medication_id?: string
+          minimum_stock_level?: number
+          priority_level?: string | null
+          reason?: string | null
+          status?: string | null
+          suggested_quantity?: number
+          suggested_supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reorder_suggestions_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reorder_suggestions_suggested_supplier_id_fkey"
+            columns: ["suggested_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resources: {
         Row: {
           availability_schedule: Json | null
@@ -2817,6 +3020,84 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      supplier_catalog_items: {
+        Row: {
+          brand_name: string | null
+          catalog_description: string | null
+          catalog_item_code: string
+          catalog_item_name: string
+          catalog_metadata: Json | null
+          created_at: string
+          id: string
+          is_available: boolean | null
+          last_updated_price_date: string | null
+          lead_time_days: number | null
+          manufacturer: string | null
+          medication_id: string | null
+          minimum_order_quantity: number | null
+          pack_size: number | null
+          supplier_id: string
+          unit_of_measure: string | null
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          brand_name?: string | null
+          catalog_description?: string | null
+          catalog_item_code: string
+          catalog_item_name: string
+          catalog_metadata?: Json | null
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          last_updated_price_date?: string | null
+          lead_time_days?: number | null
+          manufacturer?: string | null
+          medication_id?: string | null
+          minimum_order_quantity?: number | null
+          pack_size?: number | null
+          supplier_id: string
+          unit_of_measure?: string | null
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string | null
+          catalog_description?: string | null
+          catalog_item_code?: string
+          catalog_item_name?: string
+          catalog_metadata?: Json | null
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          last_updated_price_date?: string | null
+          lead_time_days?: number | null
+          manufacturer?: string | null
+          medication_id?: string | null
+          minimum_order_quantity?: number | null
+          pack_size?: number | null
+          supplier_id?: string
+          unit_of_measure?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_catalog_items_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_catalog_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supplier_communications: {
         Row: {
@@ -3197,6 +3478,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_po_requires_approval: {
+        Args: { order_value: number; user_id: string }
+        Returns: boolean
+      }
       check_resource_availability: {
         Args: {
           p_appointment_date: string
@@ -3247,6 +3532,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_reorder_suggestions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_calendar_appointments: {
         Args: { p_doctor_id?: string; p_end_date: string; p_start_date: string }
         Returns: {
@@ -3267,6 +3556,10 @@ export type Database = {
       get_default_tier_for_panel: {
         Args: { p_panel_id: string }
         Returns: string
+      }
+      get_user_po_approval_limit: {
+        Args: { user_id: string }
+        Returns: number
       }
       get_user_role: {
         Args: Record<PropertyKey, never>
