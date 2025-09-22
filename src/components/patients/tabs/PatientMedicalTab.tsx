@@ -55,19 +55,6 @@ export function PatientMedicalTab({ patient, onSave }: PatientMedicalTabProps) {
           fetchMedicalRecords();
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'consultation_notes',
-          filter: `patient_id=eq.${patient.id}`
-        },
-        () => {
-          console.log('Consultation notes updated, refreshing...');
-          fetchMedicalRecords();
-        }
-      )
       .subscribe();
 
     return () => {
@@ -99,27 +86,7 @@ export function PatientMedicalTab({ patient, onSave }: PatientMedicalTabProps) {
 
     setLoading(true);
     try {
-      // First, fetch all consultation notes for this patient
-      const { data: consultationNotes, error: notesError } = await supabase
-        .from('consultation_notes')
-        .select(`
-          id,
-          created_at,
-          diagnosis,
-          chief_complaint,
-          symptoms,
-          treatment_plan,
-          prescriptions,
-          vital_signs,
-          doctor_id,
-          profiles!consultation_notes_doctor_id_fkey(first_name, last_name)
-        `)
-        .eq('patient_id', patient.id)
-        .order('created_at', { ascending: false });
-
-      if (notesError) throw notesError;
-
-      // Also fetch patient visits for additional context
+      // Fetch patient visits which contain consultation data in session_data
       const { data: visits, error: visitsError } = await supabase
         .from('patient_visits')
         .select(`
@@ -136,51 +103,30 @@ export function PatientMedicalTab({ patient, onSave }: PatientMedicalTabProps) {
 
       if (visitsError) throw visitsError;
 
-      // Combine consultation notes and visits into medical records
+      // Transform visits into medical records by extracting data from session_data
       const records: MedicalRecord[] = [];
 
-      // Add consultation notes as medical records
-      consultationNotes?.forEach(note => {
-        const doctorProfile = Array.isArray(note.profiles) ? note.profiles[0] : note.profiles;
-        const doctorName = doctorProfile 
-          ? `Dr. ${doctorProfile.first_name} ${doctorProfile.last_name}`
-          : 'Unknown Doctor';
-
-        records.push({
-          id: note.id,
-          visit_date: note.created_at,
-          doctor_name: doctorName,
-          diagnosis: note.diagnosis || '',
-          consultation_notes: note.chief_complaint || note.symptoms || '',
-          prescriptions: [], // Will be populated from session data if available
-          session_data: null
-        });
-      });
-
-      // Add visits that might not have consultation notes
       visits?.forEach(visit => {
-        // Check if we already have a record for this visit from consultation notes
-        const existingRecord = records.find(record => 
-          new Date(record.visit_date).toDateString() === new Date(visit.visit_date).toDateString()
-        );
+        const doctorProfile = Array.isArray(visit.profiles) ? visit.profiles[0] : visit.profiles;
+        let doctorName = 'Unknown Doctor';
+        
+        if (doctorProfile) {
+          doctorName = `Dr. ${doctorProfile.first_name} ${doctorProfile.last_name}`;
+        }
 
-        if (!existingRecord) {
-          const doctorProfile = Array.isArray(visit.profiles) ? visit.profiles[0] : visit.profiles;
-          const doctorName = doctorProfile 
-            ? `Dr. ${doctorProfile.first_name} ${doctorProfile.last_name}`
-            : 'Unknown Doctor';
+        let diagnosis = '';
+        let consultation_notes = '';
+        let prescriptions: any[] = [];
 
-          let diagnosis = '';
-          let consultation_notes = '';
-          let prescriptions: any[] = [];
+        if (visit.session_data) {
+          const sessionData = visit.session_data as any;
+          diagnosis = sessionData?.diagnosis || '';
+          consultation_notes = sessionData?.consultation_notes || '';
+          prescriptions = sessionData?.prescribed_items || [];
+        }
 
-          if (visit.session_data) {
-            const sessionData = visit.session_data as any;
-            diagnosis = sessionData?.diagnosis || '';
-            consultation_notes = sessionData?.consultation_notes || '';
-            prescriptions = sessionData?.prescribed_items || [];
-          }
-
+        // Only add records that have some consultation data
+        if (consultation_notes || diagnosis || prescriptions.length > 0) {
           records.push({
             id: visit.id,
             visit_date: visit.visit_date,
@@ -190,20 +136,8 @@ export function PatientMedicalTab({ patient, onSave }: PatientMedicalTabProps) {
             prescriptions,
             session_data: visit.session_data
           });
-        } else {
-          // Enhance existing record with visit session data
-          if (visit.session_data) {
-            const sessionData = visit.session_data as any;
-            if (sessionData?.prescribed_items) {
-              existingRecord.prescriptions = sessionData.prescribed_items;
-            }
-            existingRecord.session_data = visit.session_data;
-          }
         }
       });
-
-      // Sort records by date (most recent first)
-      records.sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime());
 
       setMedicalRecords(records);
     } catch (error) {
