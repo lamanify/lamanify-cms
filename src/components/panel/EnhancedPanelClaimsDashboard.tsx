@@ -19,10 +19,13 @@ import {
   Upload
 } from 'lucide-react';
 import { PanelClaimsDashboard } from './PanelClaimsDashboard';
-import { ClaimDocumentsManager } from './ClaimDocumentsManager';
-import { ClaimNotesManager } from './ClaimNotesManager';
 import { PanelClaimsAnalyticsDashboard } from './PanelClaimsAnalyticsDashboard';
 import { PanelClaimsWorkflowManager } from './PanelClaimsWorkflowManager';
+import { PanelClaimsExportManager } from './PanelClaimsExportManager';
+import { ClaimsReconciliationManager } from './ClaimsReconciliationManager';
+import { ReconciliationDashboard } from './ReconciliationDashboard';
+import { ClaimDocumentsManager } from './ClaimDocumentsManager';
+import { ClaimNotesManager } from './ClaimNotesManager';
 import { usePanelClaims } from '@/hooks/usePanelClaims';
 
 interface ClaimDetailsModalProps {
@@ -104,7 +107,7 @@ export function EnhancedPanelClaimsDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="claims" className="flex items-center space-x-2">
             <FileText className="h-4 w-4" />
             <span>Claims</span>
@@ -112,6 +115,14 @@ export function EnhancedPanelClaimsDashboard() {
           <TabsTrigger value="analytics" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="reconciliation" className="flex items-center space-x-2">
+            <Settings className="h-4 w-4" />
+            <span>Reconciliation</span>
+          </TabsTrigger>
+          <TabsTrigger value="reconciliation-analytics" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Recon Analytics</span>
           </TabsTrigger>
           <TabsTrigger value="workflow" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
@@ -131,6 +142,14 @@ export function EnhancedPanelClaimsDashboard() {
           <PanelClaimsAnalyticsDashboard />
         </TabsContent>
 
+        <TabsContent value="reconciliation">
+          <ClaimsReconciliationManager />
+        </TabsContent>
+
+        <TabsContent value="reconciliation-analytics">
+          <ReconciliationDashboard />
+        </TabsContent>
+
         <TabsContent value="workflow">
           <PanelClaimsWorkflowManager />
         </TabsContent>
@@ -138,13 +157,12 @@ export function EnhancedPanelClaimsDashboard() {
         <TabsContent value="reports">
           <Card>
             <CardHeader>
-              <CardTitle>Scheduled Reports</CardTitle>
+              <CardTitle>Export & Reports</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="text-center py-8 text-muted-foreground">
                 <Download className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Scheduled reports functionality coming soon</p>
-                <p className="text-sm">Automated PDF reports and email scheduling</p>
+                <p>Export and reporting functionality</p>
               </div>
             </CardContent>
           </Card>

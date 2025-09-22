@@ -1543,6 +1543,80 @@ export type Database = {
           },
         ]
       }
+      panel_claims_reconciliation: {
+        Row: {
+          claim_amount: number
+          claim_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          received_amount: number
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_date: string
+          reconciliation_status: string
+          rejection_reason: string | null
+          updated_at: string
+          variance_amount: number | null
+          variance_percentage: number | null
+          variance_type: string
+        }
+        Insert: {
+          claim_amount?: number
+          claim_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          received_amount?: number
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_date?: string
+          reconciliation_status?: string
+          rejection_reason?: string | null
+          updated_at?: string
+          variance_amount?: number | null
+          variance_percentage?: number | null
+          variance_type?: string
+        }
+        Update: {
+          claim_amount?: number
+          claim_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          received_amount?: number
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_date?: string
+          reconciliation_status?: string
+          rejection_reason?: string | null
+          updated_at?: string
+          variance_amount?: number | null
+          variance_percentage?: number | null
+          variance_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_reconciliation_claim"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       panel_claims_scheduled_reports: {
         Row: {
           created_at: string
@@ -3257,6 +3331,144 @@ export type Database = {
         }
         Relationships: []
       }
+      reconciliation_approval_requests: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          escalated_at: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          reconciliation_id: string
+          rejection_reason: string | null
+          requested_at: string
+          requested_by: string | null
+          status: string
+          workflow_id: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          escalated_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          reconciliation_id: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          status?: string
+          workflow_id: string
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          escalated_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          reconciliation_id?: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          status?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_approval_reconciliation"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims_reconciliation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_approval_workflow"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "reconciliation_approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reconciliation_approval_workflows: {
+        Row: {
+          auto_escalate_days: number | null
+          created_at: string
+          created_by: string | null
+          escalation_role: Database["public"]["Enums"]["user_role"] | null
+          id: string
+          is_active: boolean
+          panel_id: string | null
+          required_approver_role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          variance_threshold_amount: number
+          variance_threshold_percentage: number
+          workflow_name: string
+        }
+        Insert: {
+          auto_escalate_days?: number | null
+          created_at?: string
+          created_by?: string | null
+          escalation_role?: Database["public"]["Enums"]["user_role"] | null
+          id?: string
+          is_active?: boolean
+          panel_id?: string | null
+          required_approver_role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          variance_threshold_amount?: number
+          variance_threshold_percentage?: number
+          workflow_name: string
+        }
+        Update: {
+          auto_escalate_days?: number | null
+          created_at?: string
+          created_by?: string | null
+          escalation_role?: Database["public"]["Enums"]["user_role"] | null
+          id?: string
+          is_active?: boolean
+          panel_id?: string | null
+          required_approver_role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          variance_threshold_amount?: number
+          variance_threshold_percentage?: number
+          workflow_name?: string
+        }
+        Relationships: []
+      }
+      reconciliation_variance_categories: {
+        Row: {
+          category_code: string
+          category_name: string
+          created_at: string
+          default_action: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          category_code: string
+          category_name: string
+          created_at?: string
+          default_action?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          category_code?: string
+          category_name?: string
+          created_at?: string
+          default_action?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
       reorder_suggestions: {
         Row: {
           average_consumption_daily: number | null
@@ -3945,6 +4157,10 @@ export type Database = {
       }
       check_po_requires_approval: {
         Args: { order_value: number; user_id: string }
+        Returns: boolean
+      }
+      check_reconciliation_needs_approval: {
+        Args: { reconciliation_id: string }
         Returns: boolean
       }
       check_resource_availability: {
