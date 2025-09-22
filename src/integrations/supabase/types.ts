@@ -2065,11 +2065,13 @@ export type Database = {
           payment_status: string | null
           payment_terms: string | null
           po_number: string
+          quotation_id: string | null
+          quotation_request_id: string | null
           received_at: string | null
           received_by: string | null
           requested_by: string | null
           shipping_cost: number | null
-          status: string
+          status: Database["public"]["Enums"]["po_status"]
           subtotal: number
           supplier_id: string
           tax_amount: number | null
@@ -2089,11 +2091,13 @@ export type Database = {
           payment_status?: string | null
           payment_terms?: string | null
           po_number: string
+          quotation_id?: string | null
+          quotation_request_id?: string | null
           received_at?: string | null
           received_by?: string | null
           requested_by?: string | null
           shipping_cost?: number | null
-          status?: string
+          status?: Database["public"]["Enums"]["po_status"]
           subtotal?: number
           supplier_id: string
           tax_amount?: number | null
@@ -2113,11 +2117,13 @@ export type Database = {
           payment_status?: string | null
           payment_terms?: string | null
           po_number?: string
+          quotation_id?: string | null
+          quotation_request_id?: string | null
           received_at?: string | null
           received_by?: string | null
           requested_by?: string | null
           shipping_cost?: number | null
-          status?: string
+          status?: Database["public"]["Enums"]["po_status"]
           subtotal?: number
           supplier_id?: string
           tax_amount?: number | null
@@ -2126,6 +2132,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_orders_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_quotation_request_id_fkey"
+            columns: ["quotation_request_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -2167,6 +2187,323 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quotation_comparisons: {
+        Row: {
+          comparison_criteria: Json | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          notes: string | null
+          quotation_ids: string[]
+          quotation_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          comparison_criteria?: Json | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          quotation_ids: string[]
+          quotation_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          comparison_criteria?: Json | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          quotation_ids?: string[]
+          quotation_request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_comparisons_quotation_request_id_fkey"
+            columns: ["quotation_request_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_items: {
+        Row: {
+          brand: string | null
+          created_at: string
+          delivery_time_days: number | null
+          id: string
+          item_description: string
+          medication_id: string | null
+          minimum_order_quantity: number | null
+          notes: string | null
+          quantity: number
+          quotation_id: string
+          quotation_request_item_id: string | null
+          specifications: string | null
+          total_price: number
+          unit_of_measure: string
+          unit_price: number
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          delivery_time_days?: number | null
+          id?: string
+          item_description: string
+          medication_id?: string | null
+          minimum_order_quantity?: number | null
+          notes?: string | null
+          quantity: number
+          quotation_id: string
+          quotation_request_item_id?: string | null
+          specifications?: string | null
+          total_price: number
+          unit_of_measure?: string
+          unit_price: number
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          delivery_time_days?: number | null
+          id?: string
+          item_description?: string
+          medication_id?: string | null
+          minimum_order_quantity?: number | null
+          notes?: string | null
+          quantity?: number
+          quotation_id?: string
+          quotation_request_item_id?: string | null
+          specifications?: string | null
+          total_price?: number
+          unit_of_measure?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_items_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_items_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_items_quotation_request_item_id_fkey"
+            columns: ["quotation_request_item_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_request_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_request_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_description: string
+          medication_id: string | null
+          notes: string | null
+          quotation_request_id: string
+          requested_quantity: number
+          specifications: string | null
+          unit_of_measure: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_description: string
+          medication_id?: string | null
+          notes?: string | null
+          quotation_request_id: string
+          requested_quantity: number
+          specifications?: string | null
+          unit_of_measure?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_description?: string
+          medication_id?: string | null
+          notes?: string | null
+          quotation_request_id?: string
+          requested_quantity?: number
+          specifications?: string | null
+          unit_of_measure?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_request_items_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_request_items_quotation_request_id_fkey"
+            columns: ["quotation_request_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_requests: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          priority: string
+          request_date: string
+          request_number: string
+          requested_by: string
+          required_by_date: string | null
+          status: string
+          supplier_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          priority?: string
+          request_date?: string
+          request_number: string
+          requested_by: string
+          required_by_date?: string | null
+          status?: string
+          supplier_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          priority?: string
+          request_date?: string
+          request_number?: string
+          requested_by?: string
+          required_by_date?: string | null
+          status?: string
+          supplier_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          comparison_notes: string | null
+          created_at: string
+          currency: string
+          delivery_terms: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string
+          quotation_request_id: string
+          rejected_reason: string | null
+          status: string
+          supplier_id: string
+          supplier_reference: string | null
+          total_amount: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          comparison_notes?: string | null
+          created_at?: string
+          currency?: string
+          delivery_terms?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_terms?: string | null
+          quotation_date?: string
+          quotation_number: string
+          quotation_request_id: string
+          rejected_reason?: string | null
+          status?: string
+          supplier_id: string
+          supplier_reference?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          comparison_notes?: string | null
+          created_at?: string
+          currency?: string
+          delivery_terms?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_terms?: string | null
+          quotation_date?: string
+          quotation_number?: string
+          quotation_request_id?: string
+          rejected_reason?: string | null
+          status?: string
+          supplier_id?: string
+          supplier_reference?: string | null
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_quotation_request_id_fkey"
+            columns: ["quotation_request_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recall_campaigns: {
         Row: {
@@ -2680,6 +3017,10 @@ export type Database = {
         Args: { p_patient_id: string; p_tier_id: string }
         Returns: boolean
       }
+      convert_quotation_to_po: {
+        Args: { p_created_by?: string; p_quotation_id: string }
+        Returns: string
+      }
       create_recurring_appointments: {
         Args: { p_base_appointment_id: string; p_recurrence_pattern: Json }
         Returns: string[]
@@ -2701,6 +3042,14 @@ export type Database = {
         Returns: string
       }
       generate_queue_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_quotation_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_quotation_request_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
@@ -2761,6 +3110,17 @@ export type Database = {
         | "Insurance"
         | "Corporate"
         | "Government Panel"
+      po_status:
+        | "draft"
+        | "quotation_requested"
+        | "quotation_received"
+        | "pending_approval"
+        | "approved"
+        | "ordered"
+        | "partially_received"
+        | "received"
+        | "closed"
+        | "cancelled"
       user_role: "admin" | "doctor" | "nurse" | "receptionist" | "locum"
     }
     CompositeTypes: {
@@ -2894,6 +3254,18 @@ export const Constants = {
         "Insurance",
         "Corporate",
         "Government Panel",
+      ],
+      po_status: [
+        "draft",
+        "quotation_requested",
+        "quotation_received",
+        "pending_approval",
+        "approved",
+        "ordered",
+        "partially_received",
+        "received",
+        "closed",
+        "cancelled",
       ],
       user_role: ["admin", "doctor", "nurse", "receptionist", "locum"],
     },
