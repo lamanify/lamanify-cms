@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertCircle, FileText, Plus, Search, Eye, Download, Send } from 'lucide-react';
 import { usePanelClaims, PanelClaim } from '@/hooks/usePanelClaims';
 import { usePanels } from '@/hooks/usePanels';
@@ -13,6 +14,8 @@ import { CreateClaimModal } from './CreateClaimModal';
 import { ClaimDetailsModal } from './ClaimDetailsModal';
 import { PanelClaimsExportManager } from './PanelClaimsExportManager';
 import { ClaimsIntegrationManager } from './ClaimsIntegrationManager';
+import { BulkActionToolbar } from './BulkActionToolbar';
+import { BatchStatusUpdateModal } from './BatchStatusUpdateModal';
 import { format } from 'date-fns';
 
 export function PanelClaimsDashboard() {
@@ -25,6 +28,8 @@ export function PanelClaimsDashboard() {
   const [selectedClaim, setSelectedClaim] = useState<PanelClaim | null>(null);
   const [selectedClaims, setSelectedClaims] = useState<string[]>([]);
   const [showIntegrationManager, setShowIntegrationManager] = useState(false);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchStatus, setBatchStatus] = useState<PanelClaim['status'] | null>(null);
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = claim.claim_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,6 +66,45 @@ export function PanelClaimsDashboard() {
   const handleStatusChange = async (claimId: string, newStatus: PanelClaim['status']) => {
     await updateClaimStatus(claimId, newStatus);
   };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedClaims(filteredClaims.map(claim => claim.id));
+    } else {
+      setSelectedClaims([]);
+    }
+  };
+
+  const handleSelectClaim = (claimId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedClaims(prev => [...prev, claimId]);
+    } else {
+      setSelectedClaims(prev => prev.filter(id => id !== claimId));
+    }
+  };
+
+  const handleBulkStatusChange = (newStatus: PanelClaim['status']) => {
+    setBatchStatus(newStatus);
+    setShowBatchModal(true);
+  };
+
+  const handleBatchConfirm = async (data: { reason?: string; paidAmount?: number }) => {
+    if (batchStatus) {
+      // Process each selected claim
+      for (const claimId of selectedClaims) {
+        await updateClaimStatus(claimId, batchStatus, data);
+      }
+      
+      // Reset selections and close modal
+      setSelectedClaims([]);
+      setShowBatchModal(false);
+      setBatchStatus(null);
+      fetchClaims();
+    }
+  };
+
+  const isAllSelected = filteredClaims.length > 0 && selectedClaims.length === filteredClaims.length;
+  const isIndeterminate = selectedClaims.length > 0 && selectedClaims.length < filteredClaims.length;
 
   const getTotalsByStatus = () => {
     return claims.reduce((acc, claim) => {
@@ -202,11 +246,27 @@ export function PanelClaimsDashboard() {
             </Select>
           </div>
 
+          {/* Bulk Actions Toolbar */}
+          <BulkActionToolbar
+            selectedClaims={selectedClaims}
+            claims={filteredClaims}
+            onClearSelection={() => setSelectedClaims([])}
+            onBulkStatusChange={handleBulkStatusChange}
+          />
+
           {/* Claims Table */}
           <div className="border rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all claims"
+                      className={isIndeterminate ? "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground" : ""}
+                    />
+                  </TableHead>
                   <TableHead>Claim Number</TableHead>
                   <TableHead>Panel</TableHead>
                   <TableHead>Period</TableHead>
@@ -220,19 +280,26 @@ export function PanelClaimsDashboard() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       Loading claims...
                     </TableCell>
                   </TableRow>
                 ) : filteredClaims.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       No claims found matching your criteria
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredClaims.map((claim) => (
                     <TableRow key={claim.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedClaims.includes(claim.id)}
+                          onCheckedChange={(checked) => handleSelectClaim(claim.id, checked as boolean)}
+                          aria-label={`Select claim ${claim.claim_number}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{claim.claim_number}</TableCell>
                       <TableCell>
                         <div>
@@ -307,6 +374,17 @@ export function PanelClaimsDashboard() {
           <ClaimsIntegrationManager />
         </DialogContent>
       </Dialog>
+
+      {/* Batch Status Update Modal */}
+      {showBatchModal && batchStatus && (
+        <BatchStatusUpdateModal
+          open={showBatchModal}
+          onOpenChange={setShowBatchModal}
+          selectedClaims={selectedClaims.map(id => filteredClaims.find(c => c.id === id)!).filter(Boolean)}
+          newStatus={batchStatus}
+          onConfirm={handleBatchConfirm}
+        />
+      )}
     </div>
   );
 }
