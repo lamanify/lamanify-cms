@@ -36,8 +36,8 @@ export interface PurchaseOrder {
   order_date: string;
   expected_delivery_date?: string;
   delivery_date?: string;
-  status: 'draft' | 'pending' | 'approved' | 'ordered' | 'partially_received' | 'received' | 'cancelled';
-  subtotal: number;
+  status: 'draft' | 'quotation_requested' | 'quotation_received' | 'pending_approval' | 'approved' | 'ordered' | 'partially_received' | 'received' | 'closed' | 'cancelled';
+  subtotal?: number;
   tax_amount?: number;
   total_amount: number;
   notes?: string;
@@ -50,6 +50,8 @@ export interface PurchaseOrder {
   payment_terms?: string;
   shipping_cost?: number;
   tracking_number?: string;
+  quotation_id?: string;
+  quotation_request_id?: string;
   supplier?: Supplier;
   items?: PurchaseOrderItem[];
 }
