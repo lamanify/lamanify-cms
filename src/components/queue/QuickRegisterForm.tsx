@@ -330,17 +330,67 @@ export function QuickRegisterForm({
       }).select().single();
       if (patientError) throw patientError;
 
-      // Auto-assign tier if panel is selected
+      // Auto-assign price tier based on payment method
+      let assignedTierId = null;
+
       if (formData.panelId && formData.paymentMethod === 'panel') {
         // Get default tier for this panel
-        const {
-          data: panelTiers
-        } = await supabase.from('panels_price_tiers').select('tier_id, is_default_tier').eq('panel_id', formData.panelId).eq('is_default_tier', true).single();
+        const { data: panelTiers } = await supabase
+          .from('panels_price_tiers')
+          .select('tier_id, is_default_tier')
+          .eq('panel_id', formData.panelId)
+          .eq('is_default_tier', true)
+          .single();
+        
         if (panelTiers) {
-          await supabase.from('patients').update({
-            assigned_tier_id: panelTiers.tier_id
-          }).eq('id', patient.id);
+          assignedTierId = panelTiers.tier_id;
         }
+      } else {
+        // Map payment methods to default price tiers
+        const tierMapping = {
+          'self_pay': 'Self Pay',
+          'insurance': 'Insurance',
+          'company': 'Company', 
+          'government': 'Government'
+        };
+
+        const tierName = tierMapping[formData.paymentMethod];
+        if (tierName) {
+          const { data: defaultTier } = await supabase
+            .from('price_tiers')
+            .select('id')
+            .eq('tier_name', tierName)
+            .eq('tier_type', 'standard')
+            .single();
+          
+          if (defaultTier) {
+            assignedTierId = defaultTier.id;
+          }
+        }
+      }
+
+      // If no specific tier found, use the first available standard tier
+      if (!assignedTierId) {
+        const { data: fallbackTier } = await supabase
+          .from('price_tiers')
+          .select('id')
+          .eq('tier_type', 'standard')
+          .order('tier_name')
+          .limit(1)
+          .single();
+        
+        if (fallbackTier) {
+          assignedTierId = fallbackTier.id;
+        }
+      }
+
+      // Update patient with assigned tier
+      if (assignedTierId) {
+        await supabase.from('patients').update({
+          assigned_tier_id: assignedTierId,
+          tier_assigned_at: new Date().toISOString(),
+          tier_assigned_by: profile?.id
+        }).eq('id', patient.id);
       }
 
       // Add to queue
