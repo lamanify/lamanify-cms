@@ -119,7 +119,7 @@ export const useWorkflowManagement = () => {
         .select(`
           *,
           suppliers (
-            id, name
+            id, supplier_name
           )
         `)
         .eq('is_active', true)
@@ -129,7 +129,7 @@ export const useWorkflowManagement = () => {
       
       const templatesWithSupplier = data?.map(template => ({
         ...template,
-        supplier_name: template.suppliers?.name || 'Unknown'
+        supplier_name: template.suppliers?.supplier_name || 'Unknown'
       })) || [];
 
       setPOTemplates(templatesWithSupplier);
@@ -162,7 +162,7 @@ export const useWorkflowManagement = () => {
       const suggestionsWithNames = (data || []).map((suggestion: any) => ({
         ...suggestion,
         medication_name: suggestion.medications?.name || 'Unknown',
-        supplier_name: suggestion.suppliers?.name || null,
+        supplier_name: suggestion.suppliers?.supplier_name || null,
         priority_level: suggestion.priority_level as 'low' | 'normal' | 'high' | 'urgent'
       }));
 
@@ -181,7 +181,7 @@ export const useWorkflowManagement = () => {
         .select(`
           *,
           suppliers (
-            id, name
+            id, supplier_name
           ),
           medications (
             id, name
@@ -199,7 +199,7 @@ export const useWorkflowManagement = () => {
       
       const itemsWithNames = data?.map(item => ({
         ...item,
-        supplier_name: item.suppliers?.name || 'Unknown',
+        supplier_name: item.suppliers?.supplier_name || 'Unknown',
         medication_name: item.medications?.name || 'Unknown'
       })) || [];
 
