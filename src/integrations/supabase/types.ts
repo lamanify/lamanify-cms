@@ -507,6 +507,102 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_settings: {
+        Row: {
+          country_code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_encrypted: boolean | null
+          setting_category: string
+          setting_key: string
+          setting_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_encrypted?: boolean | null
+          setting_category: string
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_encrypted?: boolean | null
+          setting_category?: string
+          setting_key?: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compliance_submissions: {
+        Row: {
+          api_response: Json | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error_details: Json | null
+          failed_submissions: number | null
+          id: string
+          invoice_ids: string[] | null
+          next_retry_at: string | null
+          retry_count: number | null
+          submission_batch_id: string | null
+          submission_data: Json | null
+          submission_status: string
+          submission_type: string
+          submitted_at: string | null
+          successful_submissions: number | null
+          total_invoices: number
+        }
+        Insert: {
+          api_response?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_details?: Json | null
+          failed_submissions?: number | null
+          id?: string
+          invoice_ids?: string[] | null
+          next_retry_at?: string | null
+          retry_count?: number | null
+          submission_batch_id?: string | null
+          submission_data?: Json | null
+          submission_status?: string
+          submission_type: string
+          submitted_at?: string | null
+          successful_submissions?: number | null
+          total_invoices?: number
+        }
+        Update: {
+          api_response?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_details?: Json | null
+          failed_submissions?: number | null
+          id?: string
+          invoice_ids?: string[] | null
+          next_retry_at?: string | null
+          retry_count?: number | null
+          submission_batch_id?: string | null
+          submission_data?: Json | null
+          submission_status?: string
+          submission_type?: string
+          submitted_at?: string | null
+          successful_submissions?: number | null
+          total_invoices?: number
+        }
+        Relationships: []
+      }
       consultation_files: {
         Row: {
           consultation_note_id: string | null
@@ -676,6 +772,53 @@ export type Database = {
         }
         Relationships: []
       }
+      digital_signatures: {
+        Row: {
+          certificate_info: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string
+          is_valid: boolean | null
+          signature_data: string
+          signature_type: string
+          signing_timestamp: string
+          validation_details: Json | null
+        }
+        Insert: {
+          certificate_info?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          is_valid?: boolean | null
+          signature_data: string
+          signature_type: string
+          signing_timestamp?: string
+          validation_details?: Json | null
+        }
+        Update: {
+          certificate_info?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          is_valid?: boolean | null
+          signature_data?: string
+          signature_type?: string
+          signing_timestamp?: string
+          validation_details?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_signature_einvoice"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "e_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_templates: {
         Row: {
           content: string
@@ -717,6 +860,120 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      e_invoice_templates: {
+        Row: {
+          compliance_country: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          template_content: Json
+          template_name: string
+          template_type: string
+          template_version: string
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          compliance_country?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          template_content?: Json
+          template_name: string
+          template_type: string
+          template_version?: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          compliance_country?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          template_content?: Json
+          template_name?: string
+          template_type?: string
+          template_version?: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
+      e_invoices: {
+        Row: {
+          compliance_status: string
+          created_at: string
+          created_by: string | null
+          digital_signature: Json | null
+          id: string
+          invoice_data: Json
+          invoice_id: string
+          lhdn_response: Json | null
+          qr_code_data: string | null
+          qr_code_url: string | null
+          submission_date: string | null
+          submission_id: string | null
+          template_id: string | null
+          uin: string
+          updated_at: string
+          validation_errors: Json | null
+        }
+        Insert: {
+          compliance_status?: string
+          created_at?: string
+          created_by?: string | null
+          digital_signature?: Json | null
+          id?: string
+          invoice_data?: Json
+          invoice_id: string
+          lhdn_response?: Json | null
+          qr_code_data?: string | null
+          qr_code_url?: string | null
+          submission_date?: string | null
+          submission_id?: string | null
+          template_id?: string | null
+          uin: string
+          updated_at?: string
+          validation_errors?: Json | null
+        }
+        Update: {
+          compliance_status?: string
+          created_at?: string
+          created_by?: string | null
+          digital_signature?: Json | null
+          id?: string
+          invoice_data?: Json
+          invoice_id?: string
+          lhdn_response?: Json | null
+          qr_code_data?: string | null
+          qr_code_url?: string | null
+          submission_date?: string | null
+          submission_id?: string | null
+          template_id?: string | null
+          uin?: string
+          updated_at?: string
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_einvoice_billing"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "billing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_einvoice_template"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "e_invoice_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       follow_up_campaigns: {
         Row: {
@@ -4225,6 +4482,10 @@ export type Database = {
       generate_reorder_suggestions: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      generate_uin: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_calendar_appointments: {
         Args: { p_doctor_id?: string; p_end_date: string; p_start_date: string }
