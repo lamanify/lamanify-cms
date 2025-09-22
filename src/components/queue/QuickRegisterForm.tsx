@@ -1157,7 +1157,7 @@ export function QuickRegisterForm({ isOpen, onClose }: QuickRegisterFormProps) {
               <Button 
                 onClick={handleSubmit}
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-accent hover:bg-accent/90"
               >
                 {loading ? (
                   <>
