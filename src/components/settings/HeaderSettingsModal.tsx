@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Save, Upload } from 'lucide-react';
 import { useHeaderSettings, HeaderSettings } from '@/hooks/useHeaderSettings';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface HeaderSettingsModalProps {
   open: boolean;
@@ -19,6 +21,8 @@ interface HeaderSettingsModalProps {
 
 export function HeaderSettingsModal({ open, onOpenChange }: HeaderSettingsModalProps) {
   const { headerSettings, updateHeaderSettings } = useHeaderSettings();
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     clinic_name: '',
     logo_url: '',
@@ -46,12 +50,68 @@ export function HeaderSettingsModal({ open, onOpenChange }: HeaderSettingsModalP
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // For now, we'll just store the file name
-      // In a real implementation, you'd upload to storage and get the URL
-      setFormData(prev => ({ ...prev, logo_url: file.name }));
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please select an image file (PNG, JPG, etc.)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please select an image smaller than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo_${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('clinic-logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('clinic-logos')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, logo_url: publicUrl }));
+      
+      toast({
+        title: 'Logo uploaded successfully',
+        description: 'Your clinic logo has been uploaded.',
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload logo. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -89,9 +149,10 @@ export function HeaderSettingsModal({ open, onOpenChange }: HeaderSettingsModalP
                 <Button
                   variant="outline"
                   onClick={() => document.getElementById('logo')?.click()}
+                  disabled={uploading}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {formData.logo_url ? 'Change Logo' : 'Upload Logo'}
+                  {uploading ? 'Uploading...' : formData.logo_url ? 'Change Logo' : 'Upload Logo'}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">
                   Recommended: 200x200px, PNG or JPG
