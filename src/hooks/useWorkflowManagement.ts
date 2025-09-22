@@ -119,7 +119,7 @@ export const useWorkflowManagement = () => {
         .select(`
           *,
           suppliers (
-            name
+            id, name
           )
         `)
         .eq('is_active', true)
@@ -129,7 +129,7 @@ export const useWorkflowManagement = () => {
       
       const templatesWithSupplier = data?.map(template => ({
         ...template,
-        supplier_name: template.suppliers?.supplier_name || 'Unknown'
+        supplier_name: template.suppliers?.name || 'Unknown'
       })) || [];
 
       setPOTemplates(templatesWithSupplier);
@@ -147,10 +147,10 @@ export const useWorkflowManagement = () => {
         .select(`
           *,
           medications (
-            name
+            id, name
           ),
           suppliers (
-            name
+            id, name
           )
         `)
         .neq('status', 'dismissed')
@@ -159,11 +159,12 @@ export const useWorkflowManagement = () => {
 
       if (error) throw error;
       
-      const suggestionsWithNames = data?.map(suggestion => ({
+      const suggestionsWithNames = (data || []).map((suggestion: any) => ({
         ...suggestion,
         medication_name: suggestion.medications?.name || 'Unknown',
-        supplier_name: suggestion.suppliers?.supplier_name || 'Unknown'
-      })) || [];
+        supplier_name: suggestion.suppliers?.name || null,
+        priority_level: suggestion.priority_level as 'low' | 'normal' | 'high' | 'urgent'
+      }));
 
       setReorderSuggestions(suggestionsWithNames);
     } catch (error: any) {
@@ -180,10 +181,10 @@ export const useWorkflowManagement = () => {
         .select(`
           *,
           suppliers (
-            name
+            id, name
           ),
           medications (
-            name
+            id, name
           )
         `)
         .eq('is_available', true);
@@ -198,7 +199,7 @@ export const useWorkflowManagement = () => {
       
       const itemsWithNames = data?.map(item => ({
         ...item,
-        supplier_name: item.suppliers?.supplier_name || 'Unknown',
+        supplier_name: item.suppliers?.name || 'Unknown',
         medication_name: item.medications?.name || 'Unknown'
       })) || [];
 
