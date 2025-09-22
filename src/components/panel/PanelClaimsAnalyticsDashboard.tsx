@@ -285,12 +285,13 @@ export const PanelClaimsAnalyticsDashboard = () => {
       </div>
 
       {/* Charts */}
-      <Tabs defaultValue="trends" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="trends">Monthly Trends</TabsTrigger>
-          <TabsTrigger value="status">Status Distribution</TabsTrigger>
-          <TabsTrigger value="panels">Panel Performance</TabsTrigger>
-        </TabsList>
+            <Tabs defaultValue="trends" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="trends">Monthly Trends</TabsTrigger>
+                <TabsTrigger value="status">Status Distribution</TabsTrigger>
+                <TabsTrigger value="panels">Panel Performance</TabsTrigger>
+                <TabsTrigger value="aging">Claim Aging</TabsTrigger>
+              </TabsList>
 
         <TabsContent value="trends" className="space-y-4">
           <Card>

@@ -18,7 +18,11 @@ import { BulkActionToolbar } from './BulkActionToolbar';
 import { BatchStatusUpdateModal } from './BatchStatusUpdateModal';
 import { format } from 'date-fns';
 
-export function PanelClaimsDashboard() {
+interface PanelClaimsDashboardProps {
+  onViewClaim?: (claimId: string) => void;
+}
+
+export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps = {}) {
   const { claims, loading, fetchClaims, updateClaimStatus } = usePanelClaims();
   const { panels } = usePanels();
   const [searchTerm, setSearchTerm] = useState('');

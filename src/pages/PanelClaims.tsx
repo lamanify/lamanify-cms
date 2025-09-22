@@ -1,9 +1,5 @@
-import { PanelClaimsDashboard } from '@/components/panel/PanelClaimsDashboard';
+import { EnhancedPanelClaimsDashboard } from '@/components/panel/EnhancedPanelClaimsDashboard';
 
 export default function PanelClaims() {
-  return (
-    <div className="container mx-auto py-6">
-      <PanelClaimsDashboard />
-    </div>
-  );
+  return <EnhancedPanelClaimsDashboard />;
 }

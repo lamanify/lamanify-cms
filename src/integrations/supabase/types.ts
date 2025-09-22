@@ -1048,6 +1048,62 @@ export type Database = {
         }
         Relationships: []
       }
+      panel_claim_documents: {
+        Row: {
+          claim_id: string
+          created_at: string
+          description: string | null
+          document_name: string
+          document_type: string
+          file_path: string
+          file_size: number | null
+          id: string
+          is_required: boolean
+          mime_type: string | null
+          updated_at: string
+          uploaded_by: string | null
+          version: number
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          description?: string | null
+          document_name: string
+          document_type: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          is_required?: boolean
+          mime_type?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: number
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          description?: string | null
+          document_name?: string
+          document_type?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          is_required?: boolean
+          mime_type?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claim_documents_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       panel_claim_items: {
         Row: {
           billing_id: string
@@ -1092,6 +1148,69 @@ export type Database = {
             columns: ["claim_id"]
             isOneToOne: false
             referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panel_claim_notes: {
+        Row: {
+          claim_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_system_generated: boolean
+          metadata: Json | null
+          note_category: string
+          parent_note_id: string | null
+          priority: string
+          updated_at: string
+          updated_by: string | null
+          visibility: string
+        }
+        Insert: {
+          claim_id: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system_generated?: boolean
+          metadata?: Json | null
+          note_category: string
+          parent_note_id?: string | null
+          priority?: string
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Update: {
+          claim_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system_generated?: boolean
+          metadata?: Json | null
+          note_category?: string
+          parent_note_id?: string | null
+          priority?: string
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_claim_notes_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panel_claim_notes_parent_note_id_fkey"
+            columns: ["parent_note_id"]
+            isOneToOne: false
+            referencedRelation: "panel_claim_notes"
             referencedColumns: ["id"]
           },
         ]
@@ -1423,6 +1542,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      panel_claims_scheduled_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_range_days: number
+          id: string
+          is_active: boolean
+          last_generated_at: string | null
+          next_generation_at: string | null
+          panel_filters: string[] | null
+          recipients: string[]
+          report_name: string
+          report_template: Json | null
+          report_type: string
+          schedule_day: number | null
+          schedule_frequency: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_range_days?: number
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_generation_at?: string | null
+          panel_filters?: string[] | null
+          recipients: string[]
+          report_name: string
+          report_template?: Json | null
+          report_type: string
+          schedule_day?: number | null
+          schedule_frequency: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_range_days?: number
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_generation_at?: string | null
+          panel_filters?: string[] | null
+          recipients?: string[]
+          report_name?: string
+          report_template?: Json | null
+          report_type?: string
+          schedule_day?: number | null
+          schedule_frequency?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       panel_claims_schedules: {
         Row: {
@@ -3799,6 +3972,15 @@ export type Database = {
       generate_check_in_link: {
         Args: { p_appointment_id: string }
         Returns: string
+      }
+      generate_claim_aging_analysis: {
+        Args: { p_panel_id?: string }
+        Returns: {
+          age_range: string
+          avg_amount: number
+          claim_count: number
+          total_amount: number
+        }[]
       }
       generate_claim_number: {
         Args: Record<PropertyKey, never>
