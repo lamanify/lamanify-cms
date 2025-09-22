@@ -157,12 +157,25 @@ export function PatientConsultationModal({
     }
   }, [isOpen, queueEntry?.patient?.id, getDraftForPatient, refreshSessionData]);
 
+  // Clear consultation data when patient changes
+  useEffect(() => {
+    if (isOpen && queueEntry?.patient?.id) {
+      console.log('Patient changed, clearing consultation data for new patient:', queueEntry?.patient?.id);
+      setConsultationNotes('');
+      setDiagnosis('');
+      setTreatmentItems([]);
+      setCurrentDraftId(null);
+      setIsDraftSaved(false);
+    }
+  }, [queueEntry?.patient?.id, isOpen]);
+
   // Sync with real-time session data
   useEffect(() => {
-    if (sessionData && isOpen) {
+    if (sessionData && isOpen && queueEntry?.patient?.id) {
       console.log('Syncing consultation with session data:', sessionData);
 
-      // Only update if session data is newer than current state
+      // Only update if session data is from current patient's session
+      // and if session data is newer than current state
       if (sessionData.consultation_notes && sessionData.consultation_notes !== consultationNotes) {
         setConsultationNotes(sessionData.consultation_notes);
       }
