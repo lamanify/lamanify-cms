@@ -468,6 +468,45 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_templates: {
+        Row: {
+          content_template: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          subject_template: string
+          template_name: string
+          template_type: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          content_template: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject_template: string
+          template_name: string
+          template_type: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          content_template?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject_template?: string
+          template_name?: string
+          template_type?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: []
+      }
       consultation_files: {
         Row: {
           consultation_note_id: string | null
@@ -1983,6 +2022,82 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: string
+          file_path: string
+          file_size: number | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          mime_type: string | null
+          purchase_order_id: string | null
+          quotation_id: string | null
+          supplier_id: string | null
+          updated_at: string
+          uploaded_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          mime_type?: string | null
+          purchase_order_id?: string | null
+          quotation_id?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          mime_type?: string | null
+          purchase_order_id?: string | null
+          quotation_id?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_documents_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_documents_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_documents_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           batch_number: string | null
@@ -2702,6 +2817,85 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      supplier_communications: {
+        Row: {
+          attachments: Json | null
+          communication_type: string
+          content: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          id: string
+          metadata: Json | null
+          purchase_order_id: string | null
+          quotation_id: string | null
+          recipient_email: string | null
+          sender_email: string | null
+          status: string | null
+          subject: string | null
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          communication_type: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          id?: string
+          metadata?: Json | null
+          purchase_order_id?: string | null
+          quotation_id?: string | null
+          recipient_email?: string | null
+          sender_email?: string | null
+          status?: string | null
+          subject?: string | null
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          communication_type?: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          id?: string
+          metadata?: Json | null
+          purchase_order_id?: string | null
+          quotation_id?: string | null
+          recipient_email?: string | null
+          sender_email?: string | null
+          status?: string | null
+          subject?: string | null
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_communications_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_communications_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_communications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppliers: {
         Row: {

@@ -13,6 +13,8 @@ import { SupplierManagement } from './SupplierManagement';
 import { PurchaseOrderAuditTrail } from './PurchaseOrderAuditTrail';
 import { ProcurementAnalytics } from './ProcurementAnalytics';
 import { QuotationManager } from './QuotationManager';
+import { DocumentManager } from './DocumentManager';
+import { SupplierCommunication } from './SupplierCommunication';
 import { 
   FileText, 
   Package, 
@@ -442,6 +444,14 @@ export function EnhancedPurchaseOrderDashboard() {
 
         <TabsContent value="suppliers">
           <SupplierManagement />
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <DocumentManager />
+        </TabsContent>
+
+        <TabsContent value="communication">
+          <SupplierCommunication />
         </TabsContent>
 
         <TabsContent value="analytics">
