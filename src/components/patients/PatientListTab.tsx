@@ -95,27 +95,38 @@ export function PatientListTab() {
 
       if (patientsError) throw patientsError;
 
-      // Fetch appointments data for analytics
-      const { data: appointmentsData } = await supabase
-        .from('appointments')
-        .select('patient_id, appointment_date, status');
+      // Fetch actual patient visits for accurate visit counting
+      const { data: visitsData } = await supabase
+        .from('patient_visits')
+        .select('id, patient_id, visit_date, total_amount, payment_status');
 
-      // Fetch billing data for additional analytics
-      const { data: billingData } = await supabase
-        .from('billing')
-        .select('patient_id, created_at, amount');
+      // Fetch payment records for accurate financial data
+      const { data: paymentsData } = await supabase
+        .from('payment_records')
+        .select('visit_id, amount, status')
+        .eq('status', 'confirmed');
+
+      // Create a map of visit IDs to payment amounts
+      const visitPayments = new Map();
+      paymentsData?.forEach(payment => {
+        const currentAmount = visitPayments.get(payment.visit_id) || 0;
+        visitPayments.set(payment.visit_id, currentAmount + (payment.amount || 0));
+      });
 
       // Process and enhance patient data
       const enhancedPatients: EnhancedPatient[] = (patientsData || []).map(patient => {
-        const patientAppointments = appointmentsData?.filter(apt => apt.patient_id === patient.id) || [];
-        const patientBilling = billingData?.filter(bill => bill.patient_id === patient.id) || [];
+        const patientVisits = visitsData?.filter(visit => visit.patient_id === patient.id) || [];
         
-        const totalVisits = patientAppointments.length + patientBilling.length;
-        const lastVisitDate = patientAppointments.length > 0 
-          ? Math.max(...patientAppointments.map(v => new Date(v.appointment_date).getTime()))
+        const totalVisits = patientVisits.length;
+        const lastVisitDate = patientVisits.length > 0 
+          ? Math.max(...patientVisits.map(v => new Date(v.visit_date).getTime()))
           : null;
         
-        const amountSpent = patientBilling.reduce((sum, bill) => sum + (bill.amount || 0), 0);
+        // Calculate amount spent from actual payments
+        const amountSpent = patientVisits.reduce((sum, visit) => {
+          const paidAmount = visitPayments.get(visit.id) || 0;
+          return sum + paidAmount;
+        }, 0);
         
         // Calculate visit frequency
         let visitFrequency: 'new' | 'regular' | 'frequent' | 'inactive' = 'new';

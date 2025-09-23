@@ -11,8 +11,9 @@ interface ColumnConfig {
   visible: boolean;
   sortable: boolean;
 }
-import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Settings, Eye, Phone, Mail, Calendar } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Settings, Eye, Phone, Mail, Calendar, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface PatientDataTableProps {
   patients: any[];
@@ -38,6 +39,7 @@ export function PatientDataTable({
   onSort
 }: PatientDataTableProps) {
   const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const { formatCurrency } = useCurrency();
 
   const visibleColumns = columns.filter(col => col.visible);
   const allSelected = selectedPatients.length === patients.length && patients.length > 0;
@@ -54,6 +56,22 @@ export function PatientDataTable({
     }
     
     return age;
+  };
+
+  const formatPhoneForWhatsApp = (phone: string) => {
+    if (!phone) return '';
+    // Remove all non-digit characters
+    const cleaned = phone.replace(/\D/g, '');
+    // If it starts with 0, replace with 60 (Malaysia country code)
+    if (cleaned.startsWith('0')) {
+      return '60' + cleaned.substring(1);
+    }
+    // If it already starts with 60, use as is
+    if (cleaned.startsWith('60')) {
+      return cleaned;
+    }
+    // Otherwise assume it needs 60 prefix
+    return '60' + cleaned;
   };
 
   const renderSortIcon = (columnKey: string) => {
@@ -147,7 +165,7 @@ export function PatientDataTable({
       case 'amount_spent':
         return (
           <div className="text-right font-medium">
-            ${(patient.amount_spent || 0).toFixed(2)}
+            {formatCurrency(patient.amount_spent || 0)}
           </div>
         );
       
@@ -291,6 +309,18 @@ export function PatientDataTable({
                           <a href={`mailto:${patient.email}`}>
                             <Mail className="h-4 w-4 mr-2" />
                             Send Email
+                          </a>
+                        </DropdownMenuItem>
+                      )}
+                      {patient.phone && (
+                        <DropdownMenuItem asChild>
+                          <a 
+                            href={`https://api.whatsapp.com/send/?phone=${formatPhoneForWhatsApp(patient.phone)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            WhatsApp
                           </a>
                         </DropdownMenuItem>
                       )}
