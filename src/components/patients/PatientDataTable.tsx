@@ -344,7 +344,7 @@ export function PatientDataTable({
       )}
 
       {/* WhatsApp Template Modal */}
-      {whatsAppModal.patient && (
+      {whatsAppModal?.patient && (
         <WhatsAppTemplateModal
           isOpen={whatsAppModal.isOpen}
           onClose={() => setWhatsAppModal({ isOpen: false, patient: null })}
