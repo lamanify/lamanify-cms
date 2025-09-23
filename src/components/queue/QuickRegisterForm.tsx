@@ -318,14 +318,27 @@ export function QuickRegisterForm({
         gender: formData.gender.toLowerCase(),
         phone: formData.phone,
         email: formData.email || null,
+        // Save detailed address fields
+        street_address: formData.streetAddress || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        postal_code: formData.postalCode || null,
+        country: formData.country || 'Malaysia',
+        // Keep legacy full address field
         address: fullAddress || null,
         emergency_contact_name: formData.emergencyContactName || null,
         emergency_contact_phone: formData.emergencyContactPhone || null,
         allergies: formData.allergies || null,
         medical_history: formData.medicalConditions || null,
+        insurance_info: formData.insuranceInfo || null,
         visit_reason: formData.visitReason.trim() || null,
+        urgency_level: formData.urgencyLevel || 'normal',
+        // Save identity document to correct field based on type
+        nric: idType === 'nric' ? formData.nricId : null,
+        passport: idType === 'passport' ? formData.nricId : null,
+        birth_cert: idType === 'birth_cert' ? formData.nricId : null,
         // Ensure empty strings become null
-        additional_notes: [formData.nricId ? `${idType?.toUpperCase()}: ${formData.nricId}` : null, formData.visitDetails ? `Visit Details: ${formData.visitDetails}` : null].filter(Boolean).join('; ') || null,
+        additional_notes: [formData.visitDetails ? `Visit Details: ${formData.visitDetails}` : null].filter(Boolean).join('; ') || null,
         created_by: profile?.id
       }).select().single();
       if (patientError) throw patientError;

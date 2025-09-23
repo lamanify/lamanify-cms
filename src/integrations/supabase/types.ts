@@ -2457,6 +2457,10 @@ export type Database = {
           address: string | null
           allergies: string | null
           assigned_tier_id: string | null
+          avatar_url: string | null
+          birth_cert: string | null
+          city: string | null
+          country: string | null
           created_at: string | null
           created_by: string | null
           date_of_birth: string
@@ -2466,10 +2470,14 @@ export type Database = {
           first_name: string
           gender: string | null
           id: string
+          insurance_info: string | null
           last_name: string
           medical_history: string | null
+          nric: string | null
+          passport: string | null
           patient_id: string | null
           phone: string | null
+          postal_code: string | null
           preferred_name: string | null
           referral_source: string | null
           reliability_score: number | null
@@ -2478,9 +2486,12 @@ export type Database = {
           restriction_reason: string | null
           risk_level: string | null
           secondary_phone: string | null
+          state: string | null
+          street_address: string | null
           tier_assigned_at: string | null
           tier_assigned_by: string | null
           updated_at: string | null
+          urgency_level: string | null
           visit_reason: string | null
         }
         Insert: {
@@ -2488,6 +2499,10 @@ export type Database = {
           address?: string | null
           allergies?: string | null
           assigned_tier_id?: string | null
+          avatar_url?: string | null
+          birth_cert?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           created_by?: string | null
           date_of_birth: string
@@ -2497,10 +2512,14 @@ export type Database = {
           first_name: string
           gender?: string | null
           id?: string
+          insurance_info?: string | null
           last_name: string
           medical_history?: string | null
+          nric?: string | null
+          passport?: string | null
           patient_id?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferred_name?: string | null
           referral_source?: string | null
           reliability_score?: number | null
@@ -2509,9 +2528,12 @@ export type Database = {
           restriction_reason?: string | null
           risk_level?: string | null
           secondary_phone?: string | null
+          state?: string | null
+          street_address?: string | null
           tier_assigned_at?: string | null
           tier_assigned_by?: string | null
           updated_at?: string | null
+          urgency_level?: string | null
           visit_reason?: string | null
         }
         Update: {
@@ -2519,6 +2541,10 @@ export type Database = {
           address?: string | null
           allergies?: string | null
           assigned_tier_id?: string | null
+          avatar_url?: string | null
+          birth_cert?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           created_by?: string | null
           date_of_birth?: string
@@ -2528,10 +2554,14 @@ export type Database = {
           first_name?: string
           gender?: string | null
           id?: string
+          insurance_info?: string | null
           last_name?: string
           medical_history?: string | null
+          nric?: string | null
+          passport?: string | null
           patient_id?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferred_name?: string | null
           referral_source?: string | null
           reliability_score?: number | null
@@ -2540,9 +2570,12 @@ export type Database = {
           restriction_reason?: string | null
           risk_level?: string | null
           secondary_phone?: string | null
+          state?: string | null
+          street_address?: string | null
           tier_assigned_at?: string | null
           tier_assigned_by?: string | null
           updated_at?: string | null
+          urgency_level?: string | null
           visit_reason?: string | null
         }
         Relationships: [
