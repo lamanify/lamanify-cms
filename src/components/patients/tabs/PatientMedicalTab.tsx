@@ -120,6 +120,7 @@ export function PatientMedicalTab({ patient, onSave }: PatientMedicalTabProps) {
 
         if (visit.session_data) {
           const sessionData = visit.session_data as any;
+          console.log('Session data for visit:', visit.id, sessionData);
           diagnosis = sessionData?.diagnosis || '';
           consultation_notes = sessionData?.consultation_notes || '';
           prescriptions = sessionData?.prescribed_items || [];
@@ -249,30 +250,56 @@ export function PatientMedicalTab({ patient, onSave }: PatientMedicalTabProps) {
                           </div>
                         )}
 
-                        {/* Prescriptions */}
+                        {/* Treatment Items */}
                         {record.prescriptions && record.prescriptions.length > 0 && (
                           <div className="mb-3">
                             <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
                               <Pill className="h-4 w-4" />
-                              Prescriptions ({record.prescriptions.length})
+                              Treatment Items ({record.prescriptions.length})
                             </h4>
                             <div className="space-y-2">
-                              {record.prescriptions.map((prescription, idx) => (
+                              {record.prescriptions.map((item, idx) => (
                                 <div key={idx} className="bg-muted p-2 rounded text-sm">
-                                  <div className="font-medium">{prescription.name}</div>
-                                  {prescription.dosage && (
+                                  <div className="flex items-center justify-between">
+                                    <div className="font-medium">{item.name}</div>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {item.type === 'medication' ? 'Medication' : 'Service'}
+                                    </Badge>
+                                  </div>
+                                  
+                                  {item.quantity && (
                                     <div className="text-muted-foreground">
-                                      Dosage: {prescription.dosage}
+                                      Quantity: {item.quantity}
                                     </div>
                                   )}
-                                  {prescription.instructions && (
+                                  
+                                  {item.dosage && (
                                     <div className="text-muted-foreground">
-                                      Instructions: {prescription.instructions}
+                                      Dosage: {item.dosage}
                                     </div>
                                   )}
-                                  {prescription.quantity && (
+                                  
+                                  {item.frequency && (
                                     <div className="text-muted-foreground">
-                                      Quantity: {prescription.quantity}
+                                      Frequency: {item.frequency}
+                                    </div>
+                                  )}
+                                  
+                                  {item.duration && (
+                                    <div className="text-muted-foreground">
+                                      Duration: {item.duration} {item.duration.includes('day') ? '' : 'days'}
+                                    </div>
+                                  )}
+                                  
+                                  {item.instructions && (
+                                    <div className="text-muted-foreground">
+                                      Instructions: {item.instructions}
+                                    </div>
+                                  )}
+                                  
+                                  {item.price && (
+                                    <div className="text-muted-foreground font-medium">
+                                      Amount: RM {item.price.toFixed(2)}
                                     </div>
                                   )}
                                 </div>
