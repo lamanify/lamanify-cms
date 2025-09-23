@@ -36,6 +36,7 @@ interface IntelligentPrescriptionModalProps {
   onAdd: (item: PrescriptionItem) => void;
   editItem?: PrescriptionItem | null;
   patientPriceTier?: string; // Auto-selected from patient registration
+  patientPaymentMethod?: string; // Patient's payment method for auto-selection
 }
 
 export function IntelligentPrescriptionModal({ 
@@ -43,19 +44,31 @@ export function IntelligentPrescriptionModal({
   onClose, 
   onAdd, 
   editItem, 
-  patientPriceTier 
+  patientPriceTier,
+  patientPaymentMethod 
 }: IntelligentPrescriptionModalProps) {
   const { medications, loading: medicationsLoading } = useMedications();
   const { services, loading: servicesLoading } = useServices();
   const { priceTiers } = usePriceTiers();
   const { getTemplateForMedication } = useDosageTemplates();
+
+  // Auto-select price tier based on patient's payment method
+  const getAutoSelectedTier = () => {
+    if (patientPaymentMethod && priceTiers.length > 0) {
+      const matchingTier = priceTiers.find(tier => 
+        tier.payment_methods && tier.payment_methods.includes(patientPaymentMethod)
+      );
+      return matchingTier?.id || patientPriceTier || '';
+    }
+    return patientPriceTier || '';
+  };
   
   const [formData, setFormData] = useState<Omit<PrescriptionItem, 'id'>>({
     item: '',
     itemId: '',
     itemType: 'medication',
     quantity: 1,
-    priceTier: patientPriceTier || '',
+    priceTier: '',
     rate: 0,
     amount: 0,
     dosage: '',
@@ -63,6 +76,14 @@ export function IntelligentPrescriptionModal({
     frequency: '',
     duration: ''
   });
+
+  // Update price tier when component loads or when payment method/tiers change
+  useEffect(() => {
+    const autoTier = getAutoSelectedTier();
+    if (autoTier && formData.priceTier !== autoTier) {
+      setFormData(prev => ({ ...prev, priceTier: autoTier }));
+    }
+  }, [patientPaymentMethod, priceTiers.length]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [comboOpen, setComboOpen] = useState(false);
@@ -245,8 +266,8 @@ export function IntelligentPrescriptionModal({
       itemId,
       itemType: itemType as 'medication' | 'service',
       item: itemName,
-      // Reset dependent fields but keep patient's price tier
-      priceTier: patientPriceTier || '',
+      // Reset dependent fields but keep auto-selected price tier
+      priceTier: getAutoSelectedTier(),
       rate: 0,
       dosage: '',
       instruction: '',
@@ -462,8 +483,10 @@ export function IntelligentPrescriptionModal({
                     <SelectItem key={tier.id} value={tier.id}>
                       <div className="flex items-center justify-between w-full">
                         <span>{tier.tier_name}</span>
-                        {formData.priceTier === tier.id && patientPriceTier === tier.id && (
-                          <Badge variant="secondary" className="ml-2 text-xs">Patient Tier</Badge>
+                        {formData.priceTier === tier.id && getAutoSelectedTier() === tier.id && (
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            {patientPaymentMethod ? 'Auto-selected' : 'Patient Tier'}
+                          </Badge>
                         )}
                       </div>
                     </SelectItem>

@@ -962,9 +962,16 @@ export function PatientConsultationModal({
             </DialogContent>
           </Dialog>}
 
-        <IntelligentPrescriptionModal isOpen={isPrescriptionModalOpen} onClose={() => {
-      setIsPrescriptionModalOpen(false);
-      setEditingItem(null);
-    }} onAdd={addTreatmentItem} editItem={editingItem} patientPriceTier={queueEntry?.patient?.assigned_tier_id} />
+        <IntelligentPrescriptionModal 
+          isOpen={isPrescriptionModalOpen} 
+          onClose={() => {
+            setIsPrescriptionModalOpen(false);
+            setEditingItem(null);
+          }} 
+          onAdd={addTreatmentItem} 
+          editItem={editingItem} 
+          patientPriceTier={queueEntry?.patient?.assigned_tier_id}
+          patientPaymentMethod={queueEntry?.payment_method}
+        />
       </Dialog>;
 }
