@@ -5,15 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Settings, Eye, Phone, Mail, Calendar, MessageCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { useCurrency } from '@/hooks/useCurrency';
+import { WhatsAppTemplateModal } from './WhatsAppTemplateModal';
+import type { Patient } from '@/pages/Patients';
+
 interface ColumnConfig {
   key: string;
   label: string;
   visible: boolean;
   sortable: boolean;
 }
-import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Settings, Eye, Phone, Mail, Calendar, MessageCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { useCurrency } from '@/hooks/useCurrency';
 
 interface PatientDataTableProps {
   patients: any[];
@@ -39,6 +42,10 @@ export function PatientDataTable({
   onSort
 }: PatientDataTableProps) {
   const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const [whatsAppModal, setWhatsAppModal] = useState<{ isOpen: boolean; patient: Patient | null }>({
+    isOpen: false,
+    patient: null
+  });
   const { formatCurrency } = useCurrency();
 
   const visibleColumns = columns.filter(col => col.visible);
@@ -313,15 +320,11 @@ export function PatientDataTable({
                         </DropdownMenuItem>
                       )}
                       {patient.phone && (
-                        <DropdownMenuItem asChild>
-                          <a 
-                            href={`https://api.whatsapp.com/send/?phone=${formatPhoneForWhatsApp(patient.phone)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            WhatsApp
-                          </a>
+                        <DropdownMenuItem 
+                          onClick={() => setWhatsAppModal({ isOpen: true, patient })}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          WhatsApp Template
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -338,6 +341,15 @@ export function PatientDataTable({
           <Eye className="h-12 w-12 mx-auto mb-4" />
           <p>No patients found matching your criteria</p>
         </div>
+      )}
+
+      {/* WhatsApp Template Modal */}
+      {whatsAppModal.patient && (
+        <WhatsAppTemplateModal
+          isOpen={whatsAppModal.isOpen}
+          onClose={() => setWhatsAppModal({ isOpen: false, patient: null })}
+          patient={whatsAppModal.patient}
+        />
       )}
     </div>
   );
