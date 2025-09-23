@@ -270,6 +270,9 @@ export function PatientDataTable({
                   )}
                 </TableHead>
               ))}
+              <TableHead className="w-[50px] text-center">
+                <MessageCircle className="h-4 w-4 mx-auto" />
+              </TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -291,6 +294,20 @@ export function PatientDataTable({
                     {renderCellContent(patient, column.key)}
                   </TableCell>
                 ))}
+                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                  {patient.phone ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setWhatsAppModal({ isOpen: true, patient })}
+                      className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <div className="h-8 w-8" />
+                  )}
+                </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -317,14 +334,6 @@ export function PatientDataTable({
                             <Mail className="h-4 w-4 mr-2" />
                             Send Email
                           </a>
-                        </DropdownMenuItem>
-                      )}
-                      {patient.phone && (
-                        <DropdownMenuItem 
-                          onClick={() => setWhatsAppModal({ isOpen: true, patient })}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          WhatsApp Template
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
