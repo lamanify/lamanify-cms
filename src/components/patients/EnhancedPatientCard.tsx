@@ -102,12 +102,12 @@ export function EnhancedPatientCard({
       )}
 
       {/* Patient Cards Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {patients.map((patient) => (
           <HoverCard key={patient.id} openDelay={300} closeDelay={100}>
             <HoverCardTrigger asChild>
               <Card 
-                className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                className={`cursor-pointer transition-all duration-200 hover:shadow-lg h-full flex flex-col ${
                   selectedPatients.includes(patient.id) 
                     ? 'ring-2 ring-primary bg-primary/5' 
                     : 'hover:shadow-md'
