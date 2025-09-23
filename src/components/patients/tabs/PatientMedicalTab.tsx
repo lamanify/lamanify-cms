@@ -95,24 +95,34 @@ export function PatientMedicalTab({ patient, onSave }: PatientMedicalTabProps) {
           session_data,
           total_amount,
           payment_status,
-          doctor_id,
-          profiles!patient_visits_doctor_id_fkey(first_name, last_name)
+          doctor_id
         `)
         .eq('patient_id', patient.id)
         .order('visit_date', { ascending: false });
 
       if (visitsError) throw visitsError;
 
+      // Get unique doctor IDs for a separate query
+      const doctorIds = [...new Set(visits?.map(visit => visit.doctor_id).filter(Boolean))];
+      
+      // Fetch doctor information separately
+      const doctorProfiles = new Map();
+      if (doctorIds.length > 0) {
+        const { data: doctors } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', doctorIds);
+          
+        doctors?.forEach(doctor => {
+          doctorProfiles.set(doctor.id, `Dr. ${doctor.first_name} ${doctor.last_name}`);
+        });
+      }
+
       // Transform visits into medical records by extracting data from session_data
       const records: MedicalRecord[] = [];
 
       visits?.forEach(visit => {
-        const doctorProfile = Array.isArray(visit.profiles) ? visit.profiles[0] : visit.profiles;
-        let doctorName = 'Unknown Doctor';
-        
-        if (doctorProfile) {
-          doctorName = `Dr. ${doctorProfile.first_name} ${doctorProfile.last_name}`;
-        }
+        const doctorName = doctorProfiles.get(visit.doctor_id) || 'Unknown Doctor';
 
         let diagnosis = '';
         let consultation_notes = '';
