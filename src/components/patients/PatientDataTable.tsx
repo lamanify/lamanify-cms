@@ -117,7 +117,7 @@ export function PatientDataTable({
       case 'patient_id':
         return (
           <Badge variant="outline" className="font-mono text-xs">
-            {patient.patient_id || 'N/A'}
+            {patient.nric || patient.passport || patient.birth_cert || 'N/A'}
           </Badge>
         );
       
@@ -259,14 +259,14 @@ export function PatientDataTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-auto p-0 hover:bg-transparent"
+                      className="h-auto p-0 hover:bg-transparent hover:text-black"
                       onClick={() => onSort(column.key)}
                     >
                       <span className="mr-2">{column.label}</span>
                       {renderSortIcon(column.key)}
                     </Button>
                   ) : (
-                    column.label
+                    <span className="hover:text-black cursor-default">{column.label}</span>
                   )}
                 </TableHead>
               ))}
