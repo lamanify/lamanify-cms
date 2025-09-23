@@ -50,9 +50,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { key: 'phone', label: 'Phone', visible: true, sortable: false },
   { key: 'age', label: 'Age', visible: true, sortable: true },
   { key: 'last_visit_date', label: 'Last Visit', visible: true, sortable: true },
-  { key: 'total_visits', label: 'Total Visits', visible: true, sortable: true },
-  { key: 'amount_spent', label: 'Amount Spent', visible: true, sortable: true },
-  { key: 'actions', label: 'Actions', visible: true, sortable: false }
+  { key: 'amount_spent', label: 'Amount Spent', visible: true, sortable: true }
 ];
 
 export function PatientListTab() {

@@ -271,9 +271,8 @@ export function PatientDataTable({
                 </TableHead>
               ))}
               <TableHead className="w-[50px] text-center">
-                <MessageCircle className="h-4 w-4 mx-auto" />
+                <MessageCircle className="h-4 w-4 mx-auto text-green-600" />
               </TableHead>
-              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -300,44 +299,13 @@ export function PatientDataTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => setWhatsAppModal({ isOpen: true, patient })}
-                      className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600"
+                      className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600 text-green-600"
                     >
-                      <MessageCircle className="h-4 w-4" />
+                      <MessageCircle className="h-4 w-4 fill-green-600" />
                     </Button>
                   ) : (
                     <div className="h-8 w-8" />
                   )}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onPatientClick(patient)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      {patient.phone && (
-                        <DropdownMenuItem asChild>
-                          <a href={`tel:${patient.phone}`}>
-                            <Phone className="h-4 w-4 mr-2" />
-                            Call Patient
-                          </a>
-                        </DropdownMenuItem>
-                      )}
-                      {patient.email && (
-                        <DropdownMenuItem asChild>
-                          <a href={`mailto:${patient.email}`}>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send Email
-                          </a>
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
