@@ -122,7 +122,7 @@ export function PatientFinancialTab({ patient, onSave }: PatientFinancialTabProp
           payment_status,
           visit_summary,
           created_at,
-          profiles!patient_visits_doctor_id_fkey(first_name, last_name),
+          doctor_id,
           payment_records(
             id,
             amount,
@@ -137,18 +137,34 @@ export function PatientFinancialTab({ patient, onSave }: PatientFinancialTabProp
 
       if (visitsError) throw visitsError;
 
+      // Fetch doctor profiles separately for each visit
+      const visitsWithDoctors = await Promise.all(
+        (visits || []).map(async (visit) => {
+          let doctorProfile = null;
+          if (visit.doctor_id) {
+            const { data: doctor } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', visit.doctor_id)
+              .single();
+            doctorProfile = doctor;
+          }
+          return { ...visit, profiles: doctorProfile };
+        })
+      );
+
       // Transform data
       const records: PaymentRecord[] = [];
       let totalVisits = 0;
       let totalAmount = 0;
       let totalPaid = 0;
 
-      visits?.forEach(visit => {
+      visitsWithDoctors?.forEach(visit => {
         totalVisits++;
         totalAmount += visit.total_amount || 0;
         totalPaid += visit.amount_paid || 0;
 
-        const doctorProfile = Array.isArray(visit.profiles) ? visit.profiles[0] : visit.profiles;
+        const doctorProfile = visit.profiles;
         const doctorName = doctorProfile 
           ? `Dr. ${doctorProfile.first_name} ${doctorProfile.last_name}`
           : 'Unknown Doctor';
