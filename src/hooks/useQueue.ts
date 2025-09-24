@@ -327,6 +327,20 @@ export function useQueue() {
     try {
       console.log('Finalizing session for queue:', queueId);
 
+      // Check if visit already exists for this queue to prevent duplicates
+      const { data: existingVisit, error: existingVisitError } = await supabase
+        .from('patient_visits')
+        .select('id')
+        .eq('queue_id', queueId)
+        .maybeSingle();
+
+      if (existingVisitError) throw existingVisitError;
+      
+      if (existingVisit) {
+        console.log('Visit already exists for queue:', queueId, '- skipping duplicate creation');
+        return;
+      }
+
       // Get the queue entry and session data
       const { data: queueEntry, error: queueError } = await supabase
         .from('patient_queue')
@@ -338,11 +352,17 @@ export function useQueue() {
 
       const { data: sessionData, error: sessionError } = await supabase
         .from('queue_sessions')
-        .select('session_data')
+        .select('session_data, status')
         .eq('queue_id', queueId)
         .single();
 
       if (sessionError) throw sessionError;
+
+      // Check if session is already archived
+      if (sessionData?.status === 'archived') {
+        console.log('Session already archived for queue:', queueId);
+        return;
+      }
 
       // Type cast and extract session data safely
       const sessionContent = sessionData?.session_data as any;
