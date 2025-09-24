@@ -343,96 +343,111 @@ export function QuickRegisterForm({
       }).select().single();
       if (patientError) throw patientError;
 
-      // Auto-assign price tier based on payment method
-      let assignedTierId = null;
-
-      if (formData.panelId && formData.paymentMethod === 'panel') {
-        // Get default tier for this panel
-        const { data: panelTiers } = await supabase
-          .from('panels_price_tiers')
-          .select('tier_id, is_default_tier')
-          .eq('panel_id', formData.panelId)
-          .eq('is_default_tier', true)
-          .single();
-        
-        if (panelTiers) {
-          assignedTierId = panelTiers.tier_id;
-        }
-      } else {
-        // Map payment methods to default price tiers
-        const tierMapping = {
-          'self_pay': 'Self Pay',
-          'insurance': 'Insurance',
-          'company': 'Company', 
-          'government': 'Government'
-        };
-
-        const tierName = tierMapping[formData.paymentMethod];
-        if (tierName) {
-          const { data: defaultTier } = await supabase
-            .from('price_tiers')
-            .select('id')
-            .eq('tier_name', tierName)
-            .eq('tier_type', 'standard')
-            .single();
-          
-          if (defaultTier) {
-            assignedTierId = defaultTier.id;
-          }
-        }
-      }
-
-      // If no specific tier found, use the first available standard tier
-      if (!assignedTierId) {
-        const { data: fallbackTier } = await supabase
-          .from('price_tiers')
-          .select('id')
-          .eq('tier_type', 'standard')
-          .order('tier_name')
-          .limit(1)
-          .single();
-        
-        if (fallbackTier) {
-          assignedTierId = fallbackTier.id;
-        }
-      }
-
-      // Update patient with assigned tier
-      if (assignedTierId) {
-        await supabase.from('patients').update({
-          assigned_tier_id: assignedTierId,
-          tier_assigned_at: new Date().toISOString(),
-          tier_assigned_by: profile?.id
-        }).eq('id', patient.id);
-      }
-
-      // Add to queue
+      // IMMEDIATE: Add to queue first for instant display
       const queueResult = await addToQueue(patient.id, formData.preferredDoctorId && formData.preferredDoctorId !== "none" ? formData.preferredDoctorId : undefined);
       console.log('Queue addition successful:', queueResult);
 
-      // Create registration activity
-      await supabase.from('patient_activities').insert({
-        patient_id: patient.id,
-        activity_type: 'registration',
-        title: 'Quick Registration & Queue',
-        content: `New patient registered via quick registration`,
-        staff_member_id: profile?.id,
-        metadata: {
-          registration_type: 'quick',
-          visit_reason: formData.visitReason,
-          payment_method: formData.paymentMethod,
-          urgency_level: formData.urgencyLevel,
-          preferred_doctor: formData.preferredDoctorId,
-          has_photo: !!formData.photoFile,
-          insurance_info: formData.insuranceInfo,
-          id_type: idType,
-          panel_id: formData.panelId
-        }
-      });
+      // Show immediate success message
       toast({
-        title: "Registration Successful",
-        description: `${formData.fullName} has been registered and added to the queue`
+        title: "Added to Queue",
+        description: `${formData.fullName} has been added to the queue and will appear immediately`
       });
+
+      // BACKGROUND: Process price tier assignment and activity logging asynchronously
+      const backgroundProcessing = async () => {
+        try {
+          // Auto-assign price tier based on payment method
+          let assignedTierId = null;
+
+          if (formData.panelId && formData.paymentMethod === 'panel') {
+            // Get default tier for this panel
+            const { data: panelTiers } = await supabase
+              .from('panels_price_tiers')
+              .select('tier_id, is_default_tier')
+              .eq('panel_id', formData.panelId)
+              .eq('is_default_tier', true)
+              .single();
+            
+            if (panelTiers) {
+              assignedTierId = panelTiers.tier_id;
+            }
+          } else {
+            // Map payment methods to default price tiers
+            const tierMapping = {
+              'self_pay': 'Self Pay',
+              'insurance': 'Insurance',
+              'company': 'Company', 
+              'government': 'Government'
+            };
+
+            const tierName = tierMapping[formData.paymentMethod];
+            if (tierName) {
+              const { data: defaultTier } = await supabase
+                .from('price_tiers')
+                .select('id')
+                .eq('tier_name', tierName)
+                .eq('tier_type', 'standard')
+                .single();
+              
+              if (defaultTier) {
+                assignedTierId = defaultTier.id;
+              }
+            }
+          }
+
+          // If no specific tier found, use the first available standard tier
+          if (!assignedTierId) {
+            const { data: fallbackTier } = await supabase
+              .from('price_tiers')
+              .select('id')
+              .eq('tier_type', 'standard')
+              .order('tier_name')
+              .limit(1)
+              .single();
+            
+            if (fallbackTier) {
+              assignedTierId = fallbackTier.id;
+            }
+          }
+
+          // Update patient with assigned tier
+          if (assignedTierId) {
+            await supabase.from('patients').update({
+              assigned_tier_id: assignedTierId,
+              tier_assigned_at: new Date().toISOString(),
+              tier_assigned_by: profile?.id
+            }).eq('id', patient.id);
+          }
+
+          // Create registration activity
+          await supabase.from('patient_activities').insert({
+            patient_id: patient.id,
+            activity_type: 'registration',
+            title: 'Quick Registration & Queue',
+            content: `New patient registered via quick registration`,
+            staff_member_id: profile?.id,
+            metadata: {
+              registration_type: 'quick',
+              visit_reason: formData.visitReason,
+              payment_method: formData.paymentMethod,
+              urgency_level: formData.urgencyLevel,
+              preferred_doctor: formData.preferredDoctorId,
+              has_photo: !!formData.photoFile,
+              insurance_info: formData.insuranceInfo,
+              id_type: idType,
+              panel_id: formData.panelId
+            }
+          });
+
+          console.log('Background processing completed for patient:', patient.id);
+        } catch (backgroundError) {
+          console.error('Background processing error:', backgroundError);
+          // Don't show error to user as main flow succeeded
+        }
+      };
+
+      // Start background processing without awaiting
+      backgroundProcessing();
 
       // Reset form and close modal
       setFormData({
