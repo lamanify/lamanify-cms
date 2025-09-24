@@ -187,192 +187,385 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {isPaused && (
-        <div className="flex items-center justify-center p-3 bg-warning/10 border border-warning rounded-lg">
+        <div className="flex items-center justify-center p-3 bg-warning/10 border border-warning rounded-lg animate-fade-in">
           <AlertTriangle className="h-5 w-5 text-warning mr-2" />
           <span className="text-warning font-medium">Queue is paused</span>
         </div>
       )}
       
-      {displayQueue.map((entry) => {
-        const waitTime = getWaitTime(entry);
-        const isPriority = entry.status === 'urgent' || entry.status.includes('urgent');
-        
-        return (
-          <div
-            key={entry.id}
-            onClick={() => handlePatientClick(entry)}
-            className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
-              entry.status === 'completed' ? 'bg-gray-100' :
-              'bg-white'
-            }`}
-          >
-            <div className="flex items-center space-x-6 flex-1">
-              {/* Queue Number and Status */}
-              <div className="flex items-center space-x-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
-                      <div className={`text-2xl font-bold flex items-center gap-1 ${entry.status === 'completed' ? 'text-gray-500' : 'text-primary'}`}>
-                        {entry.queue_number}
-                        <ChevronDown className="h-4 w-4" />
-                      </div>
-                      <Badge 
-                        className={`text-xs ${getStatusColor(entry.status, waitTime, isPriority)}`}
-                      >
-                        {getStatusLabel(entry.status)}
-                      </Badge>
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-48">
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'waiting'); }}>
-                      Waiting
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'in_consultation'); }}>
-                      Serving/Consultation
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'dispensary'); }}>
-                      Dispensary
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange(entry.id, 'completed'); }}>
-                      Completed
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Patient Info */}
-              <div className="min-w-0 flex-1">
-                <div className="text-xl font-bold text-foreground hover:text-primary transition-colors">
-                  {entry.patient?.first_name} {entry.patient?.last_name}
-                </div>
-                
-                <div className="flex items-center space-x-3 mt-1">
-                  {entry.patient?.patient_id && (
-                    <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-                      ID: {entry.patient.patient_id}
-                    </span>
-                  )}
-                  
-                  {entry.patient?.date_of_birth && (
-                    <span className="text-sm text-muted-foreground">
-                      {(() => {
-                        const birthDate = new Date(entry.patient.date_of_birth);
-                        const today = new Date();
-                        const age = today.getFullYear() - birthDate.getFullYear();
-                        const monthDiff = today.getMonth() - birthDate.getMonth();
-                        const finalAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
-                        return `${finalAge} years old`;
-                      })()}
-                      {' • '}
-                      {entry.patient.gender ? 
-                        entry.patient.gender.charAt(0).toUpperCase() + entry.patient.gender.slice(1).toLowerCase() 
-                        : 'Unknown'}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Visit Context and Additional Info */}
-                <div className="flex items-center flex-wrap gap-2 mt-2 text-sm text-muted-foreground">
-                  {entry.patient?.visit_reason && (
-                    <span className="bg-secondary/50 px-2 py-1 rounded-md">
-                      {entry.patient.visit_reason}
-                    </span>
-                  )}
-                  
-                  {entry.patient?.phone && (
-                    <div className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {entry.patient.phone}
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {new Date(entry.checked_in_at).toLocaleTimeString('en-US', { 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: true 
-                    })}
-                  </div>
-                </div>
-                
-                {/* Payment Method and Doctor Assignment */}
-                <div className="flex items-center flex-wrap gap-2 mt-2">
-                   {entry.payment_method && (
-                     <div className="flex items-center gap-1">
-                       <CreditCard className={`h-3 w-3 ${entry.status === 'completed' ? 'text-gray-500' : 'text-blue-500'}`} />
-                       <span className={`text-xs px-2 py-1 rounded border ${
-                         entry.status === 'completed' 
-                           ? 'bg-gray-200 text-gray-600 border-gray-300' 
-                           : 'bg-blue-100 text-blue-800 border-blue-200'
-                       }`}>
-                         {getPaymentMethodDisplay(entry.payment_method)}
-                       </span>
-                     </div>
-                   )}
-                  
-                   {entry.assigned_doctor_id && entry.doctor && (
-                     <span className={`text-xs px-2 py-1 rounded border ${
-                       entry.status === 'completed' 
-                         ? 'bg-gray-200 text-gray-600 border-gray-300' 
-                         : 'bg-purple-100 text-purple-800 border-purple-200'
-                     }`}>
-                       Dr. {entry.doctor.first_name} {entry.doctor.last_name}
-                     </span>
-                   )}
-                </div>
-                
-                {/* Visit Notes */}
-                {entry.patient?.medical_history && (
-                  <div className="text-sm text-muted-foreground mt-2 bg-muted/30 px-2 py-1 rounded max-w-md truncate">
-                    Notes: {entry.patient.medical_history}
-                  </div>
-                )}
-              </div>
-
-              {/* Wait Time Display */}
-              <div className="text-right">
-                <div className={`text-lg font-medium flex items-center ${getWaitTimeAlert(waitTime)}`}>
-                  <Clock className="h-4 w-4 mr-1" />
-                  {formatWaitTime(waitTime)}
-                  {waitTime >= 45 && <AlertTriangle className="h-4 w-4 ml-1" />}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Wait time
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2 ml-4">
-              {entry.status === 'waiting' && (
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(entry.id, 'in_consultation');
-                  }}
-                >
-                  Start Consultation
-                </Button>
-              )}
-
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOptimisticRemove(entry.id);
-                }}
-              >
-                Remove
-              </Button>
-            </div>
-          </div>
+      {(() => {
+        // Separate urgent and regular patients
+        const urgentPatients = displayQueue.filter(entry => 
+          entry.status === 'urgent' || 
+          (entry.patient?.urgency_level === 'urgent' || entry.patient?.urgency_level === 'high')
         );
-      })}
+        const waitingPatients = displayQueue.filter(entry => 
+          entry.status === 'waiting' && 
+          !(entry.patient?.urgency_level === 'urgent' || entry.patient?.urgency_level === 'high')
+        );
+        const otherPatients = displayQueue.filter(entry => 
+          !['waiting', 'urgent'].includes(entry.status) &&
+          !(entry.patient?.urgency_level === 'urgent' || entry.patient?.urgency_level === 'high')
+        );
+
+        return (
+          <>
+            {/* Urgent Patients Section */}
+            {urgentPatients.length > 0 && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex items-center gap-2 pb-2 border-b border-destructive/20">
+                  <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
+                  <h3 className="text-lg font-semibold text-destructive">Urgent ({urgentPatients.length})</h3>
+                </div>
+                <div className="space-y-3">
+                  {urgentPatients.map((entry) => {
+                    const waitTime = getWaitTime(entry);
+                    
+                    return (
+                      <div
+                        key={entry.id}
+                        onClick={() => handlePatientClick(entry)}
+                        className="flex items-center justify-between p-4 rounded-lg border-2 border-destructive/30 bg-destructive/5 transition-all duration-200 cursor-pointer hover:border-destructive hover:bg-destructive/10 hover:-translate-y-1 hover:shadow-lg animate-scale-in"
+                      >
+                        <div className="flex items-center space-x-6 flex-1">
+                          {/* Queue Number and Status */}
+                          <div className="flex items-center space-x-3">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <div className="text-center cursor-pointer hover:bg-destructive/20 rounded-md p-2 transition-colors">
+                                  <div className="text-2xl font-bold flex items-center gap-1 text-destructive">
+                                    {entry.queue_number}
+                                    <ChevronDown className="h-4 w-4" />
+                                  </div>
+                                  <Badge variant="destructive" className="text-xs animate-pulse">
+                                    URGENT
+                                  </Badge>
+                                </div>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => onStatusChange(entry.id, 'waiting')}>
+                                  Mark as Waiting
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onStatusChange(entry.id, 'in_consultation')}>
+                                  Start Consultation
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          {/* Patient Info */}
+                          <div className="flex-1">
+                            <div className="font-semibold text-lg text-foreground">
+                              {entry.patient?.first_name} {entry.patient?.last_name}
+                            </div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-4">
+                              {entry.patient?.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {entry.patient.phone}
+                                </span>
+                              )}
+                              {entry.patient?.visit_reason && (
+                                <span>• {entry.patient.visit_reason}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Wait Time */}
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Wait Time</div>
+                            <div className="text-lg font-medium text-destructive flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {formatWaitTime(waitTime)}
+                            </div>
+                          </div>
+
+          {/* Payment Method */}
+          {(entry.patient as any)?.payment_method && (
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Payment</div>
+              <div className="text-sm font-medium flex items-center gap-1">
+                <CreditCard className="h-3 w-3" />
+                {getPaymentMethodDisplay((entry.patient as any).payment_method)}
+              </div>
+            </div>
+          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(entry.id, 'in_consultation');
+                            }}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            Start Now
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOptimisticRemove(entry.id);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Waiting Patients Section */}
+            {waitingPatients.length > 0 && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex items-center gap-2 pb-2 border-b border-muted">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold text-foreground">Waiting ({waitingPatients.length})</h3>
+                </div>
+                <div className="space-y-3">
+                  {waitingPatients.map((entry) => {
+                    const waitTime = getWaitTime(entry);
+                    
+                    return (
+                      <div
+                        key={entry.id}
+                        onClick={() => handlePatientClick(entry)}
+                        className="flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg bg-white"
+                      >
+                        <div className="flex items-center space-x-6 flex-1">
+                          {/* Queue Number and Status */}
+                          <div className="flex items-center space-x-3">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
+                                  <div className="text-2xl font-bold flex items-center gap-1 text-primary">
+                                    {entry.queue_number}
+                                    <ChevronDown className="h-4 w-4" />
+                                  </div>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {getStatusLabel(entry.status)}
+                                  </Badge>
+                                </div>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => onStatusChange(entry.id, 'urgent')}>
+                                  Mark as Urgent
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onStatusChange(entry.id, 'in_consultation')}>
+                                  Start Consultation
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          {/* Patient Info */}
+                          <div className="flex-1">
+                            <div className="font-semibold text-lg text-foreground">
+                              {entry.patient?.first_name} {entry.patient?.last_name}
+                            </div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-4">
+                              {entry.patient?.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {entry.patient.phone}
+                                </span>
+                              )}
+                              {entry.patient?.visit_reason && (
+                                <span>• {entry.patient.visit_reason}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Wait Time */}
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Wait Time</div>
+                            <div className="text-lg font-medium text-foreground flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {formatWaitTime(waitTime)}
+                            </div>
+                          </div>
+
+                          {/* Payment Method */}
+                          {entry.patient?.payment_method && (
+                            <div className="text-center">
+                              <div className="text-sm text-muted-foreground">Payment</div>
+                              <div className="text-sm font-medium flex items-center gap-1">
+                                <CreditCard className="h-3 w-3" />
+                                {getPaymentMethodDisplay(entry.patient.payment_method)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(entry.id, 'in_consultation');
+                            }}
+                          >
+                            Start Consultation
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOptimisticRemove(entry.id);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Other Status Patients (In Consultation, Dispensary, etc.) */}
+            {otherPatients.length > 0 && (
+              <div className="space-y-3">
+                {otherPatients.map((entry) => {
+                  const waitTime = getWaitTime(entry);
+                  
+                  return (
+                    <div
+                      key={entry.id}
+                      onClick={() => handlePatientClick(entry)}
+                      className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
+                        entry.status === 'completed' ? 'bg-gray-100' :
+                        'bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-6 flex-1">
+                        {/* Queue Number and Status */}
+                        <div className="flex items-center space-x-3">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
+                                <div className={`text-2xl font-bold flex items-center gap-1 ${entry.status === 'completed' ? 'text-gray-500' : 'text-primary'}`}>
+                                  {entry.queue_number}
+                                  <ChevronDown className="h-4 w-4" />
+                                </div>
+                                <Badge variant={entry.status === 'completed' ? 'secondary' : 'default'} className="text-xs">
+                                  {getStatusLabel(entry.status)}
+                                </Badge>
+                              </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              {entry.status === 'in_consultation' && (
+                                <DropdownMenuItem onClick={() => onStatusChange(entry.id, 'dispensary')}>
+                                  Move to Dispensary
+                                </DropdownMenuItem>
+                              )}
+                              {entry.status === 'dispensary' && (
+                                <DropdownMenuItem onClick={() => onStatusChange(entry.id, 'completed')}>
+                                  Mark as Completed
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        {/* Patient Info */}
+                        <div className="flex-1">
+                          <div className="font-semibold text-lg text-foreground">
+                            {entry.patient?.first_name} {entry.patient?.last_name}
+                          </div>
+                          <div className="text-sm text-muted-foreground flex items-center gap-4">
+                            {entry.patient?.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {entry.patient.phone}
+                              </span>
+                            )}
+                            {entry.patient?.visit_reason && (
+                              <span>• {entry.patient.visit_reason}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Wait Time */}
+                        <div className="text-center">
+                          <div className="text-sm text-muted-foreground">Wait Time</div>
+                          <div className="text-lg font-medium text-foreground flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {formatWaitTime(waitTime)}
+                          </div>
+                        </div>
+
+                        {/* Payment Method */}
+                        {entry.patient?.payment_method && (
+                          <div className="text-center">
+                            <div className="text-sm text-muted-foreground">Payment</div>
+                            <div className="text-sm font-medium flex items-center gap-1">
+                              <CreditCard className="h-3 w-3" />
+                              {getPaymentMethodDisplay(entry.patient.payment_method)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center space-x-2">
+                        {entry.status === 'in_consultation' && (
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(entry.id, 'dispensary');
+                            }}
+                          >
+                            Move to Dispensary
+                          </Button>
+                        )}
+
+                        {entry.status === 'dispensary' && (
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(entry.id, 'completed');
+                            }}
+                          >
+                            Mark Complete
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOptimisticRemove(entry.id);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        );
+      })()}
       
       {/* Patient Consultation Modal */}
       <PatientConsultationModal
