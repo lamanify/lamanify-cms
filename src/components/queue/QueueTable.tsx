@@ -199,15 +199,15 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         // Separate urgent and regular patients
         const urgentPatients = displayQueue.filter(entry => 
           entry.status === 'urgent' || 
-          (entry.patient?.urgency_level === 'urgent' || entry.patient?.urgency_level === 'high')
+          ((entry.patient as any)?.urgency_level === 'urgent' || (entry.patient as any)?.urgency_level === 'high')
         );
         const waitingPatients = displayQueue.filter(entry => 
           entry.status === 'waiting' && 
-          !(entry.patient?.urgency_level === 'urgent' || entry.patient?.urgency_level === 'high')
+          !((entry.patient as any)?.urgency_level === 'urgent' || (entry.patient as any)?.urgency_level === 'high')
         );
         const otherPatients = displayQueue.filter(entry => 
           !['waiting', 'urgent'].includes(entry.status) &&
-          !(entry.patient?.urgency_level === 'urgent' || entry.patient?.urgency_level === 'high')
+          !((entry.patient as any)?.urgency_level === 'urgent' || (entry.patient as any)?.urgency_level === 'high')
         );
 
         return (
@@ -395,16 +395,16 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                             </div>
                           </div>
 
-                          {/* Payment Method */}
-                          {entry.patient?.payment_method && (
-                            <div className="text-center">
-                              <div className="text-sm text-muted-foreground">Payment</div>
-                              <div className="text-sm font-medium flex items-center gap-1">
-                                <CreditCard className="h-3 w-3" />
-                                {getPaymentMethodDisplay(entry.patient.payment_method)}
-                              </div>
-                            </div>
-                          )}
+          {/* Payment Method */}
+          {(entry.patient as any)?.payment_method && (
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Payment</div>
+              <div className="text-sm font-medium flex items-center gap-1">
+                <CreditCard className="h-3 w-3" />
+                {getPaymentMethodDisplay((entry.patient as any).payment_method)}
+              </div>
+            </div>
+          )}
                         </div>
 
                         {/* Action Buttons */}
@@ -510,12 +510,12 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         </div>
 
                         {/* Payment Method */}
-                        {entry.patient?.payment_method && (
+                        {(entry.patient as any)?.payment_method && (
                           <div className="text-center">
                             <div className="text-sm text-muted-foreground">Payment</div>
                             <div className="text-sm font-medium flex items-center gap-1">
                               <CreditCard className="h-3 w-3" />
-                              {getPaymentMethodDisplay(entry.patient.payment_method)}
+                              {getPaymentMethodDisplay((entry.patient as any).payment_method)}
                             </div>
                           </div>
                         )}
