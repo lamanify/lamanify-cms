@@ -243,6 +243,32 @@ export function PatientConsultationModal({
     }
   }, []);
 
+  // Real-time subscription for appointments
+  useEffect(() => {
+    if (!isOpen || !queueEntry?.patient?.id) return;
+
+    const channel = supabase
+      .channel('appointments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: `patient_id=eq.${queueEntry.patient.id}`
+        },
+        () => {
+          // Refetch appointments when any change occurs
+          fetchAppointments(queueEntry.patient.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, queueEntry?.patient?.id, fetchAppointments]);
+
   // Clear consultation data when patient actually changes (not on data refresh)
   useEffect(() => {
     const currentPatientId = queueEntry?.patient?.id;
