@@ -955,14 +955,10 @@ export function PatientConsultationModal({
                     Current Visit Notes
                   </label>
                   <Textarea
-                    value={visitNotes}
-                    onChange={(e) => {
-                      setVisitNotes(e.target.value);
-                      handleEditingChange();
-                    }}
-                    placeholder="Add notes for this consultation..."
-                    className="min-h-[120px] text-sm resize-none"
-                    disabled={consultationStatus === 'waiting'}
+                    value={queueEntry?.patient?.visit_reason || ''}
+                    readOnly
+                    placeholder="No visit notes for this patient..."
+                    className="min-h-[120px] text-sm resize-none bg-muted/50 cursor-default"
                   />
                 </div>
 
