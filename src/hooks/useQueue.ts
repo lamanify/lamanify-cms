@@ -170,6 +170,20 @@ export function useQueue() {
         const activity = activities?.find(a => a.patient_id === entry.patient_id);
         const metadata = activity?.metadata as any;
         
+        // Debug logging for visit reason tracing
+        const metadataVisitReason = metadata?.visit_reason;
+        const patientVisitReason = patient?.visit_reason;
+        const finalVisitReason = metadataVisitReason || patientVisitReason || undefined;
+        
+        console.log(`Queue entry ${entry.queue_number} visit reason data:`, {
+          patient_id: entry.patient_id,
+          metadata_visit_reason: metadataVisitReason,
+          patient_visit_reason: patientVisitReason,
+          final_visit_reason: finalVisitReason,
+          has_activity: !!activity,
+          metadata_keys: metadata ? Object.keys(metadata) : 'no metadata'
+        });
+        
         return {
           ...entry,
           status: entry.status as QueueEntry['status'],
@@ -186,7 +200,7 @@ export function useQueue() {
             email: patient.email || undefined,
             medical_history: patient.medical_history || undefined,
             patient_id: patient.patient_id || undefined,
-            visit_reason: metadata?.visit_reason || patient.visit_reason || undefined,
+            visit_reason: finalVisitReason,
             assigned_tier_id: patient.assigned_tier_id || undefined,
           } : undefined,
           doctor: doctor ? {

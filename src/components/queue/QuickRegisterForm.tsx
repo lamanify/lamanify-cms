@@ -343,7 +343,35 @@ export function QuickRegisterForm({
       }).select().single();
       if (patientError) throw patientError;
 
-      // IMMEDIATE: Add to queue first for instant display
+      // SYNCHRONOUS: Create registration activity BEFORE adding to queue
+      console.log('Creating patient activity with visit_reason:', formData.visitReason);
+      const { error: activityError } = await supabase.from('patient_activities').insert({
+        patient_id: patient.id,
+        activity_type: 'registration',
+        title: 'Quick Registration & Queue',
+        content: `New patient registered via quick registration`,
+        staff_member_id: profile?.id,
+        metadata: {
+          registration_type: 'quick',
+          visit_reason: formData.visitReason,
+          payment_method: formData.paymentMethod,
+          urgency_level: formData.urgencyLevel,
+          preferred_doctor: formData.preferredDoctorId,
+          has_photo: !!formData.photoFile,
+          insurance_info: formData.insuranceInfo,
+          id_type: idType,
+          panel_id: formData.panelId
+        }
+      });
+
+      if (activityError) {
+        console.error('Activity creation error:', activityError);
+        // Continue anyway, don't block queue addition
+      } else {
+        console.log('Patient activity created successfully with visit_reason:', formData.visitReason);
+      }
+
+      // IMMEDIATE: Add to queue after activity is created
       const queueResult = await addToQueue(patient.id, formData.preferredDoctorId && formData.preferredDoctorId !== "none" ? formData.preferredDoctorId : undefined);
       console.log('Queue addition successful:', queueResult);
 
@@ -353,7 +381,7 @@ export function QuickRegisterForm({
         description: `${formData.fullName} has been added to the queue and will appear immediately`
       });
 
-      // BACKGROUND: Process price tier assignment and activity logging asynchronously
+      // BACKGROUND: Process price tier assignment asynchronously
       const backgroundProcessing = async () => {
         try {
           // Auto-assign price tier based on payment method
@@ -418,26 +446,6 @@ export function QuickRegisterForm({
               tier_assigned_by: profile?.id
             }).eq('id', patient.id);
           }
-
-          // Create registration activity
-          await supabase.from('patient_activities').insert({
-            patient_id: patient.id,
-            activity_type: 'registration',
-            title: 'Quick Registration & Queue',
-            content: `New patient registered via quick registration`,
-            staff_member_id: profile?.id,
-            metadata: {
-              registration_type: 'quick',
-              visit_reason: formData.visitReason,
-              payment_method: formData.paymentMethod,
-              urgency_level: formData.urgencyLevel,
-              preferred_doctor: formData.preferredDoctorId,
-              has_photo: !!formData.photoFile,
-              insurance_info: formData.insuranceInfo,
-              id_type: idType,
-              panel_id: formData.panelId
-            }
-          });
 
           console.log('Background processing completed for patient:', patient.id);
         } catch (backgroundError) {
