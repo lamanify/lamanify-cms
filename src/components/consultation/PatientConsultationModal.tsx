@@ -531,7 +531,7 @@ export function PatientConsultationModal({
 
           {/* Main Content with Tabs */}
           <div className="flex-1 flex overflow-hidden">
-            {/* Main Content with Tabs */}
+            {/* Left Column - Main Content with Tabs */}
             <div className="flex-1 flex flex-col">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
                  <TabsList className="w-full justify-start rounded-none border-b bg-background">
@@ -880,7 +880,47 @@ export function PatientConsultationModal({
                     </div>
                   </div>
                 </TabsContent>
-              </Tabs>
+               </Tabs>
+            </div>
+
+            {/* Right Column - Visit Notes */}
+            <div className="w-80 border-l bg-muted/30">
+              <div className="p-4 border-b bg-background">
+                <h3 className="font-medium text-sm text-foreground">Visit Notes</h3>
+              </div>
+              <div className="p-4 space-y-3 h-full overflow-y-auto">
+                <Textarea 
+                  placeholder="Quick visit notes, observations, or reminders..." 
+                  className="min-h-[120px] resize-none text-sm"
+                />
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">Quick Actions</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" className="text-xs h-7">
+                      Normal Vitals
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs h-7">
+                      Follow-up
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs h-7">
+                      Urgent
+                    </Button>
+                  </div>
+                </div>
+                <div className="pt-4 border-t">
+                  <div className="text-xs text-muted-foreground mb-2">Previous Notes</div>
+                  <div className="space-y-2">
+                    <div className="text-xs p-2 bg-background rounded border">
+                      <div className="text-muted-foreground">Last visit - 2 days ago</div>
+                      <div className="mt-1">Patient reported improvement in symptoms. Continue current medication.</div>
+                    </div>
+                    <div className="text-xs p-2 bg-background rounded border">
+                      <div className="text-muted-foreground">1 week ago</div>
+                      <div className="mt-1">Initial consultation for headache complaints.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
