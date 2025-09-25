@@ -286,22 +286,22 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                            </div>
 
                            {/* Patient Info */}
-                           <div className="flex-1">
+                           <div className="w-64">
                              <div className="font-semibold text-lg text-foreground mb-2">
                                {entry.patient?.first_name} {entry.patient?.last_name}
                              </div>
-                              <div className="flex items-center gap-2">
-                                {entry.patient?.gender && (
-                                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                    {entry.patient.gender.charAt(0).toUpperCase()}
-                                  </span>
-                                )}
-                                {entry.patient?.date_of_birth && (
-                                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                    {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
-                                  </span>
-                                )}
-                              </div>
+                             <div className="flex items-center gap-2">
+                               {entry.patient?.gender && (
+                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                   {entry.patient.gender.charAt(0).toUpperCase()}
+                                 </span>
+                               )}
+                               {entry.patient?.date_of_birth && (
+                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                   {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
+                                 </span>
+                               )}
+                             </div>
                            </div>
 
                            {/* Visit Notes */}
@@ -418,22 +418,22 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                           </div>
 
                           {/* Patient Info */}
-                          <div className="flex-1">
+                          <div className="w-64">
                             <div className="font-semibold text-lg text-foreground mb-2">
                               {entry.patient?.first_name} {entry.patient?.last_name}
                             </div>
-                             <div className="flex items-center gap-2">
-                               {entry.patient?.gender && (
-                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                   {entry.patient.gender.charAt(0).toUpperCase()}
-                                 </span>
-                               )}
-                               {entry.patient?.date_of_birth && (
-                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                   {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
-                                 </span>
-                               )}
-                             </div>
+                            <div className="flex items-center gap-2">
+                              {entry.patient?.gender && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                  {entry.patient.gender.charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                              {entry.patient?.date_of_birth && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                  {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Visit Notes */}
@@ -547,22 +547,22 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         </div>
 
                         {/* Patient Info */}
-                        <div className="flex-1">
+                        <div className="w-64">
                           <div className="font-semibold text-lg text-foreground mb-2">
                             {entry.patient?.first_name} {entry.patient?.last_name}
                           </div>
-                           <div className="flex items-center gap-2">
-                             {entry.patient?.gender && (
-                               <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                 {entry.patient.gender.charAt(0).toUpperCase()}
-                               </span>
-                             )}
-                             {entry.patient?.date_of_birth && (
-                               <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                 {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
-                               </span>
-                             )}
-                           </div>
+                          <div className="flex items-center gap-2">
+                            {entry.patient?.gender && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                {entry.patient.gender.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                            {entry.patient?.date_of_birth && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Visit Notes */}
