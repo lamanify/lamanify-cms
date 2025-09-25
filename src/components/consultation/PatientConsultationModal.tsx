@@ -61,6 +61,9 @@ export function PatientConsultationModal({
   const [consultationStatus, setConsultationStatus] = useState<string>(queueEntry?.status || 'waiting');
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastEditTime, setLastEditTime] = useState<Date | null>(null);
   const {
     toast
   } = useToast();
@@ -94,27 +97,21 @@ export function PatientConsultationModal({
     }
   }, [queueEntry?.status]);
 
-  // Auto-save functionality with session updates
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
-  const debouncedSave = useCallback((formData: any, patientId: string) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
+  // Editing detection - track when user stops editing for 3 seconds
+  const editingTimeoutRef = useRef<NodeJS.Timeout>();
+  const handleEditingChange = useCallback(() => {
+    setIsEditing(true);
+    setHasUnsavedChanges(true);
+    setLastEditTime(new Date());
+    
+    if (editingTimeoutRef.current) {
+      clearTimeout(editingTimeoutRef.current);
     }
-    saveTimeoutRef.current = setTimeout(async () => {
-      if (patientId) {
-        // Save draft locally
-        const draftId = await saveDraft(formData, patientId, currentDraftId);
-        if (draftId && !currentDraftId) {
-          setCurrentDraftId(draftId);
-        }
-
-        // Update queue session data in real-time
-        if (queueEntry?.id) {
-          await updateSessionDataRealtime(queueEntry.id, formData.consultationNotes || '', formData.diagnosis || '', formData.treatmentItems || []);
-        }
-      }
-    }, 2000); // Auto-save after 2 seconds of inactivity
-  }, [saveDraft, currentDraftId, updateSessionDataRealtime, queueEntry?.id]);
+    
+    editingTimeoutRef.current = setTimeout(() => {
+      setIsEditing(false);
+    }, 3000); // Stop editing detection after 3 seconds of inactivity
+  }, []);
 
   // Treatment items state
   const [treatmentItems, setTreatmentItems] = useState<Array<{
@@ -162,8 +159,8 @@ export function PatientConsultationModal({
       }
     } else if (!isOpen) {
       // Clean up timeout when modal closes
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      if (editingTimeoutRef.current) {
+        clearTimeout(editingTimeoutRef.current);
       }
     }
   }, [isOpen, queueEntry?.patient?.id, getDraftForPatient, refreshSessionData]);
@@ -180,50 +177,45 @@ export function PatientConsultationModal({
     }
   }, [queueEntry?.patient?.id, isOpen]);
 
-  // Sync with real-time session data - only after consultation has started
+  // Sync with real-time session data - only when not actively editing
   useEffect(() => {
-    if (sessionData && isOpen && queueEntry?.patient?.id && consultationStatus === 'in-consultation') {
-      console.log('Syncing consultation with session data:', sessionData);
+    if (sessionData && isOpen && queueEntry?.patient?.id && consultationStatus === 'in-consultation' && !isEditing) {
+      console.log('Syncing consultation with session data (not editing):', sessionData);
 
-      // Only update if session data is from current patient's session
-      // and if session data is newer than current state
-      if (sessionData.consultation_notes && sessionData.consultation_notes !== consultationNotes) {
-        setConsultationNotes(sessionData.consultation_notes);
-      }
-      if (sessionData.diagnosis && sessionData.diagnosis !== diagnosis) {
-        setDiagnosis(sessionData.diagnosis);
-      }
-      if (sessionData.prescribed_items && sessionData.prescribed_items.length > 0) {
-        // Convert session data items back to treatment items format
-        const convertedItems = sessionData.prescribed_items.map((item, index) => ({
-          id: `session-${index}`,
-          item: item.name,
-          quantity: item.quantity,
-          priceTier: 'standard',
-          // Default tier
-          rate: item.rate,
-          amount: item.price,
-          dosage: item.dosage || '',
-          instruction: item.instructions || '',
-          frequency: item.frequency || '',
-          duration: item.duration || ''
-        }));
-        setTreatmentItems(convertedItems);
+      // Check if session data is newer than last edit time
+      const sessionLastUpdated = sessionData.last_updated ? new Date(sessionData.last_updated) : null;
+      const shouldSync = !lastEditTime || !sessionLastUpdated || sessionLastUpdated > lastEditTime;
+
+      if (shouldSync) {
+        // Only update if session data is different from current state
+        if (sessionData.consultation_notes && sessionData.consultation_notes !== consultationNotes) {
+          setConsultationNotes(sessionData.consultation_notes);
+        }
+        if (sessionData.diagnosis && sessionData.diagnosis !== diagnosis) {
+          setDiagnosis(sessionData.diagnosis);
+        }
+        if (sessionData.prescribed_items && sessionData.prescribed_items.length > 0) {
+          // Convert session data items back to treatment items format
+          const convertedItems = sessionData.prescribed_items.map((item, index) => ({
+            id: `session-${index}`,
+            item: item.name,
+            quantity: item.quantity,
+            priceTier: 'standard',
+            rate: item.rate,
+            amount: item.price,
+            dosage: item.dosage || '',
+            instruction: item.instructions || '',
+            frequency: item.frequency || '',
+            duration: item.duration || ''
+          }));
+          setTreatmentItems(convertedItems);
+        }
+        setHasUnsavedChanges(false);
       }
     }
-  }, [sessionData, isOpen, consultationNotes, diagnosis]);
+  }, [sessionData, isOpen, consultationNotes, diagnosis, isEditing, lastEditTime]);
 
-  // Auto-save when form data changes
-  useEffect(() => {
-    if (isOpen && queueEntry?.patient?.id) {
-      const formData = {
-        consultationNotes,
-        diagnosis,
-        treatmentItems
-      };
-      debouncedSave(formData, queueEntry.patient.id);
-    }
-  }, [consultationNotes, diagnosis, treatmentItems, isOpen, queueEntry?.patient?.id, debouncedSave]);
+  // No auto-save - only manual saves now
 
   // Helper function to extract consultation notes from structured content
   const extractConsultationNotes = (content: string) => {
@@ -354,14 +346,14 @@ export function PatientConsultationModal({
         // Add new item
         updatedItems = [...prev, newTreatmentItem];
       }
-
-      // Update session data with new treatment items
-      if (queueEntry?.id) {
-        updateSessionDataRealtime(queueEntry.id, consultationNotes, diagnosis, updatedItems);
-      }
       return updatedItems;
     });
+    
+    // Mark as having unsaved changes
+    setHasUnsavedChanges(true);
+    handleEditingChange();
     setEditingItem(null);
+    
     toast({
       title: "Success",
       description: item.id ? "Treatment item updated successfully" : "Treatment item added successfully"
@@ -372,15 +364,12 @@ export function PatientConsultationModal({
     setIsPrescriptionModalOpen(true);
   };
   const removeTreatmentItem = async (id: string) => {
-    setTreatmentItems(prev => {
-      const updatedItems = prev.filter(item => item.id !== id);
-
-      // Update session data with remaining treatment items
-      if (queueEntry?.id) {
-        updateSessionDataRealtime(queueEntry.id, consultationNotes, diagnosis, updatedItems);
-      }
-      return updatedItems;
-    });
+    setTreatmentItems(prev => prev.filter(item => item.id !== id));
+    
+    // Mark as having unsaved changes
+    setHasUnsavedChanges(true);
+    handleEditingChange();
+    
     toast({
       title: "Success",
       description: "Treatment item removed successfully"
@@ -399,17 +388,38 @@ export function PatientConsultationModal({
       return;
     }
 
-    // Save as draft - no database operation needed, just local state
-    setIsDraftSaved(true);
+    try {
+      // Save draft locally
+      if (queueEntry?.patient?.id) {
+        const formData = {
+          consultationNotes,
+          diagnosis,
+          treatmentItems
+        };
+        const draftId = await saveDraft(formData, queueEntry.patient.id, currentDraftId);
+        if (draftId && !currentDraftId) {
+          setCurrentDraftId(draftId);
+        }
+      }
 
-    // Update queue session data immediately
-    if (queueEntry?.id) {
-      await updateSessionDataRealtime(queueEntry.id, consultationNotes, diagnosis, treatmentItems);
+      // Update queue session data
+      if (queueEntry?.id) {
+        await updateSessionDataRealtime(queueEntry.id, consultationNotes, diagnosis, treatmentItems);
+      }
+
+      setIsDraftSaved(true);
+      setHasUnsavedChanges(false);
+      toast({
+        title: "Draft Saved",
+        description: "Consultation notes saved as draft"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save draft",
+        variant: "destructive"
+      });
     }
-    toast({
-      title: "Draft Saved",
-      description: "Consultation notes saved as draft and synced to session"
-    });
   };
   const handleAttachPhoto = () => {
     // Create a file input element
@@ -490,9 +500,19 @@ export function PatientConsultationModal({
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">{autoSaveStatus}</span>
                 </div>}
-              {currentDraftId && <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+               {currentDraftId && <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                   Draft
                 </Badge>}
+               {hasUnsavedChanges && (
+                 <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-600">
+                   Unsaved changes
+                 </Badge>
+               )}
+               {isEditing && (
+                 <Badge variant="outline" className="text-xs text-blue-600 border-blue-600">
+                   Editing...
+                 </Badge>
+               )}
               
               {/* Action Buttons */}
               <Button variant="ghost" size="sm" onClick={onClose}>
@@ -533,7 +553,10 @@ export function PatientConsultationModal({
                       <h3 className="font-medium text-sm">Write Consultation Notes here</h3>
                     </div>
                     <div className="p-3 relative">
-                       <Textarea placeholder="Type your consultation notes here" value={consultationNotes} onChange={e => setConsultationNotes(e.target.value)} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
+                       <Textarea placeholder="Type your consultation notes here" value={consultationNotes} onChange={e => {
+                         setConsultationNotes(e.target.value);
+                         handleEditingChange();
+                       }} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
                        
                        {/* Overlay notification when consultation hasn't started */}
                        {consultationStatus === 'waiting' && (
@@ -584,7 +607,10 @@ export function PatientConsultationModal({
                     <div className="flex items-center space-x-2 mb-3">
                       <div className="flex-1">
                         <label className="text-sm font-medium mb-1 block">Diagnosis</label>
-                        <Select value={diagnosis} onValueChange={setDiagnosis}>
+                        <Select value={diagnosis} onValueChange={(value) => {
+                          setDiagnosis(value);
+                          handleEditingChange();
+                        }}>
                           <SelectTrigger className="h-9">
                             <SelectValue placeholder="Select diagnosis" />
                           </SelectTrigger>
