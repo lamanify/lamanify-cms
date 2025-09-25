@@ -943,60 +943,6 @@ export function PatientConsultationModal({
                 </Tabs>
             </div>
 
-            {/* Visit Notes Column - Only visible in Consultation tab */}
-            {activeTab === 'consultation' && (
-              <div className="w-80 bg-muted/30 rounded-lg p-4 space-y-4 border-l ml-4">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                  Visit Notes
-                </h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                      Current Visit Notes
-                    </label>
-                    <Textarea
-                      value={visitNotes}
-                      onChange={(e) => {
-                        setVisitNotes(e.target.value);
-                        handleEditingChange();
-                      }}
-                      placeholder="Add notes for this consultation..."
-                      className="min-h-[120px] text-sm resize-none"
-                      disabled={consultationStatus === 'waiting'}
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-3 block">
-                      Previous Consultation Notes
-                    </label>
-                    {loadingPreviousVisits ? (
-                      <div className="flex items-center justify-center py-4">
-                        <div className="text-xs text-muted-foreground">Loading previous notes...</div>
-                      </div>
-                    ) : previousVisits.length > 0 ? (
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                        {previousVisits.map((visit, index) => (
-                          <div key={index} className="p-3 bg-background rounded border text-sm">
-                            <div className="text-xs text-muted-foreground mb-1">
-                              {format(new Date(visit.visit_date), 'MMM dd, yyyy')}
-                            </div>
-                            <p className="text-sm line-clamp-3">{visit.consultation_notes}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-muted-foreground text-center py-4">
-                        No previous consultation notes found
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Right Column - Visit Notes */}
             <div className="w-80 border-l bg-muted/30">
