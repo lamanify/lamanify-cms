@@ -303,13 +303,16 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                            </div>
                          </div>
 
-                         {/* Visit Notes - 30% */}
-                         <div className="w-[30%] px-2">
-                           <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
-                           <div className="text-sm text-foreground truncate">
-                             {entry.patient?.visit_reason || 'No notes'}
-                           </div>
-                         </div>
+                          {/* Registered Info - 30% */}
+                          <div className="w-[30%] px-2">
+                            <div className="text-xs text-muted-foreground mb-1">Registered Info</div>
+                            <div className="text-sm text-foreground">
+                              <div className="truncate">ID: {entry.patient?.patient_id || 'N/A'}</div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {entry.patient?.phone || 'No phone'}
+                              </div>
+                            </div>
+                          </div>
 
                          {/* Payment Method - 10% */}
                          <div className="w-[10%] px-2">
@@ -437,13 +440,16 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                           </div>
                         </div>
 
-                        {/* Visit Notes - 30% */}
-                        <div className="w-[30%] px-2">
-                          <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
-                          <div className="text-sm text-foreground truncate">
-                            {entry.patient?.visit_reason || 'No notes'}
+                          {/* Registered Info - 30% */}
+                          <div className="w-[30%] px-2">
+                            <div className="text-xs text-muted-foreground mb-1">Registered Info</div>
+                            <div className="text-sm text-foreground">
+                              <div className="truncate">ID: {entry.patient?.patient_id || 'N/A'}</div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {entry.patient?.phone || 'No phone'}
+                              </div>
+                            </div>
                           </div>
-                        </div>
 
                         {/* Payment Method - 10% */}
                         <div className="w-[10%] px-2">
@@ -568,13 +574,16 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         </div>
                       </div>
 
-                      {/* Visit Notes - 30% */}
-                      <div className="w-[30%] px-2">
-                        <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
-                        <div className="text-sm text-foreground truncate">
-                          {entry.patient?.visit_reason || 'No notes'}
-                        </div>
-                      </div>
+                          {/* Registered Info - 30% */}
+                          <div className="w-[30%] px-2">
+                            <div className="text-xs text-muted-foreground mb-1">Registered Info</div>
+                            <div className="text-sm text-foreground">
+                              <div className="truncate">ID: {entry.patient?.patient_id || 'N/A'}</div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {entry.patient?.phone || 'No phone'}
+                              </div>
+                            </div>
+                          </div>
 
                       {/* Payment Method - 10% */}
                       <div className="w-[10%] px-2">
