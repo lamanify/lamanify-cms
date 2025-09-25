@@ -121,11 +121,9 @@ export function PatientConsultationModal({
     setIsEditing(true);
     setHasUnsavedChanges(true);
     setLastEditTime(new Date());
-    
     if (editingTimeoutRef.current) {
       clearTimeout(editingTimeoutRef.current);
     }
-    
     editingTimeoutRef.current = setTimeout(() => {
       setIsEditing(false);
     }, 3000); // Stop editing detection after 3 seconds of inactivity
@@ -175,7 +173,7 @@ export function PatientConsultationModal({
         setTreatmentItems([]);
         setCurrentDraftId(null);
       }
-      
+
       // Fetch previous visits when modal opens
       fetchPreviousVisits(queueEntry.patient.id);
     } else if (!isOpen) {
@@ -190,20 +188,17 @@ export function PatientConsultationModal({
   const fetchPreviousVisits = useCallback(async (patientId: string) => {
     setLoadingPreviousVisits(true);
     try {
-      const { data, error } = await supabase
-        .from('patient_visits')
-        .select('visit_date, session_data')
-        .eq('patient_id', patientId)
-        .order('visit_date', { ascending: false })
-        .limit(10);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('patient_visits').select('visit_date, session_data').eq('patient_id', patientId).order('visit_date', {
+        ascending: false
+      }).limit(10);
       if (error) throw error;
-      
       const visits = data?.map(visit => ({
         visit_date: visit.visit_date,
         consultation_notes: (visit.session_data as any)?.consultation_notes || ''
       })).filter(visit => visit.consultation_notes.trim()) || [];
-      
       setPreviousVisits(visits);
     } catch (error) {
       console.error('Error fetching previous visits:', error);
@@ -217,22 +212,20 @@ export function PatientConsultationModal({
   const fetchAppointments = useCallback(async (patientId: string) => {
     setLoadingAppointments(true);
     try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('appointments').select(`
           id,
           appointment_date,
           appointment_time,
           reason,
           status,
           profiles!inner(first_name, last_name)
-        `)
-        .eq('patient_id', patientId)
-        .order('appointment_date', { ascending: false })
-        .limit(10);
-      
+        `).eq('patient_id', patientId).order('appointment_date', {
+        ascending: false
+      }).limit(10);
       if (error) throw error;
-      
       const appointmentList = data?.map(appointment => ({
         id: appointment.id,
         appointment_date: appointment.appointment_date,
@@ -241,7 +234,6 @@ export function PatientConsultationModal({
         status: appointment.status,
         doctor_name: `${(appointment.profiles as any)?.first_name || ''} ${(appointment.profiles as any)?.last_name || ''}`.trim()
       })) || [];
-      
       setAppointments(appointmentList);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -254,7 +246,6 @@ export function PatientConsultationModal({
   // Clear consultation data when patient actually changes (not on data refresh)
   useEffect(() => {
     const currentPatientId = queueEntry?.patient?.id;
-    
     if (isOpen && currentPatientId && previousPatientIdRef.current !== currentPatientId) {
       // Only clear if we're switching to a different patient and not actively editing
       if (previousPatientIdRef.current !== null && !isEditing && !hasUnsavedChanges) {
@@ -264,7 +255,7 @@ export function PatientConsultationModal({
         setVisitNotes('');
         setTreatmentItems([]);
         setCurrentDraftId(null);
-        setIsDraftSaved(false);  
+        setIsDraftSaved(false);
         setPreviousVisits([]);
         setAppointments([]);
       }
@@ -283,7 +274,6 @@ export function PatientConsultationModal({
       // Check if session data is newer than last edit time
       const sessionLastUpdated = sessionData.last_updated ? new Date(sessionData.last_updated) : null;
       const shouldSync = !lastEditTime || !sessionLastUpdated || sessionLastUpdated > lastEditTime;
-
       if (shouldSync) {
         // Only update if session data is different from current state
         if (sessionData.consultation_notes && sessionData.consultation_notes !== consultationNotes) {
@@ -325,7 +315,6 @@ export function PatientConsultationModal({
         };
         saveDraft(formData, queueEntry.patient.id, queueEntry.id);
       }, 2000);
-
       return () => {
         clearTimeout(editingTimeoutRef);
       };
@@ -463,12 +452,11 @@ export function PatientConsultationModal({
       }
       return updatedItems;
     });
-    
+
     // Mark as having unsaved changes
     setHasUnsavedChanges(true);
     handleEditingChange();
     setEditingItem(null);
-    
     toast({
       title: "Success",
       description: item.id ? "Treatment item updated successfully" : "Treatment item added successfully"
@@ -480,11 +468,10 @@ export function PatientConsultationModal({
   };
   const removeTreatmentItem = async (id: string) => {
     setTreatmentItems(prev => prev.filter(item => item.id !== id));
-    
+
     // Mark as having unsaved changes
     setHasUnsavedChanges(true);
     handleEditingChange();
-    
     toast({
       title: "Success",
       description: "Treatment item removed successfully"
@@ -502,7 +489,6 @@ export function PatientConsultationModal({
       });
       return;
     }
-
     try {
       // Save draft locally
       if (queueEntry?.patient?.id) {
@@ -522,7 +508,6 @@ export function PatientConsultationModal({
       if (queueEntry?.id) {
         await updateSessionDataRealtime(queueEntry.id, consultationNotes, diagnosis, treatmentItems);
       }
-
       setIsDraftSaved(true);
       setHasUnsavedChanges(false);
       toast({
@@ -619,16 +604,12 @@ export function PatientConsultationModal({
                {currentDraftId && <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                   Draft
                 </Badge>}
-               {hasUnsavedChanges && (
-                 <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-600">
+               {hasUnsavedChanges && <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-600">
                    Unsaved changes
-                 </Badge>
-               )}
-               {isEditing && (
-                 <Badge variant="outline" className="text-xs text-blue-600 border-blue-600">
+                 </Badge>}
+               {isEditing && <Badge variant="outline" className="text-xs text-blue-600 border-blue-600">
                    Editing...
-                 </Badge>
-               )}
+                 </Badge>}
               
               {/* Action Buttons */}
               <Button variant="ghost" size="sm" onClick={onClose}>
@@ -670,13 +651,12 @@ export function PatientConsultationModal({
                     </div>
                     <div className="p-3 relative">
                        <Textarea placeholder="Type your consultation notes here" value={consultationNotes} onChange={e => {
-                         setConsultationNotes(e.target.value);
-                         handleEditingChange();
-                       }} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
+                      setConsultationNotes(e.target.value);
+                      handleEditingChange();
+                    }} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
                        
                        {/* Overlay notification when consultation hasn't started */}
-                       {consultationStatus === 'waiting' && (
-                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                       {consultationStatus === 'waiting' && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
                            <div className="bg-white rounded-lg p-4 shadow-lg border max-w-xs text-center">
                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
                                <span className="text-blue-600 text-lg">💡</span>
@@ -685,8 +665,7 @@ export function PatientConsultationModal({
                                Click the "Start Consultation" button to start writing consultation notes
                              </p>
                            </div>
-                         </div>
-                       )}
+                         </div>}
                     
                     {/* Formatting Toolbar */}
                     <div className="flex items-center justify-between">
@@ -723,10 +702,10 @@ export function PatientConsultationModal({
                     <div className="flex items-center space-x-2 mb-3">
                       <div className="flex-1">
                         <label className="text-sm font-medium mb-1 block">Diagnosis</label>
-                        <Select value={diagnosis} onValueChange={(value) => {
-                          setDiagnosis(value);
-                          handleEditingChange();
-                        }}>
+                        <Select value={diagnosis} onValueChange={value => {
+                        setDiagnosis(value);
+                        handleEditingChange();
+                      }}>
                           <SelectTrigger className="h-9">
                             <SelectValue placeholder="Select diagnosis" />
                           </SelectTrigger>
@@ -739,12 +718,7 @@ export function PatientConsultationModal({
                         </Select>
                       </div>
                       <div className="flex space-x-1">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-7 text-xs"
-                          onClick={() => setIsAppointmentDialogOpen(true)}
-                        >
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setIsAppointmentDialogOpen(true)}>
                           <Calendar className="h-3 w-3 mr-1" />
                           Set appointment
                         </Button>
@@ -762,12 +736,9 @@ export function PatientConsultationModal({
                        <h3 className="font-medium text-sm">Patient Appointments</h3>
                      </div>
                      <div className="p-4">
-                       {loadingAppointments ? (
-                         <div className="flex items-center justify-center py-8">
+                       {loadingAppointments ? <div className="flex items-center justify-center py-8">
                            <div className="text-sm text-muted-foreground">Loading appointments...</div>
-                         </div>
-                       ) : appointments.length > 0 ? (
-                         <div className="overflow-x-auto">
+                         </div> : appointments.length > 0 ? <div className="overflow-x-auto">
                            <table className="w-full text-sm">
                              <thead>
                                <tr className="border-b">
@@ -779,8 +750,7 @@ export function PatientConsultationModal({
                                </tr>
                              </thead>
                              <tbody>
-                               {appointments.map((appointment) => (
-                                 <tr key={appointment.id} className="border-b hover:bg-muted/50">
+                               {appointments.map(appointment => <tr key={appointment.id} className="border-b hover:bg-muted/50">
                                    <td className="p-2">
                                      {format(new Date(appointment.appointment_date), 'MMM dd, yyyy')}
                                    </td>
@@ -794,29 +764,17 @@ export function PatientConsultationModal({
                                      {appointment.doctor_name || 'Not assigned'}
                                    </td>
                                    <td className="p-2">
-                                     <Badge 
-                                       variant={
-                                         appointment.status === 'completed' ? 'default' :
-                                         appointment.status === 'scheduled' ? 'secondary' :
-                                         appointment.status === 'cancelled' ? 'destructive' :
-                                         'outline'
-                                       }
-                                       className="text-xs"
-                                     >
+                                     <Badge variant={appointment.status === 'completed' ? 'default' : appointment.status === 'scheduled' ? 'secondary' : appointment.status === 'cancelled' ? 'destructive' : 'outline'} className="text-xs">
                                        {appointment.status}
                                      </Badge>
                                    </td>
-                                 </tr>
-                               ))}
+                                 </tr>)}
                              </tbody>
                            </table>
-                         </div>
-                       ) : (
-                         <div className="text-center py-8 text-muted-foreground">
+                         </div> : <div className="text-center py-8 text-muted-foreground">
                            <p className="text-sm">No appointments found</p>
                            <p className="text-xs mt-1">Appointments created during consultation will appear here</p>
-                         </div>
-                       )}
+                         </div>}
                      </div>
                    </div>
                  </TabsContent>
@@ -1058,7 +1016,7 @@ export function PatientConsultationModal({
 
             {/* Right Column - Visit Notes */}
             <div className="w-80 border-l bg-muted/30">
-              <div className="p-4 border-b bg-background">
+              <div className="p-4 border-b bg-background py-[9.5px]">
                 <h3 className="font-medium text-sm text-foreground">Visit Notes</h3>
               </div>
               <div className="p-4 space-y-3 h-full overflow-y-auto">
@@ -1066,12 +1024,7 @@ export function PatientConsultationModal({
                   <label className="text-xs font-medium text-muted-foreground mb-2 block">
                     Current Visit Notes
                   </label>
-                  <Textarea
-                    value={queueEntry?.patient?.visit_reason || ''}
-                    readOnly
-                    placeholder="No visit notes for this patient..."
-                    className="min-h-[120px] text-sm resize-none bg-muted/50 cursor-default"
-                  />
+                  <Textarea value={queueEntry?.patient?.visit_reason || ''} readOnly placeholder="No visit notes for this patient..." className="min-h-[120px] text-sm resize-none bg-muted/50 cursor-default" />
                 </div>
 
                 <Separator />
@@ -1080,26 +1033,18 @@ export function PatientConsultationModal({
                   <label className="text-xs font-medium text-muted-foreground mb-3 block">
                     Previous Consultation Notes
                   </label>
-                  {loadingPreviousVisits ? (
-                    <div className="flex items-center justify-center py-4">
+                  {loadingPreviousVisits ? <div className="flex items-center justify-center py-4">
                       <div className="text-xs text-muted-foreground">Loading previous notes...</div>
-                    </div>
-                  ) : previousVisits.length > 0 ? (
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                      {previousVisits.map((visit, index) => (
-                        <div key={index} className="p-3 bg-background rounded border text-sm">
+                    </div> : previousVisits.length > 0 ? <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                      {previousVisits.map((visit, index) => <div key={index} className="p-3 bg-background rounded border text-sm">
                           <div className="text-xs text-muted-foreground mb-1">
                             {format(new Date(visit.visit_date), 'MMM dd, yyyy')}
                           </div>
                           <p className="text-sm line-clamp-3">{visit.consultation_notes}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-muted-foreground text-center py-4">
+                        </div>)}
+                    </div> : <div className="text-xs text-muted-foreground text-center py-4">
                       No previous consultation notes found
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
             </div>
@@ -1233,39 +1178,26 @@ export function PatientConsultationModal({
             </DialogContent>
           </Dialog>}
 
-        <IntelligentPrescriptionModal 
-          isOpen={isPrescriptionModalOpen} 
-          onClose={() => {
-            setIsPrescriptionModalOpen(false);
-            setEditingItem(null);
-          }} 
-          onAdd={addTreatmentItem} 
-          editItem={editingItem} 
-          patientPriceTier={queueEntry?.patient?.assigned_tier_id}
-          patientPaymentMethod={queueEntry?.payment_method}
-        />
+        <IntelligentPrescriptionModal isOpen={isPrescriptionModalOpen} onClose={() => {
+      setIsPrescriptionModalOpen(false);
+      setEditingItem(null);
+    }} onAdd={addTreatmentItem} editItem={editingItem} patientPriceTier={queueEntry?.patient?.assigned_tier_id} patientPaymentMethod={queueEntry?.payment_method} />
 
         {/* Follow-up Appointment Dialog */}
-        <AppointmentDialog
-          open={isAppointmentDialogOpen}
-          onOpenChange={setIsAppointmentDialogOpen}
-          appointment={null}
-          preSelectedPatient={queueEntry?.patient ? {
-            id: queueEntry.patient.id,
-            first_name: queueEntry.patient.first_name,
-            last_name: queueEntry.patient.last_name
-          } : null}
-          onSave={() => {
-            setIsAppointmentDialogOpen(false);
-            // Refresh appointments when a new one is created
-            if (queueEntry?.patient?.id) {
-              fetchAppointments(queueEntry.patient.id);
-            }
-            toast({
-              title: "Appointment Scheduled",
-              description: "Follow-up appointment has been successfully scheduled.",
-            });
-          }}
-        />
+        <AppointmentDialog open={isAppointmentDialogOpen} onOpenChange={setIsAppointmentDialogOpen} appointment={null} preSelectedPatient={queueEntry?.patient ? {
+      id: queueEntry.patient.id,
+      first_name: queueEntry.patient.first_name,
+      last_name: queueEntry.patient.last_name
+    } : null} onSave={() => {
+      setIsAppointmentDialogOpen(false);
+      // Refresh appointments when a new one is created
+      if (queueEntry?.patient?.id) {
+        fetchAppointments(queueEntry.patient.id);
+      }
+      toast({
+        title: "Appointment Scheduled",
+        description: "Follow-up appointment has been successfully scheduled."
+      });
+    }} />
       </Dialog>;
 }
