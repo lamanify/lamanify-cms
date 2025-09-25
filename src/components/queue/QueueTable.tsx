@@ -119,9 +119,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   const getStatusColor = (status: string, waitTime: number, isPriority = false) => {
     if (isPriority) return 'bg-queue-priority text-queue-priority-foreground';
     if (status === 'completed') return 'bg-gray-600 text-gray-100';
-    if (status === 'waiting') return 'bg-red-100 text-red-800';
-    if (status === 'dispensary') return 'bg-orange-500 text-white';
-    if (status === 'in_consultation') return 'bg-info text-info-foreground';
+    if (status === 'waiting') return 'bg-red-50 text-red-700 border-red-200';
+    if (status === 'dispensary') return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (status === 'in_consultation') return 'bg-green-50 text-green-700 border-green-200';
     if (status === 'cancelled') return 'bg-destructive text-destructive-foreground';
     
     // Wait time based colors for other statuses
@@ -131,8 +131,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
   };
 
   const getWaitTimeAlert = (waitTime: number) => {
-    if (waitTime >= 45) return 'text-queue-urgent';
-    if (waitTime >= 20) return 'text-queue-waiting';
+    if (waitTime >= 15) return 'text-red-600 font-semibold';
+    if (waitTime >= 10) return 'text-orange-600';
     return 'text-muted-foreground';
   };
 
@@ -227,7 +227,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                       <div
                         key={entry.id}
                         onClick={() => handlePatientClick(entry)}
-                        className="flex items-center justify-between p-4 rounded-lg border-2 border-destructive/30 bg-destructive/5 transition-all duration-200 cursor-pointer hover:border-destructive hover:bg-destructive/10 hover:-translate-y-1 hover:shadow-lg animate-scale-in"
+                        className="flex items-center justify-between p-4 pr-8 rounded-lg border-2 border-destructive/30 bg-destructive/5 transition-all duration-200 cursor-pointer hover:border-destructive hover:bg-destructive/10 hover:-translate-y-1 hover:shadow-lg animate-scale-in"
                       >
                         <div className="flex items-center space-x-6 flex-1">
                           {/* Queue Number and Status */}
@@ -261,21 +261,24 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                               {entry.patient?.first_name} {entry.patient?.last_name}
                             </div>
                             <div className="text-sm text-muted-foreground flex items-center gap-4">
-                              {entry.patient?.phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {entry.patient.phone}
-                                </span>
-                              )}
                               {entry.patient?.visit_reason && (
-                                <span>• {entry.patient.visit_reason}</span>
+                                <span>{entry.patient.visit_reason}</span>
+                              )}
+                              {entry.patient?.gender && (
+                                <span>• {entry.patient.gender}</span>
+                              )}
+                              {entry.patient?.date_of_birth && (
+                                <span>• {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()} years</span>
                               )}
                             </div>
                           </div>
 
-                          {/* Wait Time */}
+                          {/* Arrival Time and Wait Time */}
                           <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Wait Time</div>
+                            <div className="text-xs text-muted-foreground">
+                              Arrived: {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">Wait Time</div>
                             <div className="text-lg font-medium text-destructive flex items-center gap-1">
                               <Clock className="h-4 w-4" />
                               {formatWaitTime(waitTime)}
@@ -340,7 +343,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                       <div
                         key={entry.id}
                         onClick={() => handlePatientClick(entry)}
-                        className="flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg bg-white"
+                        className="flex items-center justify-between p-4 pr-8 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg bg-white"
                       >
                         <div className="flex items-center space-x-6 flex-1">
                           {/* Queue Number and Status */}
@@ -352,9 +355,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                                     {entry.queue_number}
                                     <ChevronDown className="h-4 w-4" />
                                   </div>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {getStatusLabel(entry.status)}
-                                  </Badge>
+                                   <Badge className={`text-xs border ${getStatusColor(entry.status, waitTime)}`}>
+                                     {getStatusLabel(entry.status)}
+                                   </Badge>
                                 </div>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent>
@@ -374,22 +377,25 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                               {entry.patient?.first_name} {entry.patient?.last_name}
                             </div>
                             <div className="text-sm text-muted-foreground flex items-center gap-4">
-                              {entry.patient?.phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {entry.patient.phone}
-                                </span>
-                              )}
                               {entry.patient?.visit_reason && (
-                                <span>• {entry.patient.visit_reason}</span>
+                                <span>{entry.patient.visit_reason}</span>
+                              )}
+                              {entry.patient?.gender && (
+                                <span>• {entry.patient.gender}</span>
+                              )}
+                              {entry.patient?.date_of_birth && (
+                                <span>• {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()} years</span>
                               )}
                             </div>
                           </div>
 
-                          {/* Wait Time */}
+                          {/* Arrival Time and Wait Time */}
                           <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Wait Time</div>
-                            <div className="text-lg font-medium text-foreground flex items-center gap-1">
+                            <div className="text-xs text-muted-foreground">
+                              Arrived: {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">Wait Time</div>
+                            <div className={`text-lg font-medium flex items-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
                               <Clock className="h-4 w-4" />
                               {formatWaitTime(waitTime)}
                             </div>
@@ -447,7 +453,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                     <div
                       key={entry.id}
                       onClick={() => handlePatientClick(entry)}
-                      className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
+                      className={`flex items-center justify-between p-4 pr-8 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
                         entry.status === 'completed' ? 'bg-gray-100' :
                         'bg-white'
                       }`}
@@ -462,7 +468,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                                   {entry.queue_number}
                                   <ChevronDown className="h-4 w-4" />
                                 </div>
-                                <Badge variant={entry.status === 'completed' ? 'secondary' : 'default'} className="text-xs">
+                                <Badge className={`text-xs border ${getStatusColor(entry.status, waitTime)}`}>
                                   {getStatusLabel(entry.status)}
                                 </Badge>
                               </div>
@@ -488,22 +494,25 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                             {entry.patient?.first_name} {entry.patient?.last_name}
                           </div>
                           <div className="text-sm text-muted-foreground flex items-center gap-4">
-                            {entry.patient?.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {entry.patient.phone}
-                              </span>
-                            )}
                             {entry.patient?.visit_reason && (
-                              <span>• {entry.patient.visit_reason}</span>
+                              <span>{entry.patient.visit_reason}</span>
+                            )}
+                            {entry.patient?.gender && (
+                              <span>• {entry.patient.gender}</span>
+                            )}
+                            {entry.patient?.date_of_birth && (
+                              <span>• {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()} years</span>
                             )}
                           </div>
                         </div>
 
-                        {/* Wait Time */}
+                        {/* Arrival Time and Wait Time */}
                         <div className="text-center">
-                          <div className="text-sm text-muted-foreground">Wait Time</div>
-                          <div className="text-lg font-medium text-foreground flex items-center gap-1">
+                          <div className="text-xs text-muted-foreground">
+                            Arrived: {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">Wait Time</div>
+                          <div className={`text-lg font-medium flex items-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
                             <Clock className="h-4 w-4" />
                             {formatWaitTime(waitTime)}
                           </div>
