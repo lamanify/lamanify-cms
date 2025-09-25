@@ -143,15 +143,13 @@ export function PatientConsultationModal({
           setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
           setCurrentDraftId(existingDraft.id);
           setIsDraftSaved(true);
-        } else {
+        } else if (!consultationNotes && !diagnosis && treatmentItems.length === 0) {
+          // Only clear if there's no existing content in the editor
           setIsDraftSaved(false);
-          setConsultationNotes('');
-          setDiagnosis('');
-          setTreatmentItems([]);
           setCurrentDraftId(null);
         }
-      } else {
-        // For new patients, always start with blank consultation notes
+      } else if (consultationStatus === 'waiting') {
+        // For waiting patients, always start with blank consultation notes
         setIsDraftSaved(false);
         setConsultationNotes('');
         setDiagnosis('');
@@ -164,7 +162,7 @@ export function PatientConsultationModal({
         clearTimeout(editingTimeoutRef.current);
       }
     }
-  }, [isOpen, queueEntry?.patient?.id, getDraftForPatient, refreshSessionData]);
+  }, [isOpen, queueEntry?.patient?.id, getDraftForPatient, refreshSessionData, consultationNotes, diagnosis, treatmentItems.length]);
 
   // Clear consultation data when patient actually changes (not on data refresh)
   useEffect(() => {
