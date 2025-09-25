@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { IntelligentPrescriptionModal } from './IntelligentPrescriptionModal';
@@ -17,6 +18,7 @@ import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { ArrowLeft, Bell, User, Edit, Clock, Bold, Italic, Underline, List, Camera, Save, Calendar, Upload, Search, ChevronDown, ChevronLeft, ChevronRight, X, Plus, FileText } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 interface Visit {
   id: string;
   date: string;
@@ -51,6 +53,12 @@ export function PatientConsultationModal({
   const [activeTab, setActiveTab] = useState('consultation');
   const [consultationNotes, setConsultationNotes] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
+  const [visitNotes, setVisitNotes] = useState('');
+  const [previousVisits, setPreviousVisits] = useState<Array<{
+    visit_date: string;
+    consultation_notes: string;
+  }>>([]);
+  const [loadingPreviousVisits, setLoadingPreviousVisits] = useState(false);
   const [historyTab, setHistoryTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all-time');
   const [historySearch, setHistorySearch] = useState('');
@@ -140,10 +148,11 @@ export function PatientConsultationModal({
         if (existingDraft) {
           setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
           setDiagnosis(existingDraft.draft_data.diagnosis || '');
+          setVisitNotes(existingDraft.draft_data.visitNotes || '');
           setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
           setCurrentDraftId(existingDraft.id);
           setIsDraftSaved(true);
-        } else if (!consultationNotes && !diagnosis && treatmentItems.length === 0) {
+        } else if (!consultationNotes && !diagnosis && !visitNotes && treatmentItems.length === 0) {
           // Only clear if there's no existing content in the editor
           setIsDraftSaved(false);
           setCurrentDraftId(null);
@@ -153,16 +162,47 @@ export function PatientConsultationModal({
         setIsDraftSaved(false);
         setConsultationNotes('');
         setDiagnosis('');
+        setVisitNotes('');
         setTreatmentItems([]);
         setCurrentDraftId(null);
       }
+      
+      // Fetch previous visits when modal opens
+      fetchPreviousVisits(queueEntry.patient.id);
     } else if (!isOpen) {
       // Clean up timeout when modal closes
       if (editingTimeoutRef.current) {
         clearTimeout(editingTimeoutRef.current);
       }
     }
-  }, [isOpen, queueEntry?.patient?.id, getDraftForSession, refreshSessionData, consultationNotes, diagnosis, treatmentItems.length]);
+  }, [isOpen, queueEntry?.patient?.id, getDraftForSession, refreshSessionData, consultationNotes, diagnosis, visitNotes, treatmentItems.length]);
+
+  // Fetch previous visits when modal opens
+  const fetchPreviousVisits = useCallback(async (patientId: string) => {
+    setLoadingPreviousVisits(true);
+    try {
+      const { data, error } = await supabase
+        .from('patient_visits')
+        .select('visit_date, session_data')
+        .eq('patient_id', patientId)
+        .order('visit_date', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      
+      const visits = data?.map(visit => ({
+        visit_date: visit.visit_date,
+        consultation_notes: (visit.session_data as any)?.consultation_notes || ''
+      })).filter(visit => visit.consultation_notes.trim()) || [];
+      
+      setPreviousVisits(visits);
+    } catch (error) {
+      console.error('Error fetching previous visits:', error);
+      setPreviousVisits([]);
+    } finally {
+      setLoadingPreviousVisits(false);
+    }
+  }, []);
 
   // Clear consultation data when patient actually changes (not on data refresh)
   useEffect(() => {
@@ -174,9 +214,11 @@ export function PatientConsultationModal({
         console.log('Patient changed, clearing consultation data for new patient:', currentPatientId);
         setConsultationNotes('');
         setDiagnosis('');
+        setVisitNotes('');
         setTreatmentItems([]);
         setCurrentDraftId(null);
         setIsDraftSaved(false);
+        setPreviousVisits([]);
       }
       previousPatientIdRef.current = currentPatientId;
     } else if (!isOpen) {
@@ -223,7 +265,24 @@ export function PatientConsultationModal({
     }
   }, [sessionData, isOpen, consultationNotes, diagnosis, isEditing, lastEditTime]);
 
-  // No auto-save - only manual saves now
+  // Auto-save draft when editing
+  useEffect(() => {
+    if (consultationStatus === 'in-consultation' && queueEntry && (consultationNotes || diagnosis || visitNotes || treatmentItems.length > 0)) {
+      const editingTimeoutRef = setTimeout(() => {
+        const formData = {
+          consultationNotes,
+          diagnosis,
+          visitNotes,
+          treatmentItems
+        };
+        saveDraft(formData, queueEntry.patient.id, queueEntry.id);
+      }, 2000);
+
+      return () => {
+        clearTimeout(editingTimeoutRef);
+      };
+    }
+  }, [consultationNotes, diagnosis, visitNotes, treatmentItems, saveDraft, queueEntry, consultationStatus]);
 
   // Helper function to extract consultation notes from structured content
   const extractConsultationNotes = (content: string) => {
@@ -387,10 +446,10 @@ export function PatientConsultationModal({
     return treatmentItems.reduce((total, item) => total + item.amount, 0);
   };
   const saveConsultationNotes = async () => {
-    if (!consultationNotes.trim() && !diagnosis && treatmentItems.length === 0) {
+    if (!consultationNotes.trim() && !diagnosis && !visitNotes.trim() && treatmentItems.length === 0) {
       toast({
         title: "Error",
-        description: "Please enter consultation notes, diagnosis, or add treatment items",
+        description: "Please enter consultation notes, diagnosis, visit notes, or add treatment items",
         variant: "destructive"
       });
       return;
@@ -402,9 +461,10 @@ export function PatientConsultationModal({
         const formData = {
           consultationNotes,
           diagnosis,
+          visitNotes,
           treatmentItems
         };
-        const draftId = await saveDraft(formData, queueEntry.patient.id, currentDraftId);
+        const draftId = await saveDraft(formData, queueEntry.patient.id, queueEntry.id, currentDraftId);
         if (draftId && !currentDraftId) {
           setCurrentDraftId(draftId);
         }
@@ -880,8 +940,63 @@ export function PatientConsultationModal({
                     </div>
                   </div>
                 </TabsContent>
-               </Tabs>
+                </Tabs>
             </div>
+
+            {/* Visit Notes Column - Only visible in Consultation tab */}
+            {activeTab === 'consultation' && (
+              <div className="w-80 bg-muted/30 rounded-lg p-4 space-y-4 border-l ml-4">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                  Visit Notes
+                </h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                      Current Visit Notes
+                    </label>
+                    <Textarea
+                      value={visitNotes}
+                      onChange={(e) => {
+                        setVisitNotes(e.target.value);
+                        handleEditingChange();
+                      }}
+                      placeholder="Add notes for this consultation..."
+                      className="min-h-[120px] text-sm resize-none"
+                      disabled={consultationStatus === 'waiting'}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-3 block">
+                      Previous Consultation Notes
+                    </label>
+                    {loadingPreviousVisits ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="text-xs text-muted-foreground">Loading previous notes...</div>
+                      </div>
+                    ) : previousVisits.length > 0 ? (
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                        {previousVisits.map((visit, index) => (
+                          <div key={index} className="p-3 bg-background rounded border text-sm">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              {format(new Date(visit.visit_date), 'MMM dd, yyyy')}
+                            </div>
+                            <p className="text-sm line-clamp-3">{visit.consultation_notes}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground text-center py-4">
+                        No previous consultation notes found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Right Column - Visit Notes */}
             <div className="w-80 border-l bg-muted/30">

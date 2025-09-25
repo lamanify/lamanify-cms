@@ -14,6 +14,7 @@ export interface ConsultationDraft {
 export interface ConsultationFormData {
   consultationNotes: string;
   diagnosis: string;
+  visitNotes: string;
   treatmentItems: Array<{
     id: string;
     item: string;
@@ -63,6 +64,7 @@ export const useConsultationDrafts = () => {
       // Check if form has any data
       const hasData = formData.consultationNotes.trim() !== '' || 
                      formData.diagnosis.trim() !== '' || 
+                     formData.visitNotes.trim() !== '' ||
                      formData.treatmentItems.length > 0;
       
       if (!hasData) {
