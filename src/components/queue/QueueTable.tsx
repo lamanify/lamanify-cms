@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Phone, Clock, AlertTriangle, User, MapPin, CreditCard, ChevronDown } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, User, MapPin, CreditCard, ChevronDown, Edit } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { PatientConsultationModal } from '@/components/consultation/PatientConsultationModal';
 import { DispensaryModal } from '@/components/queue/DispensaryModal';
@@ -479,26 +479,40 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
                         {/* Action Buttons */}
                         <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStatusChange(entry.id, 'in_consultation');
-                            }}
-                          >
-                            Start Consultation
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOptimisticRemove(entry.id);
-                            }}
-                          >
-                            Remove
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56 bg-popover border" sideOffset={4}>
+                              {getStatusDropdownOptions(entry.status).map((option) => (
+                                <DropdownMenuItem
+                                  key={option.value}
+                                  onClick={() => onStatusChange(entry.id, option.value)}
+                                  className="cursor-pointer"
+                                >
+                                  {option.label}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuItem
+                                onClick={() => setSelectedPatient(entry)}
+                                className="cursor-pointer"
+                              >
+                                Update Consultation
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleOptimisticRemove(entry.id)}
+                                className="cursor-pointer text-destructive focus:text-destructive"
+                              >
+                                Remove from Queue
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     );
@@ -610,40 +624,40 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
 
                       {/* Action Buttons */}
                       <div className="flex items-center space-x-2">
-                        {entry.status === 'in_consultation' && (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStatusChange(entry.id, 'dispensary');
-                            }}
-                          >
-                            Move to Dispensary
-                          </Button>
-                        )}
-
-                        {entry.status === 'dispensary' && (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStatusChange(entry.id, 'completed');
-                            }}
-                          >
-                            Mark Complete
-                          </Button>
-                        )}
-
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOptimisticRemove(entry.id);
-                          }}
-                        >
-                          Remove
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56 bg-popover border" sideOffset={4}>
+                            {getStatusDropdownOptions(entry.status).map((option) => (
+                              <DropdownMenuItem
+                                key={option.value}
+                                onClick={() => onStatusChange(entry.id, option.value)}
+                                className="cursor-pointer"
+                              >
+                                {option.label}
+                              </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuItem
+                              onClick={() => setSelectedPatient(entry)}
+                              className="cursor-pointer"
+                            >
+                              Update Consultation
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleOptimisticRemove(entry.id)}
+                              className="cursor-pointer text-destructive focus:text-destructive"
+                            >
+                              Remove from Queue
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   );
