@@ -19,9 +19,14 @@ interface AppointmentDialogProps {
   onOpenChange: (open: boolean) => void;
   appointment?: Appointment | null;
   onSave: () => void;
+  preSelectedPatient?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  } | null;
 }
 
-export function AppointmentDialog({ open, onOpenChange, appointment, onSave }: AppointmentDialogProps) {
+export function AppointmentDialog({ open, onOpenChange, appointment, onSave, preSelectedPatient }: AppointmentDialogProps) {
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -63,8 +68,9 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave }: A
         notes: appointment.notes || '',
       });
     } else {
+      // Reset form for new appointment, but pre-select patient if provided
       setFormData({
-        patient_id: '',
+        patient_id: preSelectedPatient?.id || '',
         doctor_id: '',
         appointment_date: '',
         appointment_time: '',
@@ -74,7 +80,7 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave }: A
         notes: '',
       });
     }
-  }, [appointment, open]);
+  }, [appointment, preSelectedPatient, open]);
 
   const fetchPatients = async () => {
     try {

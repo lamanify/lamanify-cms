@@ -995,6 +995,11 @@ export function PatientConsultationModal({
           open={isAppointmentDialogOpen}
           onOpenChange={setIsAppointmentDialogOpen}
           appointment={null}
+          preSelectedPatient={queueEntry?.patient ? {
+            id: queueEntry.patient.id,
+            first_name: queueEntry.patient.first_name,
+            last_name: queueEntry.patient.last_name
+          } : null}
           onSave={() => {
             setIsAppointmentDialogOpen(false);
             toast({
