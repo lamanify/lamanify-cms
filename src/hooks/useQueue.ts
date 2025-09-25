@@ -186,7 +186,7 @@ export function useQueue() {
             email: patient.email || undefined,
             medical_history: patient.medical_history || undefined,
             patient_id: patient.patient_id || undefined,
-            visit_reason: patient.visit_reason || undefined,
+            visit_reason: metadata?.visit_reason || patient.visit_reason || undefined,
             assigned_tier_id: patient.assigned_tier_id || undefined,
           } : undefined,
           doctor: doctor ? {
