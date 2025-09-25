@@ -5,7 +5,7 @@ import { useQueue } from '@/hooks/useQueue';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Play, UserPlus, Pause, PlayCircle } from 'lucide-react';
-import { QueueStats } from './QueueStats';
+import { CompactQueueStats } from './CompactQueueStats';
 import { CurrentQueueDisplay } from './CurrentQueueDisplay';
 import { QueueTable } from './QueueTable';
 import { FloatingActions } from './FloatingActions';
@@ -179,41 +179,44 @@ export function QueueManagement() {
   }
 
   return (
-    <div className="p-8 space-y-12">
+    <div className="p-8 space-y-8">
       {/* Registration Interface */}
       <QueueRegistrationInterface onPatientAdded={handleRefresh} />
 
-      {/* Current Queue Display */}
-      <CurrentQueueDisplay 
-        currentNumber={currentNumber}
-        currentPatient={currentPatient ? {
-          firstName: currentPatient.patient?.first_name || '',
-          lastName: currentPatient.patient?.last_name || '',
-          patientId: currentPatient.patient?.patient_id
-        } : null}
-        isServing={!!currentPatient}
-      />
-
-      {/* Queue Statistics */}
-      <QueueStats 
-        stats={{
-          ...stats,
-          averageWaitTime: Math.round(
-            queue.filter(q => q.status === 'waiting').reduce((acc, entry) => {
-              const waitTime = Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60));
-              return acc + waitTime;
-            }, 0) / Math.max(stats.waiting, 1)
-          ),
-          longestWaitTime: Math.max(
-            ...queue.filter(q => q.status === 'waiting').map(entry => 
-              Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60))
+      {/* Status Table and Current Queue Display Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Compact Status Table */}
+        <CompactQueueStats 
+          stats={{
+            ...stats,
+            averageWaitTime: Math.round(
+              queue.filter(q => q.status === 'waiting').reduce((acc, entry) => {
+                const waitTime = Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60));
+                return acc + waitTime;
+              }, 0) / Math.max(stats.waiting, 1)
             ),
-            0
-          )
-        }}
-        activeFilter={queueFilter}
-        onFilterChange={setQueueFilter}
-      />
+            longestWaitTime: Math.max(
+              ...queue.filter(q => q.status === 'waiting').map(entry => 
+                Math.floor((new Date().getTime() - new Date(entry.checked_in_at).getTime()) / (1000 * 60))
+              ),
+              0
+            )
+          }}
+          activeFilter={queueFilter}
+          onFilterChange={setQueueFilter}
+        />
+
+        {/* Right Column: Current Queue Display */}
+        <CurrentQueueDisplay 
+          currentNumber={currentNumber}
+          currentPatient={currentPatient ? {
+            firstName: currentPatient.patient?.first_name || '',
+            lastName: currentPatient.patient?.last_name || '',
+            patientId: currentPatient.patient?.patient_id
+          } : null}
+          isServing={!!currentPatient}
+        />
+      </div>
 
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-center gap-6">
