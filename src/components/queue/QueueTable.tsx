@@ -446,7 +446,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                              <div className={`text-lg font-medium flex items-center justify-center gap-1 mr-5 ${getWaitTimeAlert(waitTime)}`}>
                                 <Clock className="h-4 w-4" />
                                 {formatWaitTime(waitTime)}
                               </div>
