@@ -64,6 +64,7 @@ export function PatientConsultationModal({
   const [isEditing, setIsEditing] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastEditTime, setLastEditTime] = useState<Date | null>(null);
+  const previousPatientIdRef = useRef<string | null>(null);
   const {
     toast
   } = useToast();
@@ -165,17 +166,26 @@ export function PatientConsultationModal({
     }
   }, [isOpen, queueEntry?.patient?.id, getDraftForPatient, refreshSessionData]);
 
-  // Clear consultation data when patient changes
+  // Clear consultation data when patient actually changes (not on data refresh)
   useEffect(() => {
-    if (isOpen && queueEntry?.patient?.id) {
-      console.log('Patient changed, clearing consultation data for new patient:', queueEntry?.patient?.id);
-      setConsultationNotes('');
-      setDiagnosis('');
-      setTreatmentItems([]);
-      setCurrentDraftId(null);
-      setIsDraftSaved(false);
+    const currentPatientId = queueEntry?.patient?.id;
+    
+    if (isOpen && currentPatientId && previousPatientIdRef.current !== currentPatientId) {
+      // Only clear if we're switching to a different patient and not actively editing
+      if (previousPatientIdRef.current !== null && !isEditing && !hasUnsavedChanges) {
+        console.log('Patient changed, clearing consultation data for new patient:', currentPatientId);
+        setConsultationNotes('');
+        setDiagnosis('');
+        setTreatmentItems([]);
+        setCurrentDraftId(null);
+        setIsDraftSaved(false);
+      }
+      previousPatientIdRef.current = currentPatientId;
+    } else if (!isOpen) {
+      // Reset the ref when modal closes
+      previousPatientIdRef.current = null;
     }
-  }, [queueEntry?.patient?.id, isOpen]);
+  }, [queueEntry?.patient?.id, isOpen, isEditing, hasUnsavedChanges]);
 
   // Sync with real-time session data - only when not actively editing
   useEffect(() => {
