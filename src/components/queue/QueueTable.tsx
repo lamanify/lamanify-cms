@@ -303,14 +303,11 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                            </div>
                          </div>
 
-                          {/* Registered Info - 30% */}
+                          {/* Visit Notes - 30% */}
                           <div className="w-[30%] px-2">
-                            <div className="text-xs text-muted-foreground mb-1">Registered Info</div>
-                            <div className="text-sm text-foreground">
-                              <div className="truncate">ID: {entry.patient?.patient_id || 'N/A'}</div>
-                              <div className="truncate text-xs text-muted-foreground">
-                                {entry.patient?.phone || 'No phone'}
-                              </div>
+                            <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
+                            <div className="text-sm text-foreground truncate">
+                            {entry.patient?.visit_reason || 'No notes'}
                             </div>
                           </div>
 
@@ -440,14 +437,11 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                           </div>
                         </div>
 
-                          {/* Registered Info - 30% */}
+                          {/* Visit Notes - 30% */}
                           <div className="w-[30%] px-2">
-                            <div className="text-xs text-muted-foreground mb-1">Registered Info</div>
-                            <div className="text-sm text-foreground">
-                              <div className="truncate">ID: {entry.patient?.patient_id || 'N/A'}</div>
-                              <div className="truncate text-xs text-muted-foreground">
-                                {entry.patient?.phone || 'No phone'}
-                              </div>
+                            <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
+                            <div className="text-sm text-foreground truncate">
+                            {entry.patient?.visit_reason || 'No notes'}
                             </div>
                           </div>
 
@@ -574,14 +568,11 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         </div>
                       </div>
 
-                          {/* Registered Info - 30% */}
+                          {/* Visit Notes - 30% */}
                           <div className="w-[30%] px-2">
-                            <div className="text-xs text-muted-foreground mb-1">Registered Info</div>
-                            <div className="text-sm text-foreground">
-                              <div className="truncate">ID: {entry.patient?.patient_id || 'N/A'}</div>
-                              <div className="truncate text-xs text-muted-foreground">
-                                {entry.patient?.phone || 'No phone'}
-                              </div>
+                            <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
+                            <div className="text-sm text-foreground truncate">
+                              {entry.patient?.visit_reason || 'No notes'}
                             </div>
                           </div>
 
