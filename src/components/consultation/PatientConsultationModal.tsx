@@ -59,6 +59,15 @@ export function PatientConsultationModal({
     consultation_notes: string;
   }>>([]);
   const [loadingPreviousVisits, setLoadingPreviousVisits] = useState(false);
+  const [appointments, setAppointments] = useState<Array<{
+    id: string;
+    appointment_date: string;
+    appointment_time: string;
+    reason: string;
+    status: string;
+    doctor_name: string;
+  }>>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [historyTab, setHistoryTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all-time');
   const [historySearch, setHistorySearch] = useState('');
@@ -204,6 +213,44 @@ export function PatientConsultationModal({
     }
   }, []);
 
+  // Fetch appointments for this patient
+  const fetchAppointments = useCallback(async (patientId: string) => {
+    setLoadingAppointments(true);
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          appointment_date,
+          appointment_time,
+          reason,
+          status,
+          profiles!inner(first_name, last_name)
+        `)
+        .eq('patient_id', patientId)
+        .order('appointment_date', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      
+      const appointmentList = data?.map(appointment => ({
+        id: appointment.id,
+        appointment_date: appointment.appointment_date,
+        appointment_time: appointment.appointment_time,
+        reason: appointment.reason || 'Follow-up',
+        status: appointment.status,
+        doctor_name: `${(appointment.profiles as any)?.first_name || ''} ${(appointment.profiles as any)?.last_name || ''}`.trim()
+      })) || [];
+      
+      setAppointments(appointmentList);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      setAppointments([]);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  }, []);
+
   // Clear consultation data when patient actually changes (not on data refresh)
   useEffect(() => {
     const currentPatientId = queueEntry?.patient?.id;
@@ -217,8 +264,9 @@ export function PatientConsultationModal({
         setVisitNotes('');
         setTreatmentItems([]);
         setCurrentDraftId(null);
-        setIsDraftSaved(false);
+        setIsDraftSaved(false);  
         setPreviousVisits([]);
+        setAppointments([]);
       }
       previousPatientIdRef.current = currentPatientId;
     } else if (!isOpen) {
@@ -704,10 +752,74 @@ export function PatientConsultationModal({
                           <Upload className="h-3 w-3 mr-1" />
                           Upload file
                         </Button>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Appointments Table */}
+                   <div className="border rounded-lg overflow-hidden">
+                     <div className="text-white p-3 bg-slate-950">
+                       <h3 className="font-medium text-sm">Patient Appointments</h3>
+                     </div>
+                     <div className="p-4">
+                       {loadingAppointments ? (
+                         <div className="flex items-center justify-center py-8">
+                           <div className="text-sm text-muted-foreground">Loading appointments...</div>
+                         </div>
+                       ) : appointments.length > 0 ? (
+                         <div className="overflow-x-auto">
+                           <table className="w-full text-sm">
+                             <thead>
+                               <tr className="border-b">
+                                 <th className="text-left p-2 font-medium text-muted-foreground">Date</th>
+                                 <th className="text-left p-2 font-medium text-muted-foreground">Time</th>
+                                 <th className="text-left p-2 font-medium text-muted-foreground">Reason</th>
+                                 <th className="text-left p-2 font-medium text-muted-foreground">Doctor</th>
+                                 <th className="text-left p-2 font-medium text-muted-foreground">Status</th>
+                               </tr>
+                             </thead>
+                             <tbody>
+                               {appointments.map((appointment) => (
+                                 <tr key={appointment.id} className="border-b hover:bg-muted/50">
+                                   <td className="p-2">
+                                     {format(new Date(appointment.appointment_date), 'MMM dd, yyyy')}
+                                   </td>
+                                   <td className="p-2">
+                                     {appointment.appointment_time}
+                                   </td>
+                                   <td className="p-2">
+                                     {appointment.reason}
+                                   </td>
+                                   <td className="p-2">
+                                     {appointment.doctor_name || 'Not assigned'}
+                                   </td>
+                                   <td className="p-2">
+                                     <Badge 
+                                       variant={
+                                         appointment.status === 'completed' ? 'default' :
+                                         appointment.status === 'scheduled' ? 'secondary' :
+                                         appointment.status === 'cancelled' ? 'destructive' :
+                                         'outline'
+                                       }
+                                       className="text-xs"
+                                     >
+                                       {appointment.status}
+                                     </Badge>
+                                   </td>
+                                 </tr>
+                               ))}
+                             </tbody>
+                           </table>
+                         </div>
+                       ) : (
+                         <div className="text-center py-8 text-muted-foreground">
+                           <p className="text-sm">No appointments found</p>
+                           <p className="text-xs mt-1">Appointments created during consultation will appear here</p>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 </TabsContent>
 
                 <TabsContent value="treatment" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
                   {/* Medicine/Services Header */}
@@ -1145,6 +1257,10 @@ export function PatientConsultationModal({
           } : null}
           onSave={() => {
             setIsAppointmentDialogOpen(false);
+            // Refresh appointments when a new one is created
+            if (queueEntry?.patient?.id) {
+              fetchAppointments(queueEntry.patient.id);
+            }
             toast({
               title: "Appointment Scheduled",
               description: "Follow-up appointment has been successfully scheduled.",
