@@ -257,85 +257,88 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         onClick={() => handlePatientClick(entry)}
                         className="flex items-center justify-between p-4 pr-16 rounded-lg border-2 border-destructive/30 bg-destructive/5 transition-all duration-200 cursor-pointer hover:border-destructive hover:bg-destructive/10 hover:-translate-y-1 hover:shadow-lg animate-scale-in"
                       >
-                        <div className="flex items-center space-x-6 flex-1">
-                          {/* Queue Number and Status */}
-                          <div className="flex flex-col items-center space-y-1">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <div className="text-center cursor-pointer hover:bg-destructive/20 rounded-md p-2 transition-colors">
-                                  <div className="text-2xl font-bold flex items-center gap-1 text-destructive">
-                                    {entry.queue_number}
-                                    <ChevronDown className="h-4 w-4" />
-                                  </div>
-                                  <Badge variant="destructive" className="text-xs animate-pulse">
-                                    URGENT
-                                  </Badge>
-                                </div>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                {getStatusDropdownOptions(entry.status).map((option) => (
-                                  <DropdownMenuItem 
-                                    key={option.value}
-                                    onClick={() => onStatusChange(entry.id, option.value)}
-                                  >
-                                    {option.label}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                         <div className="flex items-center space-x-6 flex-1">
+                           {/* Queue Number and Status */}
+                           <div className="flex flex-col items-center space-y-1">
+                             <DropdownMenu>
+                               <DropdownMenuTrigger asChild>
+                                 <div className="text-center cursor-pointer hover:bg-destructive/20 rounded-md p-2 transition-colors">
+                                   <div className="text-2xl font-bold flex items-center gap-1 text-destructive">
+                                     {entry.queue_number}
+                                     <ChevronDown className="h-4 w-4" />
+                                   </div>
+                                   <Badge variant="destructive" className="text-xs animate-pulse">
+                                     URGENT
+                                   </Badge>
+                                 </div>
+                               </DropdownMenuTrigger>
+                               <DropdownMenuContent>
+                                 {getStatusDropdownOptions(entry.status).map((option) => (
+                                   <DropdownMenuItem 
+                                     key={option.value}
+                                     onClick={() => onStatusChange(entry.id, option.value)}
+                                   >
+                                     {option.label}
+                                   </DropdownMenuItem>
+                                 ))}
+                               </DropdownMenuContent>
+                             </DropdownMenu>
+                           </div>
 
-                          {/* Patient Info */}
-                          <div className="flex-1">
-                            <div className="font-semibold text-lg text-foreground mb-2">
-                              {entry.patient?.first_name} {entry.patient?.last_name}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {entry.patient?.visit_reason && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                  {entry.patient.visit_reason}
-                                </span>
-                              )}
-                              {entry.patient?.gender && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                  {entry.patient.gender}
-                                </span>
-                              )}
-                              {entry.patient?.date_of_birth && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                  {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()} years
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                           {/* Patient Info */}
+                           <div className="flex-1">
+                             <div className="font-semibold text-lg text-foreground mb-2">
+                               {entry.patient?.first_name} {entry.patient?.last_name}
+                             </div>
+                             <div className="flex items-center gap-2">
+                               {entry.patient?.gender && (
+                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                   {entry.patient.gender}
+                                 </span>
+                               )}
+                               {entry.patient?.date_of_birth && (
+                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                   {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()} years
+                                 </span>
+                               )}
+                             </div>
+                           </div>
 
-                          {/* Arrival Time and Wait Time */}
-                          <div className="flex items-center gap-4">
-                            <div className="text-center">
-                              <div className="text-xs text-muted-foreground">Arrived</div>
-                              <div className="text-sm font-medium">
-                                {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
-                                <Clock className="h-4 w-4" />
-                                {formatWaitTime(waitTime)}
-                              </div>
-                            </div>
-                          </div>
+                           {/* Visit Notes */}
+                           <div className="w-48">
+                             <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
+                             <div className="text-sm text-foreground truncate">
+                               {entry.patient?.visit_reason || 'No notes'}
+                             </div>
+                           </div>
 
-                          {/* Payment Method */}
-                          {(entry.patient as any)?.payment_method && (
-                            <div className="text-center">
-                              <div className="text-sm text-muted-foreground">Payment</div>
-                              <div className="text-sm font-medium flex items-center gap-1">
-                                <CreditCard className="h-3 w-3" />
-                                {getPaymentMethodDisplay((entry.patient as any).payment_method)}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                           {/* Payment Method */}
+                           <div className="w-32">
+                             <div className="text-xs text-muted-foreground mb-1">Payment</div>
+                             <div className="text-sm font-medium">
+                               {(entry.patient as any)?.payment_method ? 
+                                 getPaymentMethodDisplay((entry.patient as any).payment_method) : 
+                                 'Not set'
+                               }
+                             </div>
+                           </div>
+
+                           {/* Arrival Time and Wait Time */}
+                           <div className="flex items-center gap-4">
+                             <div className="text-center">
+                               <div className="text-xs text-muted-foreground">Arrived</div>
+                               <div className="text-sm font-medium">
+                                 {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                               </div>
+                             </div>
+                             <div className="text-center">
+                               <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                                 <Clock className="h-4 w-4" />
+                                 {formatWaitTime(waitTime)}
+                               </div>
+                             </div>
+                           </div>
+                         </div>
 
                         {/* Action Buttons */}
                         <div className="flex items-center space-x-2">
@@ -419,11 +422,6 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                               {entry.patient?.first_name} {entry.patient?.last_name}
                             </div>
                             <div className="flex items-center gap-2">
-                              {entry.patient?.visit_reason && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                  {entry.patient.visit_reason}
-                                </span>
-                              )}
                               {entry.patient?.gender && (
                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
                                   {entry.patient.gender}
@@ -434,6 +432,25 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                                   {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()} years
                                 </span>
                               )}
+                            </div>
+                          </div>
+
+                          {/* Visit Notes */}
+                          <div className="w-48">
+                            <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
+                            <div className="text-sm text-foreground truncate">
+                              {entry.patient?.visit_reason || 'No notes'}
+                            </div>
+                          </div>
+
+                          {/* Payment Method */}
+                          <div className="w-32">
+                            <div className="text-xs text-muted-foreground mb-1">Payment</div>
+                            <div className="text-sm font-medium">
+                              {(entry.patient as any)?.payment_method ? 
+                                getPaymentMethodDisplay((entry.patient as any).payment_method) : 
+                                'Not set'
+                              }
                             </div>
                           </div>
 
@@ -452,17 +469,6 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                               </div>
                             </div>
                           </div>
-
-                          {/* Payment Method */}
-                          {(entry.patient as any)?.payment_method && (
-                            <div className="text-center">
-                              <div className="text-sm text-muted-foreground">Payment</div>
-                              <div className="text-sm font-medium flex items-center gap-1">
-                                <CreditCard className="h-3 w-3" />
-                                {getPaymentMethodDisplay((entry.patient as any).payment_method)}
-                              </div>
-                            </div>
-                          )}
                         </div>
 
                         {/* Action Buttons */}
@@ -544,11 +550,6 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                             {entry.patient?.first_name} {entry.patient?.last_name}
                           </div>
                           <div className="flex items-center gap-2">
-                            {entry.patient?.visit_reason && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                {entry.patient.visit_reason}
-                              </span>
-                            )}
                             {entry.patient?.gender && (
                               <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
                                 {entry.patient.gender}
@@ -559,6 +560,25 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                                 {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()} years
                               </span>
                             )}
+                          </div>
+                        </div>
+
+                        {/* Visit Notes */}
+                        <div className="w-48">
+                          <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
+                          <div className="text-sm text-foreground truncate">
+                            {entry.patient?.visit_reason || 'No notes'}
+                          </div>
+                        </div>
+
+                        {/* Payment Method */}
+                        <div className="w-32">
+                          <div className="text-xs text-muted-foreground mb-1">Payment</div>
+                          <div className="text-sm font-medium">
+                            {(entry.patient as any)?.payment_method ? 
+                              getPaymentMethodDisplay((entry.patient as any).payment_method) : 
+                              'Not set'
+                            }
                           </div>
                         </div>
 
@@ -577,17 +597,6 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                             </div>
                           </div>
                         </div>
-
-                        {/* Payment Method */}
-                        {(entry.patient as any)?.payment_method && (
-                          <div className="text-center">
-                            <div className="text-sm text-muted-foreground">Payment</div>
-                            <div className="text-sm font-medium flex items-center gap-1">
-                              <CreditCard className="h-3 w-3" />
-                              {getPaymentMethodDisplay((entry.patient as any).payment_method)}
-                            </div>
-                          </div>
-                        )}
                       </div>
 
                       {/* Action Buttons */}
