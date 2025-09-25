@@ -354,6 +354,7 @@ export function QuickRegisterForm({
         metadata: {
           registration_type: 'quick',
           visit_reason: formData.visitReason,
+          visit_details: formData.visitDetails,
           payment_method: formData.paymentMethod,
           urgency_level: formData.urgencyLevel,
           preferred_doctor: formData.preferredDoctorId,

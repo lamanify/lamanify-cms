@@ -170,16 +170,25 @@ export function useQueue() {
         const activity = activities?.find(a => a.patient_id === entry.patient_id);
         const metadata = activity?.metadata as any;
         
-        // Debug logging for visit reason tracing
+        // Build comprehensive visit notes from metadata and patient data
         const metadataVisitReason = metadata?.visit_reason;
+        const metadataVisitDetails = metadata?.visit_details;
         const patientVisitReason = patient?.visit_reason;
-        const finalVisitReason = metadataVisitReason || patientVisitReason || undefined;
         
-        console.log(`Queue entry ${entry.queue_number} visit reason data:`, {
+        // Combine visit reason and details for complete visit notes
+        let visitNotes = metadataVisitReason || patientVisitReason || undefined;
+        if (visitNotes && metadataVisitDetails) {
+          visitNotes = `${visitNotes}: ${metadataVisitDetails}`;
+        } else if (!visitNotes && metadataVisitDetails) {
+          visitNotes = metadataVisitDetails;
+        }
+        
+        console.log(`Queue entry ${entry.queue_number} visit notes data:`, {
           patient_id: entry.patient_id,
           metadata_visit_reason: metadataVisitReason,
+          metadata_visit_details: metadataVisitDetails,
           patient_visit_reason: patientVisitReason,
-          final_visit_reason: finalVisitReason,
+          final_visit_notes: visitNotes,
           has_activity: !!activity,
           metadata_keys: metadata ? Object.keys(metadata) : 'no metadata'
         });
@@ -200,7 +209,7 @@ export function useQueue() {
             email: patient.email || undefined,
             medical_history: patient.medical_history || undefined,
             patient_id: patient.patient_id || undefined,
-            visit_reason: finalVisitReason,
+            visit_reason: visitNotes,
             assigned_tier_id: patient.assigned_tier_id || undefined,
           } : undefined,
           doctor: doctor ? {
