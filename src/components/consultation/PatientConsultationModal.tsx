@@ -950,36 +950,48 @@ export function PatientConsultationModal({
                 <h3 className="font-medium text-sm text-foreground">Visit Notes</h3>
               </div>
               <div className="p-4 space-y-3 h-full overflow-y-auto">
-                <Textarea 
-                  placeholder="Quick visit notes, observations, or reminders..." 
-                  className="min-h-[120px] resize-none text-sm"
-                />
-                <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">Quick Actions</div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="text-xs h-7">
-                      Normal Vitals
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs h-7">
-                      Follow-up
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs h-7">
-                      Urgent
-                    </Button>
-                  </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                    Current Visit Notes
+                  </label>
+                  <Textarea
+                    value={visitNotes}
+                    onChange={(e) => {
+                      setVisitNotes(e.target.value);
+                      handleEditingChange();
+                    }}
+                    placeholder="Add notes for this consultation..."
+                    className="min-h-[120px] text-sm resize-none"
+                    disabled={consultationStatus === 'waiting'}
+                  />
                 </div>
-                <div className="pt-4 border-t">
-                  <div className="text-xs text-muted-foreground mb-2">Previous Notes</div>
-                  <div className="space-y-2">
-                    <div className="text-xs p-2 bg-background rounded border">
-                      <div className="text-muted-foreground">Last visit - 2 days ago</div>
-                      <div className="mt-1">Patient reported improvement in symptoms. Continue current medication.</div>
+
+                <Separator />
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-3 block">
+                    Previous Consultation Notes
+                  </label>
+                  {loadingPreviousVisits ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="text-xs text-muted-foreground">Loading previous notes...</div>
                     </div>
-                    <div className="text-xs p-2 bg-background rounded border">
-                      <div className="text-muted-foreground">1 week ago</div>
-                      <div className="mt-1">Initial consultation for headache complaints.</div>
+                  ) : previousVisits.length > 0 ? (
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                      {previousVisits.map((visit, index) => (
+                        <div key={index} className="p-3 bg-background rounded border text-sm">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {format(new Date(visit.visit_date), 'MMM dd, yyyy')}
+                          </div>
+                          <p className="text-sm line-clamp-3">{visit.consultation_notes}</p>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground text-center py-4">
+                      No previous consultation notes found
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
