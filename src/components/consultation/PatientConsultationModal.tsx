@@ -13,6 +13,7 @@ import { IntelligentPrescriptionModal } from './IntelligentPrescriptionModal';
 import { useConsultationDrafts } from '@/hooks/useConsultationDrafts';
 import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
 import { usePatientActivities, PatientActivity } from '@/hooks/usePatientActivities';
+import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
 import { ArrowLeft, Bell, User, Edit, Clock, Bold, Italic, Underline, List, Camera, Save, Calendar, Upload, Search, ChevronDown, ChevronLeft, ChevronRight, X, Plus, FileText } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { format } from 'date-fns';
@@ -59,6 +60,7 @@ export function PatientConsultationModal({
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [consultationStatus, setConsultationStatus] = useState<string>(queueEntry?.status || 'waiting');
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
+  const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
   const {
     toast
   } = useToast();
@@ -595,7 +597,12 @@ export function PatientConsultationModal({
                         </Select>
                       </div>
                       <div className="flex space-x-1">
-                        <Button variant="outline" size="sm" className="h-7 text-xs">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-xs"
+                          onClick={() => setIsAppointmentDialogOpen(true)}
+                        >
                           <Calendar className="h-3 w-3 mr-1" />
                           Set appointment
                         </Button>
@@ -981,6 +988,20 @@ export function PatientConsultationModal({
           editItem={editingItem} 
           patientPriceTier={queueEntry?.patient?.assigned_tier_id}
           patientPaymentMethod={queueEntry?.payment_method}
+        />
+
+        {/* Follow-up Appointment Dialog */}
+        <AppointmentDialog
+          open={isAppointmentDialogOpen}
+          onOpenChange={setIsAppointmentDialogOpen}
+          appointment={null}
+          onSave={() => {
+            setIsAppointmentDialogOpen(false);
+            toast({
+              title: "Appointment Scheduled",
+              description: "Follow-up appointment has been successfully scheduled.",
+            });
+          }}
         />
       </Dialog>;
 }
