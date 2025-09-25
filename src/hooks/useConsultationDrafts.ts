@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface ConsultationDraft {
   id: string;
   patient_id: string;
+  queue_id: string;
   draft_data: ConsultationFormData;
   created_at: string;
   updated_at: string;
@@ -55,7 +56,7 @@ export const useConsultationDrafts = () => {
   }, [toast]);
 
   // Save draft with debouncing
-  const saveDraft = useCallback(async (formData: ConsultationFormData, patientId: string, draftId?: string) => {
+  const saveDraft = useCallback(async (formData: ConsultationFormData, patientId: string, queueId: string, draftId?: string) => {
     try {
       setAutoSaveStatus('Saving...');
       
@@ -70,9 +71,11 @@ export const useConsultationDrafts = () => {
       }
 
       const now = new Date().toISOString();
+      const sessionKey = `${patientId}_${queueId}`;
       const draft: ConsultationDraft = {
         id: draftId || crypto.randomUUID(),
         patient_id: patientId,
+        queue_id: queueId,
         draft_data: formData,
         created_at: now,
         updated_at: now,
@@ -82,7 +85,7 @@ export const useConsultationDrafts = () => {
       const existingDrafts = JSON.parse(localStorage.getItem('consultation_drafts') || '[]');
       const updatedDrafts = draftId 
         ? existingDrafts.map((d: ConsultationDraft) => d.id === draftId ? draft : d)
-        : [...existingDrafts, draft];
+        : existingDrafts.filter((d: ConsultationDraft) => `${d.patient_id}_${d.queue_id}` !== sessionKey).concat(draft);
       
       localStorage.setItem('consultation_drafts', JSON.stringify(updatedDrafts));
 
@@ -123,9 +126,9 @@ export const useConsultationDrafts = () => {
     }
   }, [fetchDrafts, toast]);
 
-  // Get draft for specific patient
-  const getDraftForPatient = useCallback((patientId: string) => {
-    return drafts.find(draft => draft.patient_id === patientId);
+  // Get draft for specific session
+  const getDraftForSession = useCallback((patientId: string, queueId: string) => {
+    return drafts.find(draft => draft.patient_id === patientId && draft.queue_id === queueId);
   }, [drafts]);
 
   // Auto-cleanup old drafts (7+ days)
@@ -158,7 +161,7 @@ export const useConsultationDrafts = () => {
     saveDraft,
     deleteDraft,
     fetchDrafts,
-    getDraftForPatient,
+    getDraftForSession,
     cleanupOldDrafts,
   };
 };

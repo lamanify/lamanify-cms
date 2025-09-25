@@ -76,7 +76,7 @@ export function PatientConsultationModal({
   } = useConsultationWorkflow();
   const {
     saveDraft,
-    getDraftForPatient,
+    getDraftForSession,
     deleteDraft,
     autoSaveStatus
   } = useConsultationDrafts();
@@ -136,7 +136,7 @@ export function PatientConsultationModal({
 
       // Only load existing draft if consultation has started
       if (consultationStatus === 'in-consultation') {
-        const existingDraft = getDraftForPatient(queueEntry.patient.id);
+        const existingDraft = getDraftForSession(queueEntry.patient.id, queueEntry.id);
         if (existingDraft) {
           setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
           setDiagnosis(existingDraft.draft_data.diagnosis || '');
@@ -162,7 +162,7 @@ export function PatientConsultationModal({
         clearTimeout(editingTimeoutRef.current);
       }
     }
-  }, [isOpen, queueEntry?.patient?.id, getDraftForPatient, refreshSessionData, consultationNotes, diagnosis, treatmentItems.length]);
+  }, [isOpen, queueEntry?.patient?.id, getDraftForSession, refreshSessionData, consultationNotes, diagnosis, treatmentItems.length]);
 
   // Clear consultation data when patient actually changes (not on data refresh)
   useEffect(() => {
