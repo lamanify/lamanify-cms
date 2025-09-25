@@ -134,15 +134,24 @@ export function PatientConsultationModal({
       // Refresh session data on modal open
       refreshSessionData();
 
-      // Load existing draft if available
-      const existingDraft = getDraftForPatient(queueEntry.patient.id);
-      if (existingDraft) {
-        setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
-        setDiagnosis(existingDraft.draft_data.diagnosis || '');
-        setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
-        setCurrentDraftId(existingDraft.id);
-        setIsDraftSaved(true);
+      // Only load existing draft if consultation has started
+      if (consultationStatus === 'in-consultation') {
+        const existingDraft = getDraftForPatient(queueEntry.patient.id);
+        if (existingDraft) {
+          setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
+          setDiagnosis(existingDraft.draft_data.diagnosis || '');
+          setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
+          setCurrentDraftId(existingDraft.id);
+          setIsDraftSaved(true);
+        } else {
+          setIsDraftSaved(false);
+          setConsultationNotes('');
+          setDiagnosis('');
+          setTreatmentItems([]);
+          setCurrentDraftId(null);
+        }
       } else {
+        // For new patients, always start with blank consultation notes
         setIsDraftSaved(false);
         setConsultationNotes('');
         setDiagnosis('');
@@ -169,9 +178,9 @@ export function PatientConsultationModal({
     }
   }, [queueEntry?.patient?.id, isOpen]);
 
-  // Sync with real-time session data
+  // Sync with real-time session data - only after consultation has started
   useEffect(() => {
-    if (sessionData && isOpen && queueEntry?.patient?.id) {
+    if (sessionData && isOpen && queueEntry?.patient?.id && consultationStatus === 'in-consultation') {
       console.log('Syncing consultation with session data:', sessionData);
 
       // Only update if session data is from current patient's session
