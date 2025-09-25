@@ -310,14 +310,18 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                           </div>
 
                           {/* Arrival Time and Wait Time */}
-                          <div className="text-center">
-                            <div className="text-xs text-muted-foreground">Arrived</div>
-                            <div className="text-sm font-medium">
-                              {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <div className="text-xs text-muted-foreground">Arrived</div>
+                              <div className="text-sm font-medium">
+                                {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </div>
                             </div>
-                            <div className={`text-lg font-medium flex items-center justify-center gap-1 mt-1 ${getWaitTimeAlert(waitTime)}`}>
-                              <Clock className="h-4 w-4" />
-                              {formatWaitTime(waitTime)}
+                            <div className="text-center">
+                              <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                                <Clock className="h-4 w-4" />
+                                {formatWaitTime(waitTime)}
+                              </div>
                             </div>
                           </div>
 
@@ -434,14 +438,18 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                           </div>
 
                           {/* Arrival Time and Wait Time */}
-                          <div className="text-center">
-                            <div className="text-xs text-muted-foreground">Arrived</div>
-                            <div className="text-sm font-medium">
-                              {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <div className="text-xs text-muted-foreground">Arrived</div>
+                              <div className="text-sm font-medium">
+                                {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </div>
                             </div>
-                            <div className={`text-lg font-medium flex items-center justify-center gap-1 mt-1 ${getWaitTimeAlert(waitTime)}`}>
-                              <Clock className="h-4 w-4" />
-                              {formatWaitTime(waitTime)}
+                            <div className="text-center">
+                              <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                                <Clock className="h-4 w-4" />
+                                {formatWaitTime(waitTime)}
+                              </div>
                             </div>
                           </div>
 
@@ -555,14 +563,18 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         </div>
 
                         {/* Arrival Time and Wait Time */}
-                        <div className="text-center">
-                          <div className="text-xs text-muted-foreground">Arrived</div>
-                          <div className="text-sm font-medium">
-                            {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <div className="text-xs text-muted-foreground">Arrived</div>
+                            <div className="text-sm font-medium">
+                              {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
                           </div>
-                          <div className={`text-lg font-medium flex items-center justify-center gap-1 mt-1 ${getWaitTimeAlert(waitTime)}`}>
-                            <Clock className="h-4 w-4" />
-                            {formatWaitTime(waitTime)}
+                          <div className="text-center">
+                            <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                              <Clock className="h-4 w-4" />
+                              {formatWaitTime(waitTime)}
+                            </div>
                           </div>
                         </div>
 
