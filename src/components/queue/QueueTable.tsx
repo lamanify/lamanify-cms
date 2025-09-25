@@ -645,7 +645,10 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                               </DropdownMenuItem>
                             ))}
                             <DropdownMenuItem
-                              onClick={() => setSelectedPatient(entry)}
+                              onClick={() => {
+                                setSelectedPatient(entry);
+                                setIsModalOpen(true);
+                              }}
                               className="cursor-pointer"
                             >
                               Update Consultation
