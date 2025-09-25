@@ -155,12 +155,12 @@ export function useQueue() {
         .select('id, first_name, last_name')
         .in('id', doctorIds);
 
-      // Fetch payment information from patient activities (registration activities)
+      // Fetch payment information from patient activities (registration and visit activities)
       const { data: activities } = await supabase
         .from('patient_activities')
-        .select('patient_id, metadata')
+        .select('patient_id, metadata, activity_type')
         .in('patient_id', patientIds)
-        .eq('activity_type', 'registration')
+        .in('activity_type', ['registration', 'visit'])
         .order('created_at', { ascending: false });
 
       // Create enriched queue entries
@@ -173,9 +173,10 @@ export function useQueue() {
         // Build comprehensive visit notes from metadata and patient data
         const metadataVisitReason = metadata?.visit_reason;
         const metadataVisitDetails = metadata?.visit_details;
+        const metadataVisitNotes = metadata?.visit_notes;
         const patientVisitReason = patient?.visit_reason;
         
-        // Combine visit reason and details for complete visit notes
+        // Combine visit reason, details, and notes for complete visit notes
         let visitNotes = metadataVisitReason || patientVisitReason || undefined;
         if (visitNotes && metadataVisitDetails) {
           visitNotes = `${visitNotes}: ${metadataVisitDetails}`;
@@ -183,10 +184,17 @@ export function useQueue() {
           visitNotes = metadataVisitDetails;
         }
         
+        // Add visit notes if available (for existing patients)
+        if (metadataVisitNotes && metadataVisitNotes !== visitNotes) {
+          visitNotes = visitNotes ? `${visitNotes}\nNotes: ${metadataVisitNotes}` : metadataVisitNotes;
+        }
+        
         console.log(`Queue entry ${entry.queue_number} visit notes data:`, {
           patient_id: entry.patient_id,
+          activity_type: activity?.activity_type,
           metadata_visit_reason: metadataVisitReason,
           metadata_visit_details: metadataVisitDetails,
+          metadata_visit_notes: metadataVisitNotes,
           patient_visit_reason: patientVisitReason,
           final_visit_notes: visitNotes,
           has_activity: !!activity,
