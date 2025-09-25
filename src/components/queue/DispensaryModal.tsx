@@ -745,6 +745,121 @@ export function DispensaryModal({
                           </div>
                         </div>
                       </div>
+
+                      {/* Inline Edit Form */}
+                      {editingItemId === item.id && (
+                        <div className="mt-4 p-4 bg-muted/20 rounded-lg border">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                              <Input
+                                id={`quantity-${item.id}`}
+                                type="number"
+                                min="1"
+                                value={editFormData.quantity || 1}
+                                onChange={(e) => setEditFormData(prev => ({ 
+                                  ...prev, 
+                                  quantity: parseInt(e.target.value) || 1 
+                                }))}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`rate-${item.id}`}>Rate (RM)</Label>
+                              <Input
+                                id={`rate-${item.id}`}
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={editFormData.rate || 0}
+                                onChange={(e) => setEditFormData(prev => ({ 
+                                  ...prev, 
+                                  rate: parseFloat(e.target.value) || 0 
+                                }))}
+                              />
+                            </div>
+                            {item.item_type === 'medication' && (
+                              <>
+                                <div>
+                                  <Label htmlFor={`dosage-${item.id}`}>Dosage Instructions</Label>
+                                  <Input
+                                    id={`dosage-${item.id}`}
+                                    value={editFormData.dosage_instructions || ''}
+                                    onChange={(e) => setEditFormData(prev => ({ 
+                                      ...prev, 
+                                      dosage_instructions: e.target.value 
+                                    }))}
+                                    placeholder="e.g., 500mg"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor={`frequency-${item.id}`}>Frequency</Label>
+                                  <Select
+                                    value={editFormData.frequency || ''}
+                                    onValueChange={(value) => setEditFormData(prev => ({ 
+                                      ...prev, 
+                                      frequency: value 
+                                    }))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select frequency" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Once daily">Once daily</SelectItem>
+                                      <SelectItem value="Twice daily">Twice daily</SelectItem>
+                                      <SelectItem value="Three times daily">Three times daily</SelectItem>
+                                      <SelectItem value="Four times daily">Four times daily</SelectItem>
+                                      <SelectItem value="Every 4 hours">Every 4 hours</SelectItem>
+                                      <SelectItem value="Every 6 hours">Every 6 hours</SelectItem>
+                                      <SelectItem value="Every 8 hours">Every 8 hours</SelectItem>
+                                      <SelectItem value="Every 12 hours">Every 12 hours</SelectItem>
+                                      <SelectItem value="As needed">As needed</SelectItem>
+                                      <SelectItem value="Before meals">Before meals</SelectItem>
+                                      <SelectItem value="After meals">After meals</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label htmlFor={`duration-${item.id}`}>Duration (days)</Label>
+                                  <Input
+                                    id={`duration-${item.id}`}
+                                    type="number"
+                                    min="1"
+                                    value={editFormData.duration_days || 1}
+                                    onChange={(e) => setEditFormData(prev => ({ 
+                                      ...prev, 
+                                      duration_days: parseInt(e.target.value) || 1 
+                                    }))}
+                                  />
+                                </div>
+                              </>
+                            )}
+                            <div className="col-span-2">
+                              <Label htmlFor={`notes-${item.id}`}>Additional Notes</Label>
+                              <Textarea
+                                id={`notes-${item.id}`}
+                                value={editFormData.notes || ''}
+                                onChange={(e) => setEditFormData(prev => ({ 
+                                  ...prev, 
+                                  notes: e.target.value 
+                                }))}
+                                placeholder="Additional instructions or notes"
+                                rows={2}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end gap-2 mt-4">
+                            <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                              <XIcon className="h-4 w-4 mr-1" />
+                              Cancel
+                            </Button>
+                            <Button size="sm" onClick={handleSaveEdit}>
+                              <SaveIcon className="h-4 w-4 mr-1" />
+                              Save Changes
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>)}
 
                   {treatmentItems.length === 0 && <div className="px-4 py-8 text-center text-muted-foreground">
