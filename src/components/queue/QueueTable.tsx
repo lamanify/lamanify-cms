@@ -324,7 +324,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                            </div>
 
                            {/* Arrival Time and Wait Time */}
-                           <div className="flex items-center gap-4">
+                           <div className="flex items-center gap-6 w-40">
                              <div className="text-center">
                                <div className="text-xs text-muted-foreground">Arrived</div>
                                <div className="text-sm font-medium">
@@ -332,8 +332,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                                </div>
                              </div>
                              <div className="text-center">
-                               <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
-                                 <Clock className="h-4 w-4" />
+                               <div className="text-xs text-muted-foreground">Wait Time</div>
+                               <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                                 <Clock className="h-3 w-3" />
                                  {formatWaitTime(waitTime)}
                                </div>
                              </div>
@@ -455,7 +456,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                           </div>
 
                           {/* Arrival Time and Wait Time */}
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-6 w-40">
                             <div className="text-center">
                               <div className="text-xs text-muted-foreground">Arrived</div>
                               <div className="text-sm font-medium">
@@ -463,8 +464,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className={`text-lg font-medium flex items-center justify-center gap-1 mr-5 ${getWaitTimeAlert(waitTime)}`}>
-                                <Clock className="h-4 w-4" />
+                              <div className="text-xs text-muted-foreground">Wait Time</div>
+                              <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                                <Clock className="h-3 w-3" />
                                 {formatWaitTime(waitTime)}
                               </div>
                             </div>
@@ -583,7 +585,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                         </div>
 
                         {/* Arrival Time and Wait Time */}
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-6 w-40">
                           <div className="text-center">
                             <div className="text-xs text-muted-foreground">Arrived</div>
                             <div className="text-sm font-medium">
@@ -591,8 +593,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
                             </div>
                           </div>
                           <div className="text-center">
-                            <div className={`text-lg font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
-                              <Clock className="h-4 w-4" />
+                            <div className="text-xs text-muted-foreground">Wait Time</div>
+                            <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                              <Clock className="h-3 w-3" />
                               {formatWaitTime(waitTime)}
                             </div>
                           </div>
