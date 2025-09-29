@@ -18,7 +18,7 @@ interface AppointmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment?: Appointment | null;
-  onSave: () => void;
+  onSave: (newAppointment?: Appointment) => void;
   preSelectedPatient?: {
     id: string;
     first_name: string;
@@ -175,10 +175,38 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
           description: "Appointment updated successfully",
         });
       } else {
+        // Get patient and doctor names for optimistic update
+        const patient = patients.find(p => p.id === formData.patient_id);
+        const doctor = doctors.find(d => d.id === formData.doctor_id);
+
+        // Create optimistic appointment object
+        const optimisticAppointment = {
+          id: crypto.randomUUID(), // Temporary ID
+          ...formData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          patients: {
+            first_name: patient?.first_name || '',
+            last_name: patient?.last_name || '',
+          },
+          profiles: {
+            first_name: doctor?.first_name || '',
+            last_name: doctor?.last_name || '',
+          },
+        };
+
+        // Call onSave with optimistic data immediately
+        onSave(optimisticAppointment as any);
+
+        // Then save to database
         const { data, error } = await supabase
           .from('appointments')
           .insert(formData)
-          .select()
+          .select(`
+            *,
+            patients (first_name, last_name),
+            profiles!appointments_doctor_id_fkey (first_name, last_name)
+          `)
           .single();
 
         if (error) throw error;
@@ -197,7 +225,10 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
         });
       }
 
-      onSave();
+      // For updates, also call onSave to refresh
+      if (appointment) {
+        onSave();
+      }
     } catch (error) {
       console.error('Error saving appointment:', error);
       toast({

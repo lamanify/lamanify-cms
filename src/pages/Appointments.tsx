@@ -39,6 +39,60 @@ export default function Appointments() {
 
   useEffect(() => {
     fetchAppointments();
+
+    // Set up real-time subscription for appointments
+    const channel = supabase
+      .channel('appointments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('New appointment:', payload);
+          // Add the new appointment to the list
+          setAppointments(prev => [...prev, payload.new as Appointment]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('Updated appointment:', payload);
+          // Update the appointment in the list
+          setAppointments(prev => 
+            prev.map(apt => 
+              apt.id === payload.new.id ? { ...apt, ...payload.new } as Appointment : apt
+            )
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('Deleted appointment:', payload);
+          // Remove the appointment from the list
+          setAppointments(prev => 
+            prev.filter(apt => apt.id !== payload.old.id)
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchAppointments = async () => {
@@ -67,8 +121,14 @@ export default function Appointments() {
     }
   };
 
-  const handleAppointmentSaved = () => {
-    fetchAppointments();
+  const handleAppointmentSaved = (newAppointment?: Appointment) => {
+    // If we have the new appointment data, add it optimistically
+    if (newAppointment && !selectedAppointment) {
+      setAppointments(prev => [newAppointment, ...prev]);
+    } else {
+      // For updates, refresh the list
+      fetchAppointments();
+    }
     setIsDialogOpen(false);
     setSelectedAppointment(null);
   };
