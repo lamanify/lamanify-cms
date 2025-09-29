@@ -256,6 +256,7 @@ export type Database = {
           status: string | null
           submission_date: string | null
           updated_at: string | null
+          visit_id: string | null
         }
         Insert: {
           amount: number
@@ -281,6 +282,7 @@ export type Database = {
           status?: string | null
           submission_date?: string | null
           updated_at?: string | null
+          visit_id?: string | null
         }
         Update: {
           amount?: number
@@ -306,15 +308,9 @@ export type Database = {
           status?: string | null
           submission_date?: string | null
           updated_at?: string | null
+          visit_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "billing_appointment_id_fkey"
-            columns: ["appointment_id"]
-            isOneToOne: false
-            referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "billing_claim_submitted_by_fkey"
             columns: ["claim_submitted_by"]
@@ -341,6 +337,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "patient_visits"
             referencedColumns: ["id"]
           },
         ]
