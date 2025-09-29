@@ -263,7 +263,7 @@ export function PatientConsultationModal({
           appointment_time,
           reason,
           status,
-          profiles!inner(first_name, last_name)
+          profiles!appointments_doctor_id_fkey(first_name, last_name)
         `).eq('patient_id', patientId).order('appointment_date', {
         ascending: false
       }).limit(10);
