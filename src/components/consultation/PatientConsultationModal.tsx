@@ -285,6 +285,13 @@ export function PatientConsultationModal({
     }
   }, []);
 
+  // Fetch appointments when modal opens
+  useEffect(() => {
+    if (isOpen && queueEntry?.patient?.id) {
+      fetchAppointments(queueEntry.patient.id);
+    }
+  }, [isOpen, queueEntry?.patient?.id, fetchAppointments]);
+
   // Real-time subscription for appointments
   useEffect(() => {
     if (!isOpen || !queueEntry?.patient?.id) return;
