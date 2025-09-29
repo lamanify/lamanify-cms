@@ -105,19 +105,18 @@ export default function Billing() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      pending: 'outline',
+      pending: 'secondary',
       paid: 'default',
       overdue: 'destructive',
-      cancelled: 'secondary'
+      cancelled: 'outline'
     };
     return variants[status] || 'outline';
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'paid': return <DollarSign className="h-4 w-4 text-success" />;
       case 'overdue': return <AlertCircle className="h-4 w-4 text-destructive" />;
-      case 'pending': return <Clock className="h-4 w-4 text-warning" />;
+      case 'pending': return <Clock className="h-4 w-4 text-muted-foreground" />;
       default: return <FileText className="h-4 w-4" />;
     }
   };
