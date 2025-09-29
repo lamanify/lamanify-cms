@@ -478,7 +478,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                             <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
                             <div className="text-sm text-foreground truncate">
                             {(updatedPatients.get(entry.patient.id)?.additional_notes || 
-                              (entry.patient as any)?.additional_notes || 'No notes')}
+                              entry.patient?.additional_notes || 'No notes')}
                             </div>
                           </div>
 
