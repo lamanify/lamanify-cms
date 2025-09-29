@@ -148,6 +148,9 @@ export function PatientConsultationModal({
     if (isOpen && queueEntry?.patient?.id) {
       // Refresh session data on modal open
       refreshSessionData();
+      
+      // Initialize visit notes from queue entry
+      setVisitNotes(queueEntry?.patient?.visit_reason || '');
 
       // Only load existing draft if consultation has started
       if (consultationStatus === 'in-consultation') {
@@ -155,7 +158,7 @@ export function PatientConsultationModal({
         if (existingDraft) {
           setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
           setDiagnosis(existingDraft.draft_data.diagnosis || '');
-          setVisitNotes(existingDraft.draft_data.visitNotes || '');
+          setVisitNotes(existingDraft.draft_data.visitNotes || queueEntry?.patient?.visit_reason || '');
           setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
           setCurrentDraftId(existingDraft.id);
           setIsDraftSaved(true);
@@ -165,11 +168,11 @@ export function PatientConsultationModal({
           setCurrentDraftId(null);
         }
       } else if (consultationStatus === 'waiting') {
-        // For waiting patients, always start with blank consultation notes
+        // For waiting patients, load current visit notes but start with blank consultation notes
         setIsDraftSaved(false);
         setConsultationNotes('');
         setDiagnosis('');
-        setVisitNotes('');
+        setVisitNotes(queueEntry?.patient?.visit_reason || '');
         setTreatmentItems([]);
         setCurrentDraftId(null);
       }
@@ -535,6 +538,11 @@ export function PatientConsultationModal({
         await updateSessionDataRealtime(queueEntry.id, consultationNotes, diagnosis, treatmentItems);
       }
       setIsDraftSaved(true);
+      
+      // Save visit notes to patient record
+      if (visitNotes.trim() && queueEntry?.patient?.id) {
+        await saveVisitNotes();
+      }
       setHasUnsavedChanges(false);
       toast({
         title: "Draft Saved",
@@ -545,6 +553,32 @@ export function PatientConsultationModal({
         title: "Error",
         description: "Failed to save draft",
         variant: "destructive"
+      });
+    }
+  };
+  
+  // Save visit notes to patient record
+  const saveVisitNotes = async () => {
+    if (!queueEntry?.patient?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .update({ visit_reason: visitNotes })
+        .eq('id', queueEntry.patient.id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Visit Notes Saved",
+        description: "Patient visit notes have been updated successfully",
+      });
+    } catch (error) {
+      console.error('Error saving visit notes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save visit notes. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -1047,10 +1081,28 @@ export function PatientConsultationModal({
               </div>
               <div className="p-4 space-y-3 h-full overflow-y-auto">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                  <label className="text-xs font-medium text-muted-foreground mb-2 flex items-center justify-between">
                     Current Visit Notes
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={saveVisitNotes}
+                      disabled={!visitNotes || visitNotes === queueEntry?.patient?.visit_reason}
+                      className="h-6 px-2 text-xs"
+                    >
+                      <Save className="h-3 w-3 mr-1" />
+                      Save
+                    </Button>
                   </label>
-                  <Textarea value={queueEntry?.patient?.visit_reason || ''} readOnly placeholder="No visit notes for this patient..." className="min-h-[120px] text-sm resize-none bg-muted/50 cursor-default" />
+                  <Textarea 
+                    value={visitNotes} 
+                    onChange={(e) => {
+                      setVisitNotes(e.target.value);
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="Enter visit notes for this patient..." 
+                    className="min-h-[120px] text-sm resize-none" 
+                  />
                 </div>
 
                 <Separator />
