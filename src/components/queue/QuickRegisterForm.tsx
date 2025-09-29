@@ -939,15 +939,15 @@ export function QuickRegisterForm({
                   </p>}
               </div>
 
-              {/* Additional Details for Visit */}
+              {/* Visit Notes for Visit */}
               <div className="space-y-2">
                 <Label htmlFor="visitDetails">
-                  Additional Details <span className="text-muted-foreground">(Optional)</span>
+                  Visit Notes <span className="text-muted-foreground">(Optional)</span>
                 </Label>
                 <Textarea id="visitDetails" value={formData.visitDetails || ''} onChange={e => setFormData(prev => ({
                 ...prev,
                 visitDetails: e.target.value
-              }))} placeholder="Describe specific symptoms or details about the visit" rows={2} />
+              }))} placeholder="Enter visit notes or specific symptoms" rows={2} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
