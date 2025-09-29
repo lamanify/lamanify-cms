@@ -47,7 +47,7 @@ const App = () => (
           {/* <Route path="/analytics" element={<AppLayout><Analytics /></AppLayout>} /> */}
           <Route path="/resources" element={<AppLayout><ResourceManagement /></AppLayout>} />
           <Route path="/consultations" element={<AppLayout><Consultations /></AppLayout>} />
-          <Route path="/consultation-waiting" element={<AppLayout><ConsultationWaitingList /></AppLayout>} />
+          {/* <Route path="/consultation-waiting" element={<AppLayout><ConsultationWaitingList /></AppLayout>} /> */}
           <Route path="/consultation/:sessionId" element={<AppLayout><ConsultationInterface /></AppLayout>} />
           <Route path="/billing" element={<AppLayout><Billing /></AppLayout>} />
           <Route path="/panel-claims" element={<AppLayout><PanelClaims /></AppLayout>} />

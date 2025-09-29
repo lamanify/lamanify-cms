@@ -28,7 +28,7 @@ const navigation = [
   // { name: 'Queue Display', href: '/display', icon: Monitor },
   { name: 'Appointments', href: '/appointments', icon: Calendar },
   // { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-  { name: 'Consultation Waiting', href: '/consultation-waiting', icon: FileText },
+  // { name: 'Consultation Waiting', href: '/consultation-waiting', icon: FileText },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Panel Claims', href: '/panel-claims', icon: Receipt },
   { name: 'Settings', href: '/settings', icon: Settings },
