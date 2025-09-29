@@ -196,6 +196,36 @@ export function PatientConsultationModal({
     }
   }, [isOpen, queueEntry?.patient?.id, getDraftForSession, refreshSessionData, consultationNotes, diagnosis, visitNotes, treatmentItems.length]);
 
+  // Real-time subscription for visit notes synchronization
+  useEffect(() => {
+    if (!isOpen || !queueEntry?.patient?.id) return;
+
+    const channel = supabase
+      .channel(`patient-notes-${queueEntry.patient.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'patients',
+          filter: `id=eq.${queueEntry.patient.id}`,
+        },
+        (payload) => {
+          const updatedPatient = payload.new;
+          
+          // Only update visit notes if we're not currently editing them
+          if (!isEditingVisitNotes && updatedPatient.additional_notes !== visitNotes) {
+            setVisitNotes(updatedPatient.additional_notes || '');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, queueEntry?.patient?.id, isEditingVisitNotes, visitNotes]);
+
   // Fetch previous visits when modal opens
   const fetchPreviousVisits = useCallback(async (patientId: string) => {
     setLoadingPreviousVisits(true);

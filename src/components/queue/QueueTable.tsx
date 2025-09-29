@@ -7,6 +7,7 @@ import { PatientConsultationModal } from '@/components/consultation/PatientConsu
 import { DispensaryModal } from '@/components/queue/DispensaryModal';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QueueTableProps {
   queue: QueueEntry[];
@@ -21,7 +22,40 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDispensaryModalOpen, setIsDispensaryModalOpen] = useState(false);
   const [removedEntries, setRemovedEntries] = useState<Set<string>>(new Set());
+  const [updatedPatients, setUpdatedPatients] = useState<Map<string, any>>(new Map());
   const { completeConsultationWorkflow } = useConsultationWorkflow();
+
+  // Real-time subscription for patient visit notes updates
+  useEffect(() => {
+    const patientIds = queue.map(entry => entry.patient.id);
+    if (patientIds.length === 0) return;
+
+    const channel = supabase
+      .channel('patient-visit-notes-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'patients',
+          filter: `id=in.(${patientIds.join(',')})`,
+        },
+        (payload) => {
+          const updatedPatient = payload.new;
+          setUpdatedPatients(prev => new Map(prev).set(updatedPatient.id, updatedPatient));
+          
+          // Refresh queue data to ensure sync
+          if (onDataRefresh) {
+            onDataRefresh();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queue, onDataRefresh]);
 
   const handleOptimisticRemove = async (queueId: string) => {
     // Immediately hide the patient from UI
@@ -308,7 +342,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                           <div className="w-[30%] px-2">
                             <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
                             <div className="text-sm text-foreground truncate">
-                            {entry.patient?.visit_reason || 'No notes'}
+                            {(updatedPatients.get(entry.patient.id)?.additional_notes || 
+                              (entry.patient as any)?.additional_notes || 'No notes')}
                             </div>
                           </div>
 
@@ -442,7 +477,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                           <div className="w-[30%] px-2">
                             <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
                             <div className="text-sm text-foreground truncate">
-                            {entry.patient?.visit_reason || 'No notes'}
+                            {(updatedPatients.get(entry.patient.id)?.additional_notes || 
+                              (entry.patient as any)?.additional_notes || 'No notes')}
                             </div>
                           </div>
 
@@ -587,7 +623,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                           <div className="w-[30%] px-2">
                             <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
                             <div className="text-sm text-foreground truncate">
-                              {entry.patient?.visit_reason || 'No notes'}
+                              {(updatedPatients.get(entry.patient.id)?.additional_notes || 
+                                (entry.patient as any)?.additional_notes || 'No notes')}
                             </div>
                           </div>
 
