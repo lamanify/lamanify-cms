@@ -290,18 +290,47 @@ export function PatientConsultationModal({
     if (!isOpen || !queueEntry?.patient?.id) return;
 
     const channel = supabase
-      .channel('appointments-changes')
+      .channel(`appointments-patient-${queueEntry.patient.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'appointments',
           filter: `patient_id=eq.${queueEntry.patient.id}`
         },
-        () => {
-          // Refetch appointments when any change occurs
-          fetchAppointments(queueEntry.patient.id);
+        async (payload) => {
+          console.log('New appointment created:', payload);
+          // Refetch appointments to get complete data with doctor names
+          await fetchAppointments(queueEntry.patient.id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'appointments',
+          filter: `patient_id=eq.${queueEntry.patient.id}`
+        },
+        async (payload) => {
+          console.log('Appointment updated:', payload);
+          // Refetch appointments to get complete data with doctor names
+          await fetchAppointments(queueEntry.patient.id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'appointments',
+          filter: `patient_id=eq.${queueEntry.patient.id}`
+        },
+        async (payload) => {
+          console.log('Appointment deleted:', payload);
+          // Refetch appointments to get complete data
+          await fetchAppointments(queueEntry.patient.id);
         }
       )
       .subscribe();
