@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -186,7 +186,7 @@ async function scheduleUpcomingReminders(supabase: any) {
         });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error processing reminder for appointment ${appointment.id}:`, error);
       reminderResults.push({
         appointment_id: appointment.id,
