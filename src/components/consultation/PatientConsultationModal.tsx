@@ -79,6 +79,7 @@ export function PatientConsultationModal({
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingVisitNotes, setIsEditingVisitNotes] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastEditTime, setLastEditTime] = useState<Date | null>(null);
   const previousPatientIdRef = useRef<string | null>(null);
@@ -149,8 +150,10 @@ export function PatientConsultationModal({
       // Refresh session data on modal open
       refreshSessionData();
       
-      // Initialize visit notes from queue entry
-      setVisitNotes(queueEntry?.patient?.visit_reason || '');
+      // Initialize visit notes from queue entry only if not actively editing
+      if (!isEditingVisitNotes) {
+        setVisitNotes(queueEntry?.patient?.visit_reason || '');
+      }
 
       // Only load existing draft if consultation has started
       if (consultationStatus === 'in-consultation') {
@@ -158,7 +161,9 @@ export function PatientConsultationModal({
         if (existingDraft) {
           setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
           setDiagnosis(existingDraft.draft_data.diagnosis || '');
-          setVisitNotes(existingDraft.draft_data.visitNotes || queueEntry?.patient?.visit_reason || '');
+          if (!isEditingVisitNotes) {
+            setVisitNotes(existingDraft.draft_data.visitNotes || queueEntry?.patient?.visit_reason || '');
+          }
           setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
           setCurrentDraftId(existingDraft.id);
           setIsDraftSaved(true);
@@ -172,7 +177,9 @@ export function PatientConsultationModal({
         setIsDraftSaved(false);
         setConsultationNotes('');
         setDiagnosis('');
-        setVisitNotes(queueEntry?.patient?.visit_reason || '');
+        if (!isEditingVisitNotes) {
+          setVisitNotes(queueEntry?.patient?.visit_reason || '');
+        }
         setTreatmentItems([]);
         setCurrentDraftId(null);
       }
@@ -1098,7 +1105,13 @@ export function PatientConsultationModal({
                     value={visitNotes} 
                     onChange={(e) => {
                       setVisitNotes(e.target.value);
+                      setIsEditingVisitNotes(true);
                       setHasUnsavedChanges(true);
+                    }}
+                    onFocus={() => setIsEditingVisitNotes(true)}
+                    onBlur={() => {
+                      // Delay clearing the editing state to allow save operations
+                      setTimeout(() => setIsEditingVisitNotes(false), 100);
                     }}
                     placeholder="Enter visit notes for this patient..." 
                     className="min-h-[120px] text-sm resize-none" 
