@@ -578,7 +578,8 @@ export function PatientConsultationModal({
         
       if (error) throw error;
       
-      // Refresh queue data to update the UI with new visit notes
+      // Exit editing mode and refresh queue data to update the UI with new visit notes
+      setIsEditingVisitNotes(false);
       if (onDataRefresh) {
         await onDataRefresh();
       }
