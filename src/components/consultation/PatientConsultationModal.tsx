@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -680,6 +680,9 @@ export function PatientConsultationModal({
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Patient Consultation</DialogTitle>
+        </DialogHeader>
         <div className="flex flex-col h-[90vh]">
           {/* Compact Header Section */}
           <div className="flex items-center justify-between p-4 border-b bg-background">
@@ -1308,7 +1311,7 @@ export function PatientConsultationModal({
         {selectedVisit && <Dialog open={!!selectedVisit} onOpenChange={() => setSelectedVisit(null)}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <h3 className="text-lg font-semibold">Visit Details - {format(new Date(selectedVisit.date), 'MMM dd, yyyy')}</h3>
+                <DialogTitle>Visit Details - {format(new Date(selectedVisit.date), 'MMM dd, yyyy')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
