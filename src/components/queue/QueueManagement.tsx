@@ -271,6 +271,7 @@ export function QueueManagement() {
           queue={filteredQueue}
           onStatusChange={handleStatusChange}
           onRemoveFromQueue={handleRemoveFromQueue}
+          onDataRefresh={handleRefresh}
           isPaused={isPaused}
         />
       </div>

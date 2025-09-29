@@ -12,10 +12,11 @@ interface QueueTableProps {
   queue: QueueEntry[];
   onStatusChange: (queueId: string, newStatus: string) => void;
   onRemoveFromQueue: (queueId: string) => void;
+  onDataRefresh?: () => Promise<void>;
   isPaused: boolean;
 }
 
-export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused }: QueueTableProps) {
+export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRefresh, isPaused }: QueueTableProps) {
   const [selectedPatient, setSelectedPatient] = useState<QueueEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDispensaryModalOpen, setIsDispensaryModalOpen] = useState(false);
@@ -678,6 +679,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, isPaused 
         queueEntry={selectedPatient}
         onStartConsultation={handleStartConsultation}
         onCallPatient={handleCallPatient}
+        onDataRefresh={onDataRefresh}
         onMarkDone={handleMarkDone}
       />
 

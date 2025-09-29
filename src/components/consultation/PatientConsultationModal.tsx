@@ -36,6 +36,7 @@ interface PatientConsultationModalProps {
   queueEntry: QueueEntry | null;
   onStartConsultation: (queueId: string) => void;
   onCallPatient: (queueId: string) => void;
+  onDataRefresh?: () => Promise<void>;
   onMarkDone?: (consultationData: {
     notes: string;
     diagnosis: string;
@@ -48,6 +49,7 @@ export function PatientConsultationModal({
   queueEntry,
   onStartConsultation,
   onCallPatient,
+  onDataRefresh,
   onMarkDone
 }: PatientConsultationModalProps) {
   const [activeTab, setActiveTab] = useState('consultation');
@@ -575,6 +577,11 @@ export function PatientConsultationModal({
         .eq('id', queueEntry.patient.id);
         
       if (error) throw error;
+      
+      // Refresh queue data to update the UI with new visit notes
+      if (onDataRefresh) {
+        await onDataRefresh();
+      }
       
       toast({
         title: "Visit Notes Saved",
