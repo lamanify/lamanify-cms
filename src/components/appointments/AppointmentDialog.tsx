@@ -38,8 +38,8 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
-    patient_id: '',
-    doctor_id: '',
+    patient_id: null as string | null,
+    doctor_id: null as string | null,
     appointment_date: '',
     appointment_time: '',
     duration_minutes: 30,
@@ -70,8 +70,8 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
     } else {
       // Reset form for new appointment, but pre-select patient if provided
       setFormData({
-        patient_id: preSelectedPatient?.id || '',
-        doctor_id: '',
+        patient_id: preSelectedPatient?.id || null,
+        doctor_id: null,
         appointment_date: '',
         appointment_time: '',
         duration_minutes: 30,
@@ -114,6 +114,47 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Validate required fields
+    if (!formData.patient_id) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a patient",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.doctor_id) {
+      toast({
+        title: "Validation Error", 
+        description: "Please select a doctor",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.appointment_date) {
+      toast({
+        title: "Validation Error",
+        description: "Please select an appointment date",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.appointment_time) {
+      toast({
+        title: "Validation Error",
+        description: "Please select an appointment time",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       if (appointment) {
@@ -183,7 +224,7 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
             <div className="space-y-2">
               <Label htmlFor="patient_id">Patient *</Label>
               <Select
-                value={formData.patient_id}
+                value={formData.patient_id || ''}
                 onValueChange={(value) => setFormData({ ...formData, patient_id: value })}
               >
                 <SelectTrigger>
@@ -202,7 +243,7 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
             <div className="space-y-2">
               <Label htmlFor="doctor_id">Doctor *</Label>
               <Select
-                value={formData.doctor_id}
+                value={formData.doctor_id || ''}
                 onValueChange={(value) => setFormData({ ...formData, doctor_id: value })}
               >
                 <SelectTrigger>
