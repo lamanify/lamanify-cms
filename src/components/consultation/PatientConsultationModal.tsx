@@ -872,7 +872,7 @@ export function PatientConsultationModal({
                      <div className="text-white p-3 bg-slate-950">
                        <h3 className="font-medium text-sm">Patient Appointments</h3>
                      </div>
-                     <div className="p-4">
+                     <div className="p-4 max-h-96 overflow-y-auto">
                        {loadingAppointments ? <div className="flex items-center justify-center py-8">
                            <div className="text-sm text-muted-foreground">Loading appointments...</div>
                          </div> : appointments.length > 0 ? <div className="overflow-x-auto">
