@@ -610,62 +610,6 @@ export function QuickRegisterForm({
           </DialogTitle>
         </DialogHeader>
         
-        {/* Draft Notification Banner */}
-        {draftInfo.exists && draftInfo.timestamp && <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <FileCheck className="h-4 w-4 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-blue-900">Draft Loaded</p>
-                <p className="text-xs text-blue-700">
-                  Autosaved on {new Date(draftInfo.timestamp).toLocaleString()}
-                </p>
-              </div>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => {
-          localStorage.removeItem('patient_registration_draft');
-          setDraftInfo({
-            exists: false
-          });
-          // Reset form
-          setFormData({
-            fullName: '',
-            phone: '',
-            dateOfBirth: '',
-            gender: '',
-            nricId: '',
-            streetAddress: '',
-            city: '',
-            state: '',
-            postalCode: '',
-            country: 'Malaysia',
-            email: '',
-            emergencyContactName: '',
-            emergencyContactPhone: '',
-            allergies: '',
-            medicalConditions: '',
-            insuranceInfo: '',
-            visitReason: '',
-            visitDetails: '',
-            paymentMethod: '',
-            urgencyLevel: 'normal',
-            preferredDoctorId: '',
-            panelId: '',
-            photoFile: null,
-            photoPreview: ''
-          });
-          setIdType('');
-          setShowIdField(false);
-          setShowAddressSection(false);
-          setShowContactSection(false);
-          setErrors({});
-          toast({
-            title: "Draft Cleared",
-            description: "Form has been reset"
-          });
-        }} className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>}
         
         <div className="space-y-6">
           {/* Essential Fields */}
@@ -1108,5 +1052,5 @@ export function QuickRegisterForm({
           </div>
         </div>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
 }
