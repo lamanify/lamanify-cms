@@ -87,8 +87,8 @@ export function QueueRegistrationInterface({ onPatientAdded }: QueueRegistration
 
     if (!visitData.reason.trim()) {
       toast({
-        title: "Visit Reason Required",
-        description: "Please provide a reason for the visit",
+        title: "Visit Notes Required",
+        description: "Please provide visit notes",
         variant: "destructive",
       });
       return;
@@ -110,19 +110,18 @@ export function QueueRegistrationInterface({ onPatientAdded }: QueueRegistration
       
       console.log('Queue addition result:', queueResult);
 
-      // Update patient's visit reason if provided
+      // Update patient's visit notes if provided
       if (visitData.reason.trim()) {
         const { error: updateError } = await supabase
           .from('patients')
           .update({ 
-            visit_reason: visitData.reason.toLowerCase().includes('consultation') ? 'consultation' :
-                         visitData.reason.toLowerCase().includes('follow') ? 'follow-up' :
-                         visitData.reason.toLowerCase().includes('emergency') ? 'emergency' : 'others'
+            additional_notes: visitData.reason,
+            visit_reason: 'consultation'  // Default to consultation
           })
           .eq('id', selectedPatient.id);
 
         if (updateError) {
-          console.warn('Failed to update patient visit reason:', updateError);
+          console.warn('Failed to update patient visit notes:', updateError);
         }
       }
       
@@ -133,7 +132,7 @@ export function QueueRegistrationInterface({ onPatientAdded }: QueueRegistration
           patient_id: selectedPatient.id,
           activity_type: 'visit',
           title: 'Added to Queue',
-          content: `Patient added to queue for ${visitData.reason || 'consultation'}${visitData.visitNotes ? `\nNotes: ${visitData.visitNotes}` : ''}`,
+          content: `Patient added to queue for consultation${visitData.reason ? `\nNotes: ${visitData.reason}` : ''}`,
           staff_member_id: profile?.id,
           metadata: {
             queue_id: queueResult?.entry?.id,
@@ -259,16 +258,16 @@ export function QueueRegistrationInterface({ onPatientAdded }: QueueRegistration
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="reason">Visit Reason *</Label>
+                    <Label htmlFor="reason">Visit Notes *</Label>
                     <Input
                       id="reason"
                       value={visitData.reason}
                       onChange={(e) => setVisitData(prev => ({ ...prev, reason: e.target.value }))}
-                      placeholder="e.g., General consultation, Follow-up"
+                      placeholder="e.g., Headache symptoms, follow-up checkup"
                       className={!visitData.reason.trim() ? 'border-destructive' : ''}
                     />
                     {!visitData.reason.trim() && (
-                      <p className="text-xs text-destructive mt-1">Visit reason is required</p>
+                      <p className="text-xs text-destructive mt-1">Visit notes are required</p>
                     )}
                   </div>
                   <div>
