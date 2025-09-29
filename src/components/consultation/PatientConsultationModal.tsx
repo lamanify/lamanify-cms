@@ -334,14 +334,17 @@ export function PatientConsultationModal({
     }
   }, [queueEntry?.patient?.id, isOpen, isEditing, hasUnsavedChanges]);
 
-  // Sync with real-time session data - only when not actively editing
+  // Sync with real-time session data - only when not actively editing and with debouncing
   useEffect(() => {
-    if (sessionData && isOpen && queueEntry?.patient?.id && consultationStatus === 'in-consultation' && !isEditing) {
+    if (sessionData && isOpen && queueEntry?.patient?.id && consultationStatus === 'in-consultation' && !isEditing && !isEditingVisitNotes) {
       console.log('Syncing consultation with session data (not editing):', sessionData);
 
-      // Check if session data is newer than last edit time
+      // Check if session data is newer than last edit time and add minimum time gap
       const sessionLastUpdated = sessionData.last_updated ? new Date(sessionData.last_updated) : null;
-      const shouldSync = !lastEditTime || !sessionLastUpdated || sessionLastUpdated > lastEditTime;
+      const now = new Date();
+      const timeSinceLastEdit = lastEditTime ? now.getTime() - lastEditTime.getTime() : 0;
+      const shouldSync = (!lastEditTime || !sessionLastUpdated || sessionLastUpdated > lastEditTime) && timeSinceLastEdit > 3000; // Wait 3 seconds after last edit
+      
       if (shouldSync) {
         // Only update if session data is different from current state
         if (sessionData.consultation_notes && sessionData.consultation_notes !== consultationNotes) {
@@ -369,11 +372,11 @@ export function PatientConsultationModal({
         setHasUnsavedChanges(false);
       }
     }
-  }, [sessionData, isOpen, consultationNotes, diagnosis, isEditing, lastEditTime]);
+  }, [sessionData, isOpen, consultationNotes, diagnosis, isEditing, isEditingVisitNotes, lastEditTime]);
 
-  // Auto-save draft when editing
+  // Auto-save draft when editing - with improved debouncing
   useEffect(() => {
-    if (consultationStatus === 'in-consultation' && queueEntry && (consultationNotes || diagnosis || visitNotes || treatmentItems.length > 0)) {
+    if (consultationStatus === 'in-consultation' && queueEntry && (consultationNotes || diagnosis || visitNotes || treatmentItems.length > 0) && hasUnsavedChanges) {
       const editingTimeoutRef = setTimeout(() => {
         const formData = {
           consultationNotes,
@@ -382,12 +385,12 @@ export function PatientConsultationModal({
           treatmentItems
         };
         saveDraft(formData, queueEntry.patient.id, queueEntry.id);
-      }, 2000);
+      }, 3000); // Increased to 3 seconds to reduce conflicts
       return () => {
         clearTimeout(editingTimeoutRef);
       };
     }
-  }, [consultationNotes, diagnosis, visitNotes, treatmentItems, saveDraft, queueEntry, consultationStatus]);
+  }, [consultationNotes, diagnosis, visitNotes, treatmentItems, saveDraft, queueEntry, consultationStatus, hasUnsavedChanges]);
 
   // Helper function to extract consultation notes from structured content
   const extractConsultationNotes = (content: string) => {
