@@ -154,7 +154,7 @@ export function PatientConsultationModal({
       
       // Initialize visit notes from queue entry only if not actively editing
       if (!isEditingVisitNotes) {
-        setVisitNotes(queueEntry?.patient?.visit_reason || '');
+        setVisitNotes((queueEntry?.patient as any)?.additional_notes || '');
       }
 
       // Only load existing draft if consultation has started
@@ -164,7 +164,7 @@ export function PatientConsultationModal({
           setConsultationNotes(existingDraft.draft_data.consultationNotes || '');
           setDiagnosis(existingDraft.draft_data.diagnosis || '');
           if (!isEditingVisitNotes) {
-            setVisitNotes(existingDraft.draft_data.visitNotes || queueEntry?.patient?.visit_reason || '');
+            setVisitNotes(existingDraft.draft_data.visitNotes || (queueEntry?.patient as any)?.additional_notes || '');
           }
           setTreatmentItems(existingDraft.draft_data.treatmentItems || []);
           setCurrentDraftId(existingDraft.id);
@@ -180,7 +180,7 @@ export function PatientConsultationModal({
         setConsultationNotes('');
         setDiagnosis('');
         if (!isEditingVisitNotes) {
-          setVisitNotes(queueEntry?.patient?.visit_reason || '');
+          setVisitNotes((queueEntry?.patient as any)?.additional_notes || '');
         }
         setTreatmentItems([]);
         setCurrentDraftId(null);
@@ -573,7 +573,7 @@ export function PatientConsultationModal({
     try {
       const { error } = await supabase
         .from('patients')
-        .update({ visit_reason: visitNotes })
+        .update({ additional_notes: visitNotes })
         .eq('id', queueEntry.patient.id);
         
       if (error) throw error;
@@ -1101,7 +1101,7 @@ export function PatientConsultationModal({
                       variant="outline" 
                       size="sm"
                       onClick={saveVisitNotes}
-                      disabled={!visitNotes || visitNotes === queueEntry?.patient?.visit_reason}
+                      disabled={!visitNotes || visitNotes === (queueEntry?.patient as any)?.additional_notes}
                       className="h-6 px-2 text-xs"
                     >
                       <Save className="h-3 w-3 mr-1" />
