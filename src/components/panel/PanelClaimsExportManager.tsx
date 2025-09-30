@@ -9,7 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Download, FileText, Table, Calendar, Settings, Send } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useToast } from '@/hooks/use-toast';
 import { PanelClaim } from '@/hooks/usePanelClaims';
 import * as XLSX from 'xlsx';
@@ -72,9 +73,9 @@ export function PanelClaimsExportManager({ claims, filteredClaims, selectedClaim
     
     // Apply date range filter
     dataToExport = dataToExport.filter(claim => {
-      const claimDate = new Date(claim.created_at);
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
+      const claimDate = parseISO(claim.created_at);
+      const startDate = parseISO(dateRange.start);
+      const endDate = parseISO(dateRange.end);
       return claimDate >= startDate && claimDate <= endDate;
     });
     
@@ -93,10 +94,10 @@ export function PanelClaimsExportManager({ claims, filteredClaims, selectedClaim
             row['Panel Code'] = claim.panel?.panel_code || '';
             break;
           case 'billing_period_start':
-            row['Period Start'] = format(new Date(claim.billing_period_start), 'yyyy-MM-dd');
+            row['Period Start'] = formatInTimeZone(parseISO(claim.billing_period_start), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd');
             break;
           case 'billing_period_end':
-            row['Period End'] = format(new Date(claim.billing_period_end), 'yyyy-MM-dd');
+            row['Period End'] = formatInTimeZone(parseISO(claim.billing_period_end), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd');
             break;
           case 'total_items':
             row['Total Items'] = claim.total_items;
@@ -108,16 +109,16 @@ export function PanelClaimsExportManager({ claims, filteredClaims, selectedClaim
             row['Status'] = claim.status.charAt(0).toUpperCase() + claim.status.slice(1);
             break;
           case 'created_at':
-            row['Created Date'] = format(new Date(claim.created_at), 'yyyy-MM-dd HH:mm');
+            row['Created Date'] = formatInTimeZone(parseISO(claim.created_at), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd HH:mm');
             break;
           case 'submitted_at':
-            row['Submitted Date'] = claim.submitted_at ? format(new Date(claim.submitted_at), 'yyyy-MM-dd HH:mm') : '';
+            row['Submitted Date'] = claim.submitted_at ? formatInTimeZone(parseISO(claim.submitted_at), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd HH:mm') : '';
             break;
           case 'approved_at':
-            row['Approved Date'] = claim.approved_at ? format(new Date(claim.approved_at), 'yyyy-MM-dd HH:mm') : '';
+            row['Approved Date'] = claim.approved_at ? formatInTimeZone(parseISO(claim.approved_at), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd HH:mm') : '';
             break;
           case 'paid_at':
-            row['Paid Date'] = claim.paid_at ? format(new Date(claim.paid_at), 'yyyy-MM-dd HH:mm') : '';
+            row['Paid Date'] = claim.paid_at ? formatInTimeZone(parseISO(claim.paid_at), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd HH:mm') : '';
             break;
           case 'paid_amount':
             row['Paid Amount'] = claim.paid_amount ? claim.paid_amount.toFixed(2) : '';
@@ -323,9 +324,9 @@ export function PanelClaimsExportManager({ claims, filteredClaims, selectedClaim
         : claims;
         
     return dataToCount.filter(claim => {
-      const claimDate = new Date(claim.created_at);
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
+      const claimDate = parseISO(claim.created_at);
+      const startDate = parseISO(dateRange.start);
+      const endDate = parseISO(dateRange.end);
       return claimDate >= startDate && claimDate <= endDate;
     }).length;
   };

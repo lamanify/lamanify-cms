@@ -10,7 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { PanelClaim } from '@/hooks/usePanelClaims';
-import { format } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { VALIDATION_RULES, shouldAutoCoerceToShortPaid, ClaimStatus, OUTSTANDING_STATUS_OPTIONS } from '@/domain/panel';
 
 interface BatchStatusUpdateModalProps {
@@ -276,7 +277,7 @@ export function BatchStatusUpdateModal({
                         </Badge>
                       </TableCell>
                       <TableCell>${claim.total_amount.toFixed(2)}</TableCell>
-                      <TableCell>{format(new Date(claim.created_at), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>{formatInTimeZone(parseISO(claim.created_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -42,6 +42,9 @@ export function isValidTransition(currentStatus: ClaimStatus, newStatus: ClaimSt
   return ALLOWED_TRANSITIONS[currentStatus]?.includes(newStatus) ?? false;
 }
 
+// Strongly typed Totals interface
+export type Totals = Partial<Record<ClaimStatus, number>> & { count: number };
+
 // Helper function to determine if short_paid should be applied
 export function shouldAutoCoerceToShortPaid(paidAmount: number, totalAmount: number): boolean {
   return paidAmount > 0 && paidAmount < totalAmount;

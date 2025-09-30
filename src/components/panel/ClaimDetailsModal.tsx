@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { FileText, Download, Edit, Check, X, Clock, DollarSign } from 'lucide-react';
-import { format } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { PanelClaim, usePanelClaims } from '@/hooks/usePanelClaims';
 import { StatusConfirmationDialog } from './StatusConfirmationDialog';
 import { BillingItemEditor } from './BillingItemEditor';
@@ -182,7 +183,7 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Billing Period:</span>
                     <span className="text-sm">
-                      {format(new Date(displayClaim.billing_period_start), 'MMM dd')} - {format(new Date(displayClaim.billing_period_end), 'MMM dd, yyyy')}
+                      {formatInTimeZone(parseISO(displayClaim.billing_period_start), 'Asia/Kuala_Lumpur', 'MMM dd')} - {formatInTimeZone(parseISO(displayClaim.billing_period_end), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy')}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -203,24 +204,24 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Created:</span>
-                    <span className="text-sm">{format(new Date(displayClaim.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                    <span className="text-sm">{formatInTimeZone(parseISO(displayClaim.created_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy HH:mm')}</span>
                   </div>
                   {displayClaim.submitted_at && (
                     <div className="flex justify-between">
                       <span className="text-sm font-medium">Submitted:</span>
-                      <span className="text-sm">{format(new Date(displayClaim.submitted_at), 'MMM dd, yyyy HH:mm')}</span>
+                      <span className="text-sm">{formatInTimeZone(parseISO(displayClaim.submitted_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy HH:mm')}</span>
                     </div>
                   )}
                   {displayClaim.approved_at && (
                     <div className="flex justify-between">
                       <span className="text-sm font-medium">Approved:</span>
-                      <span className="text-sm">{format(new Date(displayClaim.approved_at), 'MMM dd, yyyy HH:mm')}</span>
+                      <span className="text-sm">{formatInTimeZone(parseISO(displayClaim.approved_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy HH:mm')}</span>
                     </div>
                   )}
                   {displayClaim.paid_at && (
                     <div className="flex justify-between">
                       <span className="text-sm font-medium">Paid:</span>
-                      <span className="text-sm">{format(new Date(displayClaim.paid_at), 'MMM dd, yyyy HH:mm')}</span>
+                      <span className="text-sm">{formatInTimeZone(parseISO(displayClaim.paid_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy HH:mm')}</span>
                     </div>
                   )}
                   {displayClaim.panel_reference_number && (

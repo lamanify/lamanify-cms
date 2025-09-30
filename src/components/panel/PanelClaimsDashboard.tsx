@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,9 @@ import { PanelClaimsExportManager } from './PanelClaimsExportManager';
 import { ClaimsIntegrationManager } from './ClaimsIntegrationManager';
 import { BulkActionToolbar } from './BulkActionToolbar';
 import { BatchStatusUpdateModal } from './BatchStatusUpdateModal';
-import { format } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { Totals } from '@/domain/panel';
 
 interface PanelClaimsDashboardProps {
   onViewClaim?: (claimId: string) => void;
@@ -35,15 +37,17 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [batchStatus, setBatchStatus] = useState<PanelClaim['status'] | null>(null);
 
-  const filteredClaims = claims.filter(claim => {
-    const matchesSearch = claim.claim_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         claim.panel?.panel_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         claim.panel?.panel_code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || claim.status === statusFilter;
-    const matchesPanel = panelFilter === 'all' || claim.panel_id === panelFilter;
-    
-    return matchesSearch && matchesStatus && matchesPanel;
-  });
+  const filteredClaims = useMemo(() => {
+    return claims.filter(claim => {
+      const matchesSearch = claim.claim_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           claim.panel?.panel_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           claim.panel?.panel_code.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || claim.status === statusFilter;
+      const matchesPanel = panelFilter === 'all' || claim.panel_id === panelFilter;
+      
+      return matchesSearch && matchesStatus && matchesPanel;
+    });
+  }, [claims, searchTerm, statusFilter, panelFilter]);
 
   const getStatusBadgeVariant = (status: PanelClaim['status']) => {
     switch (status) {
@@ -110,15 +114,13 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
   const isAllSelected = filteredClaims.length > 0 && selectedClaims.length === filteredClaims.length;
   const isIndeterminate = selectedClaims.length > 0 && selectedClaims.length < filteredClaims.length;
 
-  const getTotalsByStatus = () => {
-    return claims.reduce((acc, claim) => {
-      acc[claim.status] = (acc[claim.status] || 0) + claim.total_amount;
-      acc.count = (acc.count || 0) + 1;
+  const totals = useMemo(() => {
+    return claims.reduce<Totals>((acc, claim) => {
+      acc[claim.status] = (acc[claim.status] ?? 0) + claim.total_amount;
+      acc.count = (acc.count ?? 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
-  };
-
-  const totals = getTotalsByStatus();
+    }, { count: 0 });
+  }, [claims]);
 
   return (
     <div className="space-y-6">
@@ -313,7 +315,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {format(new Date(claim.billing_period_start), 'MMM dd')} - {format(new Date(claim.billing_period_end), 'MMM dd, yyyy')}
+                          {formatInTimeZone(parseISO(claim.billing_period_start), 'Asia/Kuala_Lumpur', 'MMM dd')} - {formatInTimeZone(parseISO(claim.billing_period_end), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy')}
                         </div>
                       </TableCell>
                       <TableCell>{claim.total_items}</TableCell>
@@ -326,7 +328,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                           {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
                         </Badge>
                       </TableCell>
-                      <TableCell>{format(new Date(claim.created_at), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>{formatInTimeZone(parseISO(claim.created_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy')}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
