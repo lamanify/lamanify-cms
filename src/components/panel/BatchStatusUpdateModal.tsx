@@ -10,9 +10,10 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { PanelClaim } from '@/hooks/usePanelClaims';
+import { useCurrency } from '@/hooks/useCurrency';
 import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
-import { VALIDATION_RULES, shouldAutoCoerceToShortPaid, ClaimStatus, OUTSTANDING_STATUS_OPTIONS } from '@/domain/panel';
+import { VALIDATION_RULES, shouldAutoCoerceToShortPaid, ClaimStatus, OUTSTANDING_STATUS_OPTIONS, coercePaidToShortPaid } from '@/domain/panel';
 
 interface BatchStatusUpdateModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function BatchStatusUpdateModal({
   onConfirm,
   allowedStatuses = OUTSTANDING_STATUS_OPTIONS
 }: BatchStatusUpdateModalProps) {
+  const { formatCurrency } = useCurrency();
   const [reason, setReason] = useState('');
   const [paidAmount, setPaidAmount] = useState<number | ''>('');
   const [statusToApply, setStatusToApply] = useState<ClaimStatus>(newStatus as ClaimStatus);
@@ -49,6 +51,8 @@ export function BatchStatusUpdateModal({
         return <CheckCircle className="w-5 h-5 text-green-600" />;
       case 'paid':
         return <CheckCircle className="w-5 h-5 text-blue-600" />;
+      case 'short_paid':
+        return <CheckCircle className="w-5 h-5 text-orange-600" />;
       case 'rejected':
         return <XCircle className="w-5 h-5 text-red-600" />;
       default:
@@ -62,6 +66,7 @@ export function BatchStatusUpdateModal({
       case 'submitted': return 'text-yellow-600';
       case 'approved': return 'text-green-600';
       case 'paid': return 'text-blue-600';
+      case 'short_paid': return 'text-orange-600';
       case 'rejected': return 'text-red-600';
       default: return 'text-muted-foreground';
     }
@@ -174,7 +179,7 @@ export function BatchStatusUpdateModal({
                 <div className="text-sm text-muted-foreground">Panels</div>
               </div>
               <div>
-                <div className="text-2xl font-bold">${totalAmount.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
                 <div className="text-sm text-muted-foreground">Total Amount</div>
               </div>
             </div>
@@ -234,7 +239,7 @@ export function BatchStatusUpdateModal({
                 max={totalAmount}
               />
               <p className="text-sm text-muted-foreground">
-                Maximum amount: ${totalAmount.toFixed(2)}
+                Maximum amount: {formatCurrency(totalAmount)}
                 {paidAmount !== '' && Number(paidAmount) < totalAmount && (
                   <span className="text-orange-600"> • Will be marked as Short Paid</span>
                 )}
@@ -276,7 +281,7 @@ export function BatchStatusUpdateModal({
                           {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
                         </Badge>
                       </TableCell>
-                      <TableCell>${claim.total_amount.toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrency(claim.total_amount)}</TableCell>
                       <TableCell>{formatInTimeZone(parseISO(claim.created_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy')}</TableCell>
                     </TableRow>
                   ))}

@@ -49,3 +49,11 @@ export type Totals = Partial<Record<ClaimStatus, number>> & { count: number };
 export function shouldAutoCoerceToShortPaid(paidAmount: number, totalAmount: number): boolean {
   return paidAmount > 0 && paidAmount < totalAmount;
 }
+
+// Coerce paid status to short_paid if applicable
+export function coercePaidToShortPaid(total: number, paid?: number): ClaimStatus {
+  if (paid !== undefined && paid > 0 && paid < total) {
+    return 'short_paid';
+  }
+  return 'paid';
+}

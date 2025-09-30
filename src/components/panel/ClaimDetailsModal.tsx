@@ -12,6 +12,7 @@ import { FileText, Download, Edit, Check, X, Clock, DollarSign } from 'lucide-re
 import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { PanelClaim, usePanelClaims } from '@/hooks/usePanelClaims';
+import { useCurrency } from '@/hooks/useCurrency';
 import { StatusConfirmationDialog } from './StatusConfirmationDialog';
 import { BillingItemEditor } from './BillingItemEditor';
 import { useBillingManagement } from '@/hooks/useBillingManagement';
@@ -27,6 +28,7 @@ interface ClaimDetailsModalProps {
 export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }: ClaimDetailsModalProps) {
   const { fetchClaimDetails, updateClaimStatus, validateStatusTransition } = usePanelClaims();
   const { fetchBillingItemsByClaimId, updateBillingItem } = useBillingManagement();
+  const { formatCurrency } = useCurrency();
   const { toast } = useToast();
   const [claimDetails, setClaimDetails] = useState<PanelClaim | null>(null);
   const [billingItems, setBillingItems] = useState<any[]>([]);
@@ -70,6 +72,7 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
       case 'submitted': return <Clock className="w-4 h-4" />;
       case 'approved': return <Check className="w-4 h-4" />;
       case 'paid': return <DollarSign className="w-4 h-4" />;
+      case 'short_paid': return <DollarSign className="w-4 h-4" />;
       case 'rejected': return <X className="w-4 h-4" />;
       default: return <FileText className="w-4 h-4" />;
     }
@@ -81,6 +84,7 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
       case 'submitted': return 'text-yellow-600';
       case 'approved': return 'text-green-600';
       case 'paid': return 'text-blue-600';
+      case 'short_paid': return 'text-orange-600';
       case 'rejected': return 'text-red-600';
       default: return 'text-muted-foreground';
     }
@@ -192,7 +196,7 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Total Amount:</span>
-                    <span className="text-sm font-bold">${displayClaim.total_amount.toFixed(2)}</span>
+                    <span className="text-sm font-bold">{formatCurrency(displayClaim.total_amount)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -254,6 +258,7 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
                       <SelectItem value="submitted">Submitted</SelectItem>
                       <SelectItem value="approved">Approved</SelectItem>
                       <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="short_paid">Short Paid</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
@@ -318,8 +323,8 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
                               {item.billing?.invoice_number}
                             </TableCell>
                             <TableCell>{item.billing?.description}</TableCell>
-                            <TableCell>${item.item_amount.toFixed(2)}</TableCell>
-                            <TableCell>${item.claim_amount.toFixed(2)}</TableCell>
+                            <TableCell>{formatCurrency(item.item_amount)}</TableCell>
+                            <TableCell>{formatCurrency(item.claim_amount)}</TableCell>
                             <TableCell>
                               <Badge 
                                 variant={item.status === 'included' ? 'default' : item.status === 'rejected' ? 'destructive' : 'secondary'}

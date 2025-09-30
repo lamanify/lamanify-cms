@@ -10,7 +10,7 @@ export interface PanelClaim {
   billing_period_end: string;
   total_amount: number;
   total_items: number;
-  status: 'draft' | 'submitted' | 'approved' | 'paid' | 'rejected';
+  status: 'draft' | 'submitted' | 'approved' | 'paid' | 'short_paid' | 'rejected';
   submitted_at?: string;
   submitted_by?: string;
   approved_at?: string;

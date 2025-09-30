@@ -5,11 +5,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { useClaimsReconciliation } from '@/hooks/useClaimsReconciliation';
 import { usePanels } from '@/hooks/usePanels';
+import { useCurrency } from '@/hooks/useCurrency';
 import { AlertTriangle, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 export const ReconciliationDashboard: React.FC = () => {
   const { reconciliations, stats, fetchReconciliationStats, fetchReconciliations } = useClaimsReconciliation();
   const { panels } = usePanels();
+  const { formatCurrency } = useCurrency();
   const [selectedPanel, setSelectedPanel] = useState<string>('');
   const [timeRange, setTimeRange] = useState<'30' | '90' | '365'>('30');
 
@@ -129,7 +131,7 @@ export const ReconciliationDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                ${stats.total_variance_amount.toFixed(2)}
+                {formatCurrency(stats.total_variance_amount)}
               </div>
               {varianceIndicator && (
                 <div className={`flex items-center text-xs ${varianceIndicator.color}`}>
@@ -200,10 +202,12 @@ export const ReconciliationDashboard: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value, name) => [
-                  name === 'amount' ? `$${Number(value).toFixed(2)}` : value,
-                  name === 'amount' ? 'Amount' : 'Count'
-                ]} />
+                <Tooltip 
+                  formatter={(value, name) => [
+                    name === 'amount' ? formatCurrency(Number(value)) : value,
+                    name === 'amount' ? 'Amount' : 'Count'
+                  ]} 
+                />
                 <Bar dataKey="amount" fill="#8884d8" />
               </BarChart>
             </ResponsiveContainer>
@@ -252,7 +256,7 @@ export const ReconciliationDashboard: React.FC = () => {
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip 
                   formatter={(value, name) => [
-                    name === 'variance_amount' ? `$${Number(value).toFixed(2)}` : value,
+                    name === 'variance_amount' ? formatCurrency(Number(value)) : value,
                     name === 'variance_amount' ? 'Variance Amount' : 'Count'
                   ]}
                   labelFormatter={(label) => `Month: ${label}`}
@@ -293,7 +297,7 @@ export const ReconciliationDashboard: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-red-600">
-                    ${item.total_amount.toFixed(2)}
+                    {formatCurrency(item.total_amount)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Total impact

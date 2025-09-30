@@ -10,6 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertCircle, FileText, Plus, Search, Eye, Download, Send } from 'lucide-react';
 import { usePanelClaims, PanelClaim } from '@/hooks/usePanelClaims';
 import { usePanels } from '@/hooks/usePanels';
+import { useCurrency } from '@/hooks/useCurrency';
+import { toast } from '@/hooks/use-toast';
 import { CreateClaimModal } from './CreateClaimModal';
 import { ClaimDetailsModal } from './ClaimDetailsModal';
 import { PanelClaimsExportManager } from './PanelClaimsExportManager';
@@ -18,7 +20,7 @@ import { BulkActionToolbar } from './BulkActionToolbar';
 import { BatchStatusUpdateModal } from './BatchStatusUpdateModal';
 import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
-import { Totals } from '@/domain/panel';
+import { Totals, ALLOWED_TRANSITIONS, isValidTransition, coercePaidToShortPaid } from '@/domain/panel';
 
 interface PanelClaimsDashboardProps {
   onViewClaim?: (claimId: string) => void;
@@ -27,6 +29,7 @@ interface PanelClaimsDashboardProps {
 export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps = {}) {
   const { claims, loading, fetchClaims, updateClaimStatus } = usePanelClaims();
   const { panels } = usePanels();
+  const { formatCurrency } = useCurrency();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [panelFilter, setPanelFilter] = useState<string>('all');
@@ -55,6 +58,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
       case 'submitted': return 'default';
       case 'approved': return 'default';
       case 'paid': return 'default';
+      case 'short_paid': return 'default';
       case 'rejected': return 'destructive';
       default: return 'secondary';
     }
@@ -66,6 +70,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
       case 'submitted': return 'text-yellow-600';
       case 'approved': return 'text-green-600';
       case 'paid': return 'text-blue-600';
+      case 'short_paid': return 'text-orange-600';
       case 'rejected': return 'text-red-600';
       default: return 'text-muted-foreground';
     }
@@ -98,11 +103,54 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
 
   const handleBatchConfirm = async (data: { reason?: string; paidAmount?: number }) => {
     if (batchStatus) {
+      const skippedClaims: Array<{ claimNumber: string; reason: string }> = [];
+      let successCount = 0;
+
       // Process each selected claim
       for (const claimId of selectedClaims) {
-        await updateClaimStatus(claimId, batchStatus, data);
+        const claim = filteredClaims.find(c => c.id === claimId);
+        if (!claim) continue;
+
+        // Determine target status (with per-claim coercion for paid status)
+        let targetStatus = batchStatus;
+        if (batchStatus === 'paid' && data.paidAmount !== undefined) {
+          targetStatus = coercePaidToShortPaid(claim.total_amount, data.paidAmount);
+        }
+
+        // Validate transition
+        if (!isValidTransition(claim.status, targetStatus)) {
+          skippedClaims.push({
+            claimNumber: claim.claim_number,
+            reason: `Invalid transition from ${claim.status} to ${targetStatus}`
+          });
+          continue;
+        }
+
+        try {
+          await updateClaimStatus(claimId, targetStatus, data);
+          successCount++;
+        } catch (error) {
+          skippedClaims.push({
+            claimNumber: claim.claim_number,
+            reason: 'Update failed'
+          });
+        }
       }
-      
+
+      // Show feedback toast
+      if (skippedClaims.length > 0) {
+        toast({
+          title: `Batch Update: ${successCount} succeeded, ${skippedClaims.length} skipped`,
+          description: skippedClaims.map(s => `${s.claimNumber}: ${s.reason}`).join('\n'),
+          variant: 'default'
+        });
+      } else {
+        toast({
+          title: 'Batch Update Successful',
+          description: `${successCount} claim(s) updated successfully`
+        });
+      }
+
       // Reset selections and close modal
       setSelectedClaims([]);
       setShowBatchModal(false);
@@ -134,7 +182,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
           <CardContent>
             <div className="text-2xl font-bold">{claims.length}</div>
             <p className="text-xs text-muted-foreground">
-              Total value: ${claims.reduce((sum, claim) => sum + claim.total_amount, 0).toFixed(2)}
+              Total value: {formatCurrency(claims.reduce((sum, claim) => sum + claim.total_amount, 0))}
             </p>
           </CardContent>
         </Card>
@@ -149,7 +197,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
               {claims.filter(c => c.status === 'submitted').length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Value: ${(totals.submitted || 0).toFixed(2)}
+              Value: {formatCurrency(totals.submitted || 0)}
             </p>
           </CardContent>
         </Card>
@@ -164,7 +212,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
               {claims.filter(c => c.status === 'approved').length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Value: ${(totals.approved || 0).toFixed(2)}
+              Value: {formatCurrency(totals.approved || 0)}
             </p>
           </CardContent>
         </Card>
@@ -179,7 +227,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
               {claims.filter(c => c.status === 'paid').length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Value: ${(totals.paid || 0).toFixed(2)}
+              Value: {formatCurrency(totals.paid || 0)}
             </p>
           </CardContent>
         </Card>
@@ -234,6 +282,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                 <SelectItem value="submitted">Submitted</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="short_paid">Short Paid</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
@@ -319,7 +368,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                         </div>
                       </TableCell>
                       <TableCell>{claim.total_items}</TableCell>
-                      <TableCell>${claim.total_amount.toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrency(claim.total_amount)}</TableCell>
                       <TableCell>
                         <Badge 
                           variant={getStatusBadgeVariant(claim.status)}
