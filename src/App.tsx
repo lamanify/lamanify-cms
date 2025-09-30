@@ -14,6 +14,7 @@ import ConsultationWaitingList from "@/pages/ConsultationWaitingList";
 import ConsultationInterface from "@/pages/ConsultationInterface";
 import Billing from "@/pages/Billing";
 import PanelClaims from "@/pages/PanelClaims";
+import OutstandingPanelBilling from "@/pages/OutstandingPanelBilling";
 import Settings from "@/pages/Settings";
 import ClinicSettings from '@/pages/ClinicSettings';
 import AuthPage from "@/components/auth/AuthPage";
@@ -50,6 +51,7 @@ const App = () => (
           {/* <Route path="/consultation-waiting" element={<AppLayout><ConsultationWaitingList /></AppLayout>} /> */}
           <Route path="/consultation/:sessionId" element={<AppLayout><ConsultationInterface /></AppLayout>} />
           <Route path="/billing" element={<AppLayout><Billing /></AppLayout>} />
+          <Route path="/billing/outstanding-panel" element={<AppLayout><OutstandingPanelBilling /></AppLayout>} />
           <Route path="/panel-claims" element={<AppLayout><PanelClaims /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
           <Route path="/settings/clinic" element={<AppLayout><ClinicSettings /></AppLayout>} />

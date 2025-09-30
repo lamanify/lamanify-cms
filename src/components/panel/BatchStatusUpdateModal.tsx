@@ -11,13 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { PanelClaim } from '@/hooks/usePanelClaims';
 import { format } from 'date-fns';
+import { VALIDATION_RULES, shouldAutoCoerceToShortPaid, ClaimStatus, OUTSTANDING_STATUS_OPTIONS } from '@/domain/panel';
 
 interface BatchStatusUpdateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedClaims: PanelClaim[];
-  newStatus: PanelClaim['status'];
+  newStatus: PanelClaim['status'] | ClaimStatus;
   onConfirm: (data: { reason?: string; paidAmount?: number }) => void;
+  allowedStatuses?: ClaimStatus[];
 }
 
 export function BatchStatusUpdateModal({
@@ -25,15 +27,18 @@ export function BatchStatusUpdateModal({
   onOpenChange,
   selectedClaims,
   newStatus,
-  onConfirm
+  onConfirm,
+  allowedStatuses = OUTSTANDING_STATUS_OPTIONS
 }: BatchStatusUpdateModalProps) {
   const [reason, setReason] = useState('');
   const [paidAmount, setPaidAmount] = useState<number | ''>('');
+  const [statusToApply, setStatusToApply] = useState<ClaimStatus>(newStatus as ClaimStatus);
+  const [validationError, setValidationError] = useState<string>('');
 
   const totalAmount = selectedClaims.reduce((sum, claim) => sum + claim.total_amount, 0);
-  const requiresReason = newStatus === 'rejected';
-  const requiresPaymentAmount = newStatus === 'paid';
-  const isIrreversible = newStatus === 'paid';
+  const requiresReason = statusToApply === 'rejected';
+  const requiresPaymentAmount = statusToApply === 'paid' || statusToApply === 'short_paid';
+  const isIrreversible = statusToApply === 'paid';
 
   const getStatusIcon = () => {
     switch (newStatus) {
@@ -62,24 +67,66 @@ export function BatchStatusUpdateModal({
   };
 
   const canConfirm = () => {
-    if (requiresReason && !reason.trim()) return false;
-    if (requiresPaymentAmount && (!paidAmount || Number(paidAmount) <= 0)) return false;
+    // Validate rejection reason length
+    if (requiresReason && reason.trim().length < VALIDATION_RULES.MIN_REJECTION_REASON_LENGTH) {
+      return false;
+    }
+    
+    // Validate payment amount
+    if (requiresPaymentAmount) {
+      if (!paidAmount || Number(paidAmount) <= 0) return false;
+      if (Number(paidAmount) > totalAmount * VALIDATION_RULES.PAID_AMOUNT_MAX_MULTIPLIER) return false;
+    }
+    
     return true;
   };
 
   const handleConfirm = () => {
+    setValidationError('');
+    
+    // Validate rejection reason
+    if (requiresReason && reason.trim().length < VALIDATION_RULES.MIN_REJECTION_REASON_LENGTH) {
+      setValidationError(`Rejection reason must be at least ${VALIDATION_RULES.MIN_REJECTION_REASON_LENGTH} characters`);
+      return;
+    }
+    
     const data: { reason?: string; paidAmount?: number } = {};
-    if (requiresReason) data.reason = reason;
-    if (requiresPaymentAmount) data.paidAmount = Number(paidAmount);
+    
+    if (requiresReason) {
+      data.reason = reason;
+    }
+    
+    if (requiresPaymentAmount) {
+      const paid = Number(paidAmount);
+      
+      // Validate payment amount doesn't exceed total
+      if (paid > totalAmount) {
+        setValidationError('Payment amount cannot exceed total amount');
+        return;
+      }
+      
+      // Auto-coerce to short_paid if amount is less than total
+      if (shouldAutoCoerceToShortPaid(paid, totalAmount) && statusToApply === 'paid') {
+        setStatusToApply('short_paid');
+        setValidationError('Amount is less than total. Status will be set to "Short Paid"');
+        setTimeout(() => setValidationError(''), 3000);
+      }
+      
+      data.paidAmount = paid;
+    }
+    
     onConfirm(data);
     setReason('');
     setPaidAmount('');
+    setValidationError('');
   };
 
   const handleCancel = () => {
     onOpenChange(false);
     setReason('');
     setPaidAmount('');
+    setValidationError('');
+    setStatusToApply(newStatus as ClaimStatus);
   };
 
   return (
@@ -88,11 +135,20 @@ export function BatchStatusUpdateModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {getStatusIcon()}
-            Batch Status Update: {newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}
+            Batch Status Update: {statusToApply.charAt(0).toUpperCase() + statusToApply.slice(1)}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Validation Error */}
+          {validationError && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {validationError}
+              </AlertDescription>
+            </Alert>
+          )}
           {/* Warning for irreversible actions */}
           {isIrreversible && (
             <Alert className="border-amber-200 bg-amber-50">
@@ -129,11 +185,19 @@ export function BatchStatusUpdateModal({
               <Label htmlFor="reason">Rejection Reason *</Label>
               <Textarea
                 id="reason"
-                placeholder="Please provide a reason for rejecting these claims..."
+                placeholder="Please provide a reason for rejecting these claims (minimum 5 characters)..."
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                  if (e.target.value.trim().length >= VALIDATION_RULES.MIN_REJECTION_REASON_LENGTH) {
+                    setValidationError('');
+                  }
+                }}
                 className="min-h-[100px]"
               />
+              <p className="text-sm text-muted-foreground">
+                {reason.trim().length}/{VALIDATION_RULES.MIN_REJECTION_REASON_LENGTH} characters minimum
+              </p>
             </div>
           )}
 
@@ -145,13 +209,34 @@ export function BatchStatusUpdateModal({
                 type="number"
                 placeholder="0.00"
                 value={paidAmount}
-                onChange={(e) => setPaidAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? '' : Number(e.target.value);
+                  setPaidAmount(value);
+                  
+                  // Auto-validation and status coercion
+                  if (value !== '' && Number(value) > 0) {
+                    if (Number(value) > totalAmount) {
+                      setValidationError('Payment amount cannot exceed total amount');
+                    } else if (shouldAutoCoerceToShortPaid(Number(value), totalAmount)) {
+                      setValidationError('Amount is less than total. Status will be "Short Paid"');
+                      setStatusToApply('short_paid');
+                    } else {
+                      setValidationError('');
+                      if (statusToApply === 'short_paid' && Number(value) === totalAmount) {
+                        setStatusToApply('paid');
+                      }
+                    }
+                  }
+                }}
                 step="0.01"
                 min="0"
                 max={totalAmount}
               />
               <p className="text-sm text-muted-foreground">
                 Maximum amount: ${totalAmount.toFixed(2)}
+                {paidAmount !== '' && Number(paidAmount) < totalAmount && (
+                  <span className="text-orange-600"> • Will be marked as Short Paid</span>
+                )}
               </p>
             </div>
           )}
