@@ -235,6 +235,7 @@ export type Database = {
         Row: {
           amount: number
           appointment_id: string | null
+          billing_party_snapshot: Json | null
           claim_notes: string | null
           claim_number: string | null
           claim_status: string | null
@@ -261,6 +262,7 @@ export type Database = {
         Insert: {
           amount: number
           appointment_id?: string | null
+          billing_party_snapshot?: Json | null
           claim_notes?: string | null
           claim_number?: string | null
           claim_status?: string | null
@@ -287,6 +289,7 @@ export type Database = {
         Update: {
           amount?: number
           appointment_id?: string | null
+          billing_party_snapshot?: Json | null
           claim_notes?: string | null
           claim_number?: string | null
           claim_status?: string | null
