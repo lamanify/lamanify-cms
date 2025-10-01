@@ -12,8 +12,10 @@ import { useQueue } from '@/hooks/useQueue';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { PanelSelector } from '@/components/patients/PanelSelector';
+import { QueueTicket } from './QueueTicket';
 import { generatePatientId } from '@/lib/patientIdGenerator';
-import { User, Phone, Calendar, Upload, ChevronDown, ChevronUp, AlertCircle, Camera, MapPin, Mail, FileText, Clock, Stethoscope, UserPlus, FileCheck, X } from 'lucide-react';
+import { User, Phone, Calendar, Upload, ChevronDown, ChevronUp, AlertCircle, Camera, MapPin, Mail, FileText, Clock, Stethoscope, UserPlus, FileCheck, X, Printer } from 'lucide-react';
+import { createRoot } from 'react-dom/client';
 interface Doctor {
   id: string;
   first_name: string;
@@ -203,6 +205,60 @@ export function QuickRegisterForm({
       }
     }
   };
+
+  const handlePrintTicket = (queueNumber: string, patientName: string) => {
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: "Print Blocked",
+          description: "Please allow popups to print tickets",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Queue Ticket - ${queueNumber}</title>
+          </head>
+          <body>
+            <div id="ticket-root"></div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      const ticketRoot = printWindow.document.getElementById('ticket-root');
+      if (ticketRoot) {
+        const root = createRoot(ticketRoot);
+        root.render(
+          <QueueTicket
+            queueNumber={queueNumber}
+            patientName={patientName}
+            timestamp={new Date()}
+          />
+        );
+
+        setTimeout(() => {
+          printWindow.print();
+          
+          printWindow.onafterprint = () => {
+            printWindow.close();
+          };
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Print error:', error);
+      toast({
+        title: "Print Failed",
+        description: "Unable to print ticket. Queue number: " + queueNumber,
+        variant: "destructive"
+      });
+    }
+  };
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -376,10 +432,22 @@ export function QuickRegisterForm({
       const queueResult = await addToQueue(patient.id, formData.preferredDoctorId && formData.preferredDoctorId !== "none" ? formData.preferredDoctorId : undefined);
       console.log('Queue addition successful:', queueResult);
 
-      // Show immediate success message
+      // Show immediate success message with print option
+      const queueNumber = queueResult?.queueNumber;
       toast({
         title: "Added to Queue",
-        description: `${formData.fullName} has been added to the queue and will appear immediately`
+        description: `${formData.fullName} has been added to the queue${queueNumber ? ` (${queueNumber})` : ''}`,
+        action: queueNumber ? (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => handlePrintTicket(queueNumber, formData.fullName)}
+            className="gap-1"
+          >
+            <Printer className="h-3 w-3" />
+            Print
+          </Button>
+        ) : undefined
       });
 
       // BACKGROUND: Process price tier assignment asynchronously

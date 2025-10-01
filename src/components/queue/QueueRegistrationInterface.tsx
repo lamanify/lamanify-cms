@@ -6,12 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PatientSearch } from '@/components/patients/PatientSearch';
 import { QuickRegisterForm } from './QuickRegisterForm';
+import { QueueTicket } from './QueueTicket';
 import { useToast } from '@/hooks/use-toast';
 import { useQueue } from '@/hooks/useQueue';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, UserPlus, ClipboardList } from 'lucide-react';
+import { Search, UserPlus, ClipboardList, Printer } from 'lucide-react';
 import { Patient } from '@/pages/Patients';
+import { createRoot } from 'react-dom/client';
 interface Doctor {
   id: string;
   first_name: string;
@@ -36,6 +38,11 @@ export function QueueRegistrationInterface({
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [lastQueueData, setLastQueueData] = useState<{
+    queueNumber: string;
+    patientName: string;
+    timestamp: Date;
+  } | null>(null);
   const {
     toast
   } = useToast();
@@ -72,6 +79,66 @@ export function QueueRegistrationInterface({
   }, []);
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
+  };
+
+  const handlePrintTicket = () => {
+    if (!lastQueueData) return;
+
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: "Print Blocked",
+          description: "Please allow popups to print tickets",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Queue Ticket - ${lastQueueData.queueNumber}</title>
+          </head>
+          <body>
+            <div id="ticket-root"></div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      const ticketRoot = printWindow.document.getElementById('ticket-root');
+      if (ticketRoot) {
+        const root = createRoot(ticketRoot);
+        root.render(
+          <QueueTicket
+            queueNumber={lastQueueData.queueNumber}
+            patientName={lastQueueData.patientName}
+            timestamp={lastQueueData.timestamp}
+          />
+        );
+
+        setTimeout(() => {
+          printWindow.print();
+          
+          printWindow.onafterprint = () => {
+            toast({
+              title: "Print Successful",
+              description: "Queue ticket printed successfully"
+            });
+            printWindow.close();
+          };
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Print error:', error);
+      toast({
+        title: "Print Failed",
+        description: "Unable to print ticket. Queue number: " + lastQueueData.queueNumber,
+        variant: "destructive"
+      });
+    }
   };
   const handleAddExistingToQueue = async () => {
     if (!selectedPatient) {
@@ -139,6 +206,15 @@ export function QueueRegistrationInterface({
         console.warn('Failed to create patient activity:', activityError);
         // Don't fail the whole operation for this
       }
+      // Store queue data for printing
+      if (queueResult?.queueNumber) {
+        setLastQueueData({
+          queueNumber: queueResult.queueNumber,
+          patientName: `${selectedPatient.first_name} ${selectedPatient.last_name}`,
+          timestamp: new Date()
+        });
+      }
+
       toast({
         title: "Patient added to queue",
         description: `${selectedPatient.first_name} ${selectedPatient.last_name} has been added to the queue${queueResult?.queueNumber ? ` (${queueResult.queueNumber})` : ''}`
@@ -277,9 +353,18 @@ export function QueueRegistrationInterface({
                   </Select>
                 </div>
 
-                 <Button onClick={handleAddExistingToQueue} disabled={loading || !visitData.reason.trim()} size="lg" className="w-full">
-                   {loading ? 'Adding to Queue...' : 'Add to Queue'}
-                 </Button>
+                 <div className="flex gap-2">
+                   <Button onClick={handleAddExistingToQueue} disabled={loading || !visitData.reason.trim()} size="lg" className="flex-1">
+                     {loading ? 'Adding to Queue...' : 'Add to Queue'}
+                   </Button>
+                   
+                   {lastQueueData && (
+                     <Button onClick={handlePrintTicket} variant="outline" size="lg" className="gap-2">
+                       <Printer className="h-4 w-4" />
+                       Print Ticket
+                     </Button>
+                   )}
+                 </div>
               </div>
             </CardContent>
           </Card>}
