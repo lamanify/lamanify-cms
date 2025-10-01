@@ -45,7 +45,13 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
       const matchesSearch = claim.claim_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            claim.panel?.panel_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            claim.panel?.panel_code.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || claim.status === statusFilter;
+      
+      // Handle multi-status filter for "Outstanding Only"
+      const matchesStatus = statusFilter === 'all' || 
+                           statusFilter === claim.status ||
+                           (statusFilter === 'submitted,approved,short_paid' && 
+                            ['submitted', 'approved', 'short_paid'].includes(claim.status));
+      
       const matchesPanel = panelFilter === 'all' || claim.panel_id === panelFilter;
       
       return matchesSearch && matchesStatus && matchesPanel;
@@ -299,6 +305,13 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant={statusFilter === 'submitted,approved,short_paid' ? 'default' : 'outline'}
+              onClick={() => setStatusFilter(statusFilter === 'submitted,approved,short_paid' ? 'all' : 'submitted,approved,short_paid')}
+              className="whitespace-nowrap"
+            >
+              Outstanding Only
+            </Button>
           </div>
 
           {/* Bulk Actions Toolbar */}
@@ -308,6 +321,17 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
             onClearSelection={() => setSelectedClaims([])}
             onBulkStatusChange={handleBulkStatusChange}
           />
+
+          {/* Status Legend */}
+          <div className="flex flex-wrap items-center gap-4 py-4 px-2 bg-muted/30 rounded-lg mb-4">
+            <span className="text-sm font-medium text-muted-foreground">Status:</span>
+            <Badge variant="secondary" className="text-muted-foreground">Draft</Badge>
+            <Badge variant="default" className="text-yellow-600">Submitted</Badge>
+            <Badge variant="default" className="text-green-600">Approved</Badge>
+            <Badge variant="default" className="text-blue-600">Paid</Badge>
+            <Badge variant="default" className="text-orange-600">Short-paid</Badge>
+            <Badge variant="destructive" className="text-red-600">Rejected</Badge>
+          </div>
 
           {/* Claims Table */}
           <div className="border rounded-lg">
@@ -370,12 +394,26 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                       <TableCell>{claim.total_items}</TableCell>
                       <TableCell>{formatCurrency(claim.total_amount)}</TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={getStatusBadgeVariant(claim.status)}
-                          className={getStatusColor(claim.status)}
-                        >
-                          {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
-                        </Badge>
+                        {claim.status === 'short_paid' ? (
+                          <div className="flex flex-col gap-1">
+                            <Badge 
+                              variant={getStatusBadgeVariant(claim.status)}
+                              className={getStatusColor(claim.status)}
+                            >
+                              Short-paid
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {formatCurrency(claim.paid_amount || 0)} / {formatCurrency(claim.total_amount)}
+                            </span>
+                          </div>
+                        ) : (
+                          <Badge 
+                            variant={getStatusBadgeVariant(claim.status)}
+                            className={getStatusColor(claim.status)}
+                          >
+                            {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>{formatInTimeZone(parseISO(claim.created_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy')}</TableCell>
                       <TableCell className="text-right">
