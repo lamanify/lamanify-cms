@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
-import { Plus, Calendar, Clock, User, CalendarDays } from 'lucide-react';
+import { Plus, Calendar, Clock, User, CalendarDays, UserCheck, Loader2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQueue } from '@/hooks/useQueue';
 
 export interface Appointment {
   id: string;
@@ -34,8 +35,10 @@ export default function Appointments() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [processingCheckIn, setProcessingCheckIn] = useState<string | null>(null);
   const { toast } = useToast();
   const location = useLocation();
+  const { queue, addToQueue } = useQueue();
 
   useEffect(() => {
     fetchAppointments();
@@ -164,6 +167,100 @@ export default function Appointments() {
     setIsDialogOpen(true);
   };
 
+  const isPatientInQueue = (patientId: string): boolean => {
+    const activeStatuses = ['waiting', 'in_consultation', 'ready_for_payment', 'dispensary'];
+    return queue.some(
+      entry => entry.patient_id === patientId && activeStatuses.includes(entry.status)
+    );
+  };
+
+  const canCheckIn = (appointment: Appointment): boolean => {
+    const validStatuses = ['scheduled', 'confirmed'];
+    return validStatuses.includes(appointment.status) && !isPatientInQueue(appointment.patient_id);
+  };
+
+  const handleCheckIn = async (appointment: Appointment, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click from triggering
+    
+    if (processingCheckIn === appointment.id) return;
+
+    // Double-check patient not already in queue
+    if (isPatientInQueue(appointment.patient_id)) {
+      toast({
+        title: "Already in Queue",
+        description: "This patient is already in today's queue",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingCheckIn(appointment.id);
+
+    try {
+      // Add to queue with appointment data
+      await addToQueue(appointment.patient_id, appointment.doctor_id);
+
+      // Find the newly created queue entry to get its ID
+      const { data: queueData } = await supabase
+        .from('patient_queue')
+        .select('id')
+        .eq('patient_id', appointment.patient_id)
+        .eq('queue_date', new Date().toISOString().split('T')[0])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Update queue_sessions with appointment reference if queue entry exists
+      if (queueData) {
+        const { data: sessionData } = await supabase
+          .from('queue_sessions')
+          .select('id')
+          .eq('queue_id', queueData.id)
+          .maybeSingle();
+
+        if (sessionData) {
+          await supabase
+            .from('queue_sessions')
+            .update({
+              session_data: {
+                appointment_id: appointment.id,
+                source: 'appointment',
+                appointment_time: appointment.appointment_time,
+                appointment_reason: appointment.reason || '',
+                appointment_notes: appointment.notes || ''
+              }
+            })
+            .eq('id', sessionData.id);
+        }
+      }
+
+      // Update appointment status to arrived
+      const { error: updateError } = await supabase
+        .from('appointments')
+        .update({ status: 'arrived' })
+        .eq('id', appointment.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Success",
+        description: "Patient checked in and added to queue",
+      });
+
+      // Refresh appointments to show updated status
+      fetchAppointments();
+    } catch (error) {
+      console.error('Check-in error:', error);
+      toast({
+        title: "Check-in Failed",
+        description: "Failed to check in patient. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingCheckIn(null);
+    }
+  };
+
   if (loading) {
     return <div>Loading appointments...</div>;
   }
@@ -243,9 +340,39 @@ export default function Appointments() {
                       </p>
                     </div>
                   </CardTitle>
-                  <Badge variant={getStatusBadge(appointment.status)}>
-                    {appointment.status.replace('_', ' ')}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {canCheckIn(appointment) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => handleCheckIn(appointment, e)}
+                        disabled={processingCheckIn === appointment.id}
+                        className="gap-2"
+                      >
+                        {processingCheckIn === appointment.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Checking In...
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="h-4 w-4" />
+                            Mark as Arrived
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {isPatientInQueue(appointment.patient_id) && 
+                     !['arrived', 'completed', 'cancelled'].includes(appointment.status) && (
+                      <Badge variant="secondary" className="gap-1">
+                        <UserCheck className="h-3 w-3" />
+                        In Queue
+                      </Badge>
+                    )}
+                    <Badge variant={getStatusBadge(appointment.status)}>
+                      {appointment.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
