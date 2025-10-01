@@ -7,7 +7,7 @@ import { useMedications } from './useMedications';
 export interface StockMovement {
   id: string;
   medication_id: string;
-  movement_type: 'receipt' | 'dispensed' | 'adjustment' | 'expired' | 'damaged';
+  movement_type: 'receipt' | 'dispensed' | 'adjustment' | 'expired' | 'damaged' | 'wastage' | 'stock_take' | 'transfer_out' | 'transfer_in';
   quantity: number;
   previous_stock: number;
   new_stock: number;
@@ -27,6 +27,7 @@ export interface StockMovement {
     name: string;
     unit_of_measure?: string;
     cost_price?: number;
+    reorder_level?: number;
   };
   created_by_profile?: {
     first_name: string;
@@ -44,18 +45,32 @@ export interface StockSummary {
 export function useStockMovements() {
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [defaultLowStockThreshold, setDefaultLowStockThreshold] = useState<number>(10);
   const { toast } = useToast();
   const { medications, refetch: refetchMedications } = useMedications();
 
   const fetchStockMovements = async () => {
     try {
       setLoading(true);
+      
+      // Fetch default low stock threshold from clinic settings
+      const { data: settingsData } = await supabase
+        .from('clinic_settings')
+        .select('setting_value')
+        .eq('setting_key', 'default_low_stock_threshold')
+        .eq('setting_category', 'inventory')
+        .single();
+      
+      if (settingsData?.setting_value) {
+        setDefaultLowStockThreshold(parseInt(settingsData.setting_value) || 10);
+      }
+      
       // Using type assertion to bypass TypeScript errors until types are regenerated
       const { data, error } = await (supabase as any)
         .from('stock_movements')
         .select(`
           *,
-          medication:medications(name, unit_of_measure, cost_price),
+          medication:medications(name, unit_of_measure, cost_price, reorder_level),
           created_by_profile:profiles!stock_movements_created_by_fkey(first_name, last_name)
         `)
         .order('created_at', { ascending: false })
@@ -77,7 +92,7 @@ export function useStockMovements() {
 
   const createStockMovement = async (movementData: {
     medication_id: string;
-    movement_type: 'receipt' | 'dispensed' | 'adjustment' | 'expired' | 'damaged';
+    movement_type: 'receipt' | 'dispensed' | 'adjustment' | 'expired' | 'damaged' | 'wastage' | 'stock_take' | 'transfer_out' | 'transfer_in';
     quantity: number;
     reason: string;
     reference_number?: string;
@@ -103,20 +118,30 @@ export function useStockMovements() {
       // Calculate new stock based on movement type
       switch (movementData.movement_type) {
         case 'receipt':
+        case 'transfer_in':
+          newStock = currentStock + movementData.quantity;
+          break;
         case 'adjustment':
+          // Adjustment can be positive or negative
           newStock = currentStock + movementData.quantity;
           break;
         case 'dispensed':
         case 'expired':
         case 'damaged':
+        case 'wastage':
+        case 'transfer_out':
           newStock = Math.max(0, currentStock - movementData.quantity);
+          break;
+        case 'stock_take':
+          // Stock take sets absolute value
+          newStock = movementData.quantity;
           break;
         default:
           throw new Error('Invalid movement type');
       }
 
       // Validate stock levels for outgoing movements
-      if (['dispensed', 'expired', 'damaged'].includes(movementData.movement_type) && 
+      if (['dispensed', 'expired', 'damaged', 'wastage', 'transfer_out'].includes(movementData.movement_type) && 
           movementData.quantity > currentStock) {
         toast({
           variant: "destructive",
@@ -188,8 +213,16 @@ export function useStockMovements() {
 
   const getStockSummary = (): StockSummary => {
     const totalItems = medications.length;
-    const lowStockCount = medications.filter(med => (med.stock_level || 0) > 0 && (med.stock_level || 0) <= 10).length;
+    
+    // Use medication-specific reorder level or default threshold
+    const lowStockCount = medications.filter(med => {
+      const stock = med.stock_level || 0;
+      const threshold = (med as any).reorder_level || defaultLowStockThreshold;
+      return stock > 0 && stock <= threshold;
+    }).length;
+    
     const outOfStockCount = medications.filter(med => (med.stock_level || 0) === 0).length;
+    
     const totalValue = medications.reduce((sum, med) => {
       const stock = med.stock_level || 0;
       const cost = med.cost_price || 0;

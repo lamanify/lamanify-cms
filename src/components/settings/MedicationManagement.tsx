@@ -24,6 +24,7 @@ interface MedicationFormData {
   contraindications: string[];
   interactions: string[];
   pricing: { [tierId: string]: number };
+  reorder_level?: number;
 }
 
 export function MedicationManagement() {
@@ -43,11 +44,13 @@ export function MedicationManagement() {
       side_effects: [],
       contraindications: [],
       interactions: [],
-      pricing: {}
+      pricing: {},
+      reorder_level: undefined
     }
   });
 
   const watchPricing = watch('pricing');
+  const watchReorderLevel = watch('reorder_level');
 
   const openCreateDialog = () => {
     setEditingMedication(null);
@@ -61,7 +64,8 @@ export function MedicationManagement() {
       side_effects: [],
       contraindications: [],
       interactions: [],
-      pricing: {}
+      pricing: {},
+      reorder_level: undefined
     });
     setIsDialogOpen(true);
   };
@@ -78,7 +82,8 @@ export function MedicationManagement() {
       side_effects: medication.side_effects || [],
       contraindications: medication.contraindications || [],
       interactions: medication.interactions || [],
-      pricing: medication.pricing
+      pricing: medication.pricing,
+      reorder_level: (medication as any).reorder_level
     });
     setIsDialogOpen(true);
   };
@@ -196,6 +201,21 @@ export function MedicationManagement() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Reorder Level */}
+              <div>
+                <Label htmlFor="reorder_level">Reorder Level (Optional)</Label>
+                <Input
+                  id="reorder_level"
+                  type="number"
+                  min="0"
+                  {...register('reorder_level', { valueAsNumber: true })}
+                  placeholder="Leave empty to use clinic default"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Stock level at which reorder alerts are triggered. Leave empty to use clinic default threshold.
+                </p>
               </div>
 
               {/* Pricing by Tier Section */}

@@ -28,7 +28,7 @@ import { useMedications } from '@/hooks/useMedications';
 
 interface StockMovementFormData {
   medication_id: string;
-  movement_type: 'receipt' | 'dispensed' | 'adjustment' | 'expired' | 'damaged';
+  movement_type: 'receipt' | 'dispensed' | 'adjustment' | 'expired' | 'damaged' | 'wastage' | 'stock_take' | 'transfer_out' | 'transfer_in';
   quantity: number;
   reason: string;
   reference_number?: string;
@@ -41,7 +41,7 @@ interface StockMovementFormData {
 
 export function StockMovementManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [movementType, setMovementType] = useState<'receipt' | 'dispensed' | 'adjustment'>('receipt');
+  const [movementType, setMovementType] = useState<'receipt' | 'dispensed' | 'adjustment' | 'wastage' | 'stock_take' | 'transfer_out' | 'transfer_in'>('receipt');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [dateRange, setDateRange] = useState({
@@ -82,7 +82,7 @@ export function StockMovementManager() {
     return matchesSearch && matchesType && matchesDateRange;
   });
 
-  const openCreateDialog = (type: 'receipt' | 'dispensed' | 'adjustment') => {
+  const openCreateDialog = (type: 'receipt' | 'dispensed' | 'adjustment' | 'wastage' | 'stock_take' | 'transfer_out' | 'transfer_in') => {
     setMovementType(type);
     setFormData({
       medication_id: '',
@@ -106,6 +106,10 @@ export function StockMovementManager() {
       case 'adjustment': return 'Stock adjustment';
       case 'expired': return 'Expired medication removal';
       case 'damaged': return 'Damaged stock removal';
+      case 'wastage': return 'Stock wastage';
+      case 'stock_take': return 'Physical stock count';
+      case 'transfer_out': return 'Stock transfer out';
+      case 'transfer_in': return 'Stock transfer in';
       default: return '';
     }
   };
@@ -277,6 +281,10 @@ export function StockMovementManager() {
                     <SelectItem value="adjustment">Adjustments</SelectItem>
                     <SelectItem value="expired">Expired</SelectItem>
                     <SelectItem value="damaged">Damaged</SelectItem>
+                    <SelectItem value="wastage">Wastage</SelectItem>
+                    <SelectItem value="stock_take">Stock Take</SelectItem>
+                    <SelectItem value="transfer_out">Transfer Out</SelectItem>
+                    <SelectItem value="transfer_in">Transfer In</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex gap-2">
