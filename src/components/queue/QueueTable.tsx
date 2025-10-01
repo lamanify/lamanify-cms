@@ -23,6 +23,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
   const [isDispensaryModalOpen, setIsDispensaryModalOpen] = useState(false);
   const [removedEntries, setRemovedEntries] = useState<Set<string>>(new Set());
   const [updatedPatients, setUpdatedPatients] = useState<Map<string, any>>(new Map());
+  const [callingPatients, setCallingPatients] = useState<Set<string>>(new Set());
   const { completeConsultationWorkflow } = useConsultationWorkflow();
 
   // Real-time subscription for patient visit notes updates
@@ -111,9 +112,56 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
     // Don't close modal - let it stay open for the doctor to continue
   };
 
-  const handleCallPatient = (queueId: string) => {
-    // Logic for calling patient - could be notification, announcement system, etc.
-    console.log('Calling patient:', queueId);
+  const handleCallPatient = async (entry: QueueEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Prevent duplicate calls
+    if (callingPatients.has(entry.id) || entry.status !== 'waiting') {
+      return;
+    }
+    
+    setCallingPatients(prev => new Set(prev).add(entry.id));
+    
+    try {
+      // Play notification sound
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmTpL3v');
+        audio.play().catch(() => console.log('Audio notification failed'));
+      } catch (error) {
+        console.log('Audio notification failed');
+      }
+      
+      // Update status to in_consultation
+      await onStatusChange(entry.id, 'in_consultation');
+      
+      // Auto-reset after 5 minutes if still in consultation (abandoned call)
+      setTimeout(async () => {
+        // Check if patient is still in consultation status
+        const currentEntry = queue.find(q => q.id === entry.id);
+        if (currentEntry && currentEntry.status === 'in_consultation') {
+          // Patient didn't respond, reset to waiting
+          console.log('Auto-resetting abandoned call for:', entry.queue_number);
+          await onStatusChange(entry.id, 'waiting');
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+      
+    } catch (error) {
+      console.error('Error calling patient:', error);
+    } finally {
+      setCallingPatients(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(entry.id);
+        return newSet;
+      });
+    }
+  };
+
+  // Wrapper for PatientConsultationModal compatibility
+  const handleCallPatientById = (queueId: string) => {
+    const entry = queue.find(q => q.id === queueId);
+    if (entry) {
+      handleCallPatient(entry, { stopPropagation: () => {} } as React.MouseEvent);
+    }
   };
 
   const handleMarkDone = async (consultationData: { notes: string; diagnosis: string; treatmentItems: any[] }) => {
@@ -379,30 +427,28 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                            </div>
                          </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStatusChange(entry.id, 'in_consultation');
-                            }}
-                            className="bg-destructive hover:bg-destructive/90"
-                          >
-                            Start Now
-                          </Button>
+                         {/* Action Buttons */}
+                         <div className="flex items-center space-x-2">
+                           <Button
+                             size="sm"
+                             onClick={(e) => handleCallPatient(entry, e)}
+                             disabled={callingPatients.has(entry.id)}
+                             className="bg-primary hover:bg-primary/90"
+                           >
+                             {callingPatients.has(entry.id) ? 'Calling...' : 'Call Patient'}
+                           </Button>
 
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOptimisticRemove(entry.id);
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
+                           <Button
+                             size="sm"
+                             variant="destructive"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleOptimisticRemove(entry.id);
+                             }}
+                           >
+                             Remove
+                           </Button>
+                         </div>
                       </div>
                     );
                   })}
@@ -715,7 +761,7 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
         onClose={handleCloseModal}
         queueEntry={selectedPatient}
         onStartConsultation={handleStartConsultation}
-        onCallPatient={handleCallPatient}
+        onCallPatient={handleCallPatientById}
         onDataRefresh={onDataRefresh}
         onMarkDone={handleMarkDone}
       />

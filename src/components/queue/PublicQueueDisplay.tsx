@@ -2,12 +2,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQueue } from '@/hooks/useQueue';
 import { Clock, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function PublicQueueDisplay() {
   const { queue, loading, currentNumber, getEstimatedWaitTime } = useQueue();
+  const [isBlinking, setIsBlinking] = useState(false);
 
   const waitingQueue = queue.filter(entry => entry.status === 'waiting');
   const nextFewPatients = waitingQueue.slice(0, 5);
+  const currentPatient = queue.find(entry => entry.status === 'in_consultation');
+
+  // Play chime and trigger blink animation when current number changes
+  useEffect(() => {
+    if (currentNumber) {
+      // Play notification chime
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmTpL3v');
+        audio.play().catch(() => console.log('Audio notification failed'));
+      } catch (error) {
+        console.log('Audio notification failed');
+      }
+      
+      // Trigger blink animation
+      setIsBlinking(true);
+      setTimeout(() => setIsBlinking(false), 3000); // Blink for 3 seconds
+    }
+  }, [currentNumber]);
 
   if (loading) {
     return (
@@ -19,6 +39,19 @@ export function PublicQueueDisplay() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
+      <style>
+        {`
+          @keyframes blink-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+          }
+          
+          .blink-animation {
+            animation: blink-glow 0.8s ease-in-out infinite;
+          }
+        `}
+      </style>
+      
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -35,13 +68,13 @@ export function PublicQueueDisplay() {
           </p>
         </div>
 
-        {/* Current Number Display */}
-        <Card className="bg-gradient-to-r from-primary to-primary-dark text-primary-foreground">
+        {/* Current Number Display - Enhanced with Blinking */}
+        <Card className={`bg-gradient-to-r from-primary to-primary-dark text-primary-foreground ${isBlinking ? 'blink-animation' : ''}`}>
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl">Now Serving</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <div className="text-8xl font-bold mb-4">
+            <div className={`text-9xl font-bold mb-4 transition-all duration-300 ${isBlinking ? 'scale-110' : ''}`}>
               {currentNumber || '---'}
             </div>
             <p className="text-lg opacity-90">
