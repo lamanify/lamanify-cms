@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ interface SubmissionLog {
 }
 
 export function ClaimsIntegrationManager() {
+  const { toast } = useToast();
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<IntegrationConfig | null>(null);
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
@@ -56,12 +58,26 @@ export function ClaimsIntegrationManager() {
   } = useClaimsIntegrations();
 
   const handleTestConnection = async (configId: string) => {
+    const integration = integrations.find(i => i.id === configId);
+    const integrationName = integration?.name || 'Integration';
+    
     setTestingConnection(configId);
     try {
       await testConnection(configId);
       // Refresh webhook deliveries after test
       const deliveries = await fetchWebhookDeliveries(configId);
       setWebhookDeliveries(prev => ({ ...prev, [configId]: deliveries }));
+      
+      toast({
+        title: "Connection successful",
+        description: `Successfully connected to ${integrationName}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Connection failed",
+        description: `Failed to connect to ${integrationName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
     } finally {
       setTestingConnection(null);
     }
@@ -343,11 +359,16 @@ export function ClaimsIntegrationManager() {
                       disabled={testingConnection === integration.id}
                     >
                       {testingConnection === integration.id ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Testing...
+                        </>
                       ) : (
-                        <TestTube className="h-4 w-4 mr-2" />
+                        <>
+                          <TestTube className="h-4 w-4 mr-2" />
+                          Test
+                        </>
                       )}
-                      Test
                     </Button>
                     <Button
                       variant="ghost"

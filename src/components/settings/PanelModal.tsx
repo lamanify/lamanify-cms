@@ -33,19 +33,34 @@ export function PanelModal({ isOpen, onClose, onSubmit, editingPanel }: PanelMod
   });
 
   useEffect(() => {
-    if (editingPanel) {
-      setFormData({
-        panel_name: editingPanel.panel_name,
-        panel_code: editingPanel.panel_code,
-        person_in_charge_name: editingPanel.person_in_charge_name || '',
-        person_in_charge_phone: editingPanel.person_in_charge_phone || '',
-        default_status: editingPanel.default_status,
-        verification_method: editingPanel.verification_method,
-        verification_url: editingPanel.verification_url || '',
-        manual_remarks: editingPanel.manual_remarks || '',
-        price_tier_ids: editingPanel.price_tiers?.map(tier => tier.id) || []
-      });
+    if (isOpen) {
+      if (editingPanel) {
+        setFormData({
+          panel_name: editingPanel.panel_name,
+          panel_code: editingPanel.panel_code,
+          person_in_charge_name: editingPanel.person_in_charge_name || '',
+          person_in_charge_phone: editingPanel.person_in_charge_phone || '',
+          default_status: editingPanel.default_status,
+          verification_method: editingPanel.verification_method,
+          verification_url: editingPanel.verification_url || '',
+          manual_remarks: editingPanel.manual_remarks || '',
+          price_tier_ids: editingPanel.price_tiers?.map(tier => tier.id) || []
+        });
+      } else {
+        setFormData({
+          panel_name: '',
+          panel_code: '',
+          person_in_charge_name: '',
+          person_in_charge_phone: '',
+          default_status: 'active',
+          verification_method: 'manual',
+          verification_url: '',
+          manual_remarks: '',
+          price_tier_ids: []
+        });
+      }
     } else {
+      // Reset form when modal closes
       setFormData({
         panel_name: '',
         panel_code: '',
