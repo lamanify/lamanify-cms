@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,46 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { 
-  Send, 
-  Settings, 
   Globe, 
   Key, 
   AlertCircle, 
   CheckCircle, 
-  Clock, 
   RefreshCw,
   Plus,
-  Eye,
-  Trash2,
-  TestTube
+  Settings,
+  TestTube,
+  Trash2
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { PanelClaim } from '@/hooks/usePanelClaims';
 import { format } from 'date-fns';
-
-interface IntegrationConfig {
-  id: string;
-  name: string;
-  provider: string;
-  endpoint_url: string;
-  api_key: string;
-  authentication_type: 'api_key' | 'bearer_token' | 'basic_auth';
-  headers: Record<string, string>;
-  is_active: boolean;
-  retry_attempts: number;
-  timeout_seconds: number;
-  webhook_url?: string;
-  created_at: string;
-  last_used_at?: string;
-  success_count: number;
-  error_count: number;
-}
+import { useClaimsIntegrations, IntegrationConfig, WebhookDelivery } from '@/hooks/useClaimsIntegrations';
 
 interface SubmissionLog {
   id: string;
@@ -61,157 +39,91 @@ interface SubmissionLog {
 }
 
 export function ClaimsIntegrationManager() {
-  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
-  const [submissions, setSubmissions] = useState<SubmissionLog[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<IntegrationConfig | null>(null);
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [webhookDeliveries, setWebhookDeliveries] = useState<Record<string, WebhookDelivery[]>>({});
   
-  const { toast } = useToast();
-
-  // Mock data - in real implementation, these would come from Supabase
-  useEffect(() => {
-    // Load integration configurations and submission logs
-    const mockIntegrations: IntegrationConfig[] = [
-      {
-        id: '1',
-        name: 'Great Eastern TPA',
-        provider: 'great_eastern',
-        endpoint_url: 'https://api.greateasterntpa.com/claims/submit',
-        api_key: 'ge_api_key_hidden',
-        authentication_type: 'api_key',
-        headers: { 'Content-Type': 'application/json' },
-        is_active: true,
-        retry_attempts: 3,
-        timeout_seconds: 30,
-        webhook_url: 'https://api.greateasterntpa.com/webhooks/status',
-        created_at: '2024-01-15T10:00:00Z',
-        last_used_at: '2024-01-20T14:30:00Z',
-        success_count: 45,
-        error_count: 2,
-      },
-      {
-        id: '2',
-        name: 'Allianz Claims Portal',
-        provider: 'allianz',
-        endpoint_url: 'https://claims.allianz.com.my/api/v2/submit',
-        api_key: 'allianz_token_hidden',
-        authentication_type: 'bearer_token',
-        headers: { 'Content-Type': 'application/json', 'X-Partner-ID': 'CLINIC001' },
-        is_active: false,
-        retry_attempts: 5,
-        timeout_seconds: 45,
-        created_at: '2024-01-10T09:00:00Z',
-        success_count: 12,
-        error_count: 8,
-      },
-    ];
-    
-    setIntegrations(mockIntegrations);
-  }, []);
+  const {
+    integrations,
+    loading,
+    createIntegration,
+    updateIntegration,
+    deleteIntegration,
+    testConnection,
+    fetchWebhookDeliveries,
+  } = useClaimsIntegrations();
 
   const handleTestConnection = async (configId: string) => {
     setTestingConnection(configId);
-    
     try {
-      // Simulate API test
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock success/failure
-      const success = Math.random() > 0.3;
-      
-      if (success) {
-        toast({
-          title: "Connection successful",
-          description: "API endpoint is responding correctly.",
-        });
-      } else {
-        toast({
-          title: "Connection failed",
-          description: "Unable to connect to API endpoint. Please check configuration.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Test failed",
-        description: "Error testing connection.",
-        variant: "destructive",
-      });
+      await testConnection(configId);
+      // Refresh webhook deliveries after test
+      const deliveries = await fetchWebhookDeliveries(configId);
+      setWebhookDeliveries(prev => ({ ...prev, [configId]: deliveries }));
     } finally {
       setTestingConnection(null);
     }
   };
 
-  const handleSubmitClaim = async (claim: PanelClaim, configId: string) => {
-    setLoading(true);
-    
-    try {
-      const config = integrations.find(i => i.id === configId);
-      if (!config) throw new Error('Integration configuration not found');
+  const handleSaveIntegration = async () => {
+    const form = document.getElementById('integration-form') as HTMLFormElement;
+    if (!form) return;
 
-      // Prepare claim data for submission
-      const claimData = {
-        claim_number: claim.claim_number,
-        panel_reference: claim.panel_reference_number,
-        billing_period: {
-          start: claim.billing_period_start,
-          end: claim.billing_period_end,
-        },
-        total_amount: claim.total_amount,
-        items: claim.claim_items?.map(item => ({
-          invoice_number: item.billing?.invoice_number,
-          description: item.billing?.description,
-          amount: item.claim_amount,
-        })) || [],
-      };
+    const formData = new FormData(form);
+    const data: any = {
+      name: formData.get('name') as string,
+      provider: formData.get('provider') as string,
+      endpoint_url: formData.get('endpoint_url') as string,
+      authentication_type: formData.get('authentication_type') as string,
+      retry_attempts: parseInt(formData.get('retry_attempts') as string),
+      timeout_seconds: parseInt(formData.get('timeout_seconds') as string),
+      webhook_url: formData.get('webhook_url') as string || undefined,
+      is_active: formData.get('is_active') === 'on',
+    };
 
-      // Simulate API submission
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mock response
-      const success = Math.random() > 0.2;
-      
-      if (success) {
-        toast({
-          title: "Claim submitted successfully",
-          description: `Claim ${claim.claim_number} has been sent to ${config.name}.`,
-        });
-        
-        // Update integration stats
-        setIntegrations(prev => prev.map(integration => 
-          integration.id === configId 
-            ? { 
-                ...integration, 
-                success_count: integration.success_count + 1,
-                last_used_at: new Date().toISOString()
-              }
-            : integration
-        ));
-      } else {
-        throw new Error('Submission rejected by TPA system');
+    // Parse headers JSON
+    const headersStr = formData.get('headers') as string;
+    if (headersStr) {
+      try {
+        data.headers = JSON.parse(headersStr);
+      } catch (e) {
+        data.headers = {};
       }
-    } catch (error: any) {
-      toast({
-        title: "Submission failed",
-        description: error.message || "Failed to submit claim to TPA.",
-        variant: "destructive",
-      });
-      
-      // Update error count
-      setIntegrations(prev => prev.map(integration => 
-        integration.id === configId 
-          ? { ...integration, error_count: integration.error_count + 1 }
-          : integration
-      ));
-    } finally {
-      setLoading(false);
+    }
+
+    // Only include API key if it's being changed
+    const apiKey = formData.get('api_key') as string;
+    if (apiKey && apiKey.trim()) {
+      data.api_key = apiKey;
+    }
+
+    try {
+      if (selectedConfig) {
+        await updateIntegration(selectedConfig.id, data);
+      } else {
+        if (!data.api_key) {
+          throw new Error('API key is required for new integrations');
+        }
+        await createIntegration(data);
+      }
+      setShowConfigDialog(false);
+      setSelectedConfig(null);
+      setShowApiKeyInput(false);
+    } catch (error) {
+      console.error('Error saving integration:', error);
     }
   };
 
   const ConfigurationDialog = () => (
-    <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
+    <Dialog open={showConfigDialog} onOpenChange={(open) => {
+      setShowConfigDialog(open);
+      if (!open) {
+        setSelectedConfig(null);
+        setShowApiKeyInput(false);
+      }
+    }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -219,19 +131,21 @@ export function ClaimsIntegrationManager() {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <form id="integration-form" className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="integration-name">Integration Name</Label>
+              <Label htmlFor="name">Integration Name</Label>
               <Input
-                id="integration-name"
+                id="name"
+                name="name"
                 placeholder="e.g., Great Eastern TPA"
                 defaultValue={selectedConfig?.name}
+                required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="provider">Provider</Label>
-              <Select defaultValue={selectedConfig?.provider}>
+              <Select name="provider" defaultValue={selectedConfig?.provider || 'custom'}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select provider" />
                 </SelectTrigger>
@@ -247,18 +161,20 @@ export function ClaimsIntegrationManager() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="endpoint-url">API Endpoint URL</Label>
+            <Label htmlFor="endpoint_url">API Endpoint URL</Label>
             <Input
-              id="endpoint-url"
+              id="endpoint_url"
+              name="endpoint_url"
               placeholder="https://api.example.com/claims/submit"
               defaultValue={selectedConfig?.endpoint_url}
+              required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="auth-type">Authentication Type</Label>
-              <Select defaultValue={selectedConfig?.authentication_type || 'api_key'}>
+              <Label htmlFor="authentication_type">Authentication Type</Label>
+              <Select name="authentication_type" defaultValue={selectedConfig?.authentication_type || 'api_key'}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -270,13 +186,31 @@ export function ClaimsIntegrationManager() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="api-key">API Key / Token</Label>
-              <Input
-                id="api-key"
-                type="password"
-                placeholder="Enter API key or token"
-                defaultValue={selectedConfig?.api_key}
-              />
+              <Label htmlFor="api_key">API Key / Token</Label>
+              {selectedConfig && !showApiKeyInput ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={selectedConfig.api_key_masked}
+                    disabled
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowApiKeyInput(true)}
+                  >
+                    <Key className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  id="api_key"
+                  name="api_key"
+                  type="password"
+                  placeholder={selectedConfig ? "Enter new key to change" : "Enter API key or token"}
+                  required={!selectedConfig}
+                />
+              )}
             </div>
           </div>
 
@@ -284,6 +218,7 @@ export function ClaimsIntegrationManager() {
             <Label htmlFor="headers">Custom Headers (JSON)</Label>
             <Textarea
               id="headers"
+              name="headers"
               placeholder='{"Content-Type": "application/json", "X-Partner-ID": "CLINIC001"}'
               className="h-20"
               defaultValue={selectedConfig?.headers ? JSON.stringify(selectedConfig.headers, null, 2) : ''}
@@ -292,9 +227,10 @@ export function ClaimsIntegrationManager() {
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="retry-attempts">Retry Attempts</Label>
+              <Label htmlFor="retry_attempts">Retry Attempts</Label>
               <Input
-                id="retry-attempts"
+                id="retry_attempts"
+                name="retry_attempts"
                 type="number"
                 min="1"
                 max="10"
@@ -302,9 +238,10 @@ export function ClaimsIntegrationManager() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="timeout">Timeout (seconds)</Label>
+              <Label htmlFor="timeout_seconds">Timeout (seconds)</Label>
               <Input
-                id="timeout"
+                id="timeout_seconds"
+                name="timeout_seconds"
                 type="number"
                 min="10"
                 max="300"
@@ -312,35 +249,44 @@ export function ClaimsIntegrationManager() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="is-active">Status</Label>
+              <Label htmlFor="is_active">Status</Label>
               <div className="flex items-center space-x-2 pt-2">
                 <Switch
-                  id="is-active"
+                  id="is_active"
+                  name="is_active"
                   defaultChecked={selectedConfig?.is_active !== false}
                 />
-                <Label htmlFor="is-active" className="text-sm">Active</Label>
+                <Label htmlFor="is_active" className="text-sm">Active</Label>
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="webhook-url">Webhook URL (Optional)</Label>
+            <Label htmlFor="webhook_url">Webhook URL (Optional)</Label>
             <Input
-              id="webhook-url"
+              id="webhook_url"
+              name="webhook_url"
               placeholder="https://api.example.com/webhooks/status"
               defaultValue={selectedConfig?.webhook_url}
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowConfigDialog(false)}
+            >
               Cancel
             </Button>
-            <Button>
+            <Button type="button" onClick={handleSaveIntegration} disabled={loading}>
+              {loading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : null}
               {selectedConfig ? 'Update' : 'Create'} Integration
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -486,7 +432,7 @@ export function ClaimsIntegrationManager() {
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">
-                <Send className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No submissions yet</p>
                 <p className="text-sm">Submissions will appear here once you start sending claims to TPAs</p>
               </div>

@@ -1,1 +1,4 @@
 project_id = "vxnvdmepejjhvphqxopl"
+
+[functions.claims-integrations]
+verify_jwt = true
