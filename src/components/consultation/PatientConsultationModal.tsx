@@ -86,6 +86,7 @@ export function PatientConsultationModal({
   const [lastEditTime, setLastEditTime] = useState<Date | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ file: File; preview: string }>>([]);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [notesBeforeAI, setNotesBeforeAI] = useState<string>('');
   const previousPatientIdRef = useRef<string | null>(null);
   const {
     toast
@@ -702,6 +703,9 @@ export function PatientConsultationModal({
   const handleEnhanceWithAI = async () => {
     if (!consultationNotes.trim()) return;
     
+    // Save current notes before enhancement for undo
+    setNotesBeforeAI(consultationNotes);
+    
     setIsEnhancing(true);
     try {
       const { data, error } = await supabase.functions.invoke('enhance-consultation-notes', {
@@ -726,6 +730,17 @@ export function PatientConsultationModal({
       });
     } finally {
       setIsEnhancing(false);
+    }
+  };
+
+  const handleUndoEnhancement = () => {
+    if (notesBeforeAI) {
+      setConsultationNotes(notesBeforeAI);
+      setNotesBeforeAI('');
+      toast({
+        title: "Undo successful",
+        description: "Notes restored to previous version",
+      });
     }
   };
 
@@ -843,25 +858,37 @@ export function PatientConsultationModal({
                       handleEditingChange();
                     }} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
                        
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         onClick={handleEnhanceWithAI}
-                         disabled={!consultationNotes.trim() || isEnhancing || consultationStatus === 'waiting'}
-                         className="mb-3"
-                       >
-                         {isEnhancing ? (
-                           <>
-                             <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                             Enhancing...
-                           </>
-                         ) : (
-                           <>
-                             <Sparkles className="h-3 w-3 mr-2" />
-                             Enhance with AI
-                           </>
+                       <div className="flex gap-2 mb-3">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={handleEnhanceWithAI}
+                           disabled={!consultationNotes.trim() || isEnhancing || consultationStatus === 'waiting'}
+                         >
+                           {isEnhancing ? (
+                             <>
+                               <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                               Enhancing...
+                             </>
+                           ) : (
+                             <>
+                               <Sparkles className="h-3 w-3 mr-2" />
+                               Enhance with AI
+                             </>
+                           )}
+                         </Button>
+                         
+                         {notesBeforeAI && (
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={handleUndoEnhancement}
+                             disabled={isEnhancing || consultationStatus === 'waiting'}
+                           >
+                             Undo
+                           </Button>
                          )}
-                       </Button>
+                       </div>
                        
                        {/* Overlay notification when consultation hasn't started */}
                        {consultationStatus === 'waiting' && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
