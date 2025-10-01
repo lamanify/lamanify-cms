@@ -1029,6 +1029,72 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_configs: {
+        Row: {
+          api_key_encrypted: string
+          api_key_last4: string
+          authentication_type: string
+          created_at: string | null
+          created_by: string | null
+          endpoint_url: string
+          error_count: number | null
+          headers: Json | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          name: string
+          provider: string
+          retry_attempts: number | null
+          success_count: number | null
+          timeout_seconds: number | null
+          updated_at: string | null
+          webhook_secret_last4: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_encrypted: string
+          api_key_last4: string
+          authentication_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          endpoint_url: string
+          error_count?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          name: string
+          provider: string
+          retry_attempts?: number | null
+          success_count?: number | null
+          timeout_seconds?: number | null
+          updated_at?: string | null
+          webhook_secret_last4?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string
+          api_key_last4?: string
+          authentication_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          endpoint_url?: string
+          error_count?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          name?: string
+          provider?: string
+          retry_attempts?: number | null
+          success_count?: number | null
+          timeout_seconds?: number | null
+          updated_at?: string | null
+          webhook_secret_last4?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       medical_services: {
         Row: {
           category: string
@@ -4396,6 +4462,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_deliveries: {
+        Row: {
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          integration_config_id: string | null
+          payload_hash: string | null
+          response_time_ms: number | null
+          signature_valid: boolean | null
+          status_code: number | null
+        }
+        Insert: {
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          integration_config_id?: string | null
+          payload_hash?: string | null
+          response_time_ms?: number | null
+          signature_valid?: boolean | null
+          status_code?: number | null
+        }
+        Update: {
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          integration_config_id?: string | null
+          payload_hash?: string | null
+          response_time_ms?: number | null
+          signature_valid?: boolean | null
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
             referencedColumns: ["id"]
           },
         ]
