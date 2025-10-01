@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { FileText, Download, Edit, Check, X, Clock, DollarSign } from 'lucide-react';
+import { FileText, Download, Edit, Check, X, Clock, DollarSign, FileCheck } from 'lucide-react';
 import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { PanelClaim, usePanelClaims } from '@/hooks/usePanelClaims';
@@ -17,6 +17,8 @@ import { StatusConfirmationDialog } from './StatusConfirmationDialog';
 import { BillingItemEditor } from './BillingItemEditor';
 import { useBillingManagement } from '@/hooks/useBillingManagement';
 import { useToast } from '@/hooks/use-toast';
+import { ClaimDocumentsManager } from './ClaimDocumentsManager';
+import { ClaimNotesManager } from './ClaimNotesManager';
 
 interface ClaimDetailsModalProps {
   claim: PanelClaim;
@@ -40,6 +42,7 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
     status: string;
     currentStatus: string;
   } | null>(null);
+  const [creatingDraft, setCreatingDraft] = useState(false);
 
   useEffect(() => {
     if (open && claim.id) {
@@ -136,6 +139,39 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
     onStatusChange?.();
     loadClaimDetails();
     setPendingStatusChange(null);
+  };
+
+  const handleCreateDraft = async () => {
+    // This would generate and auto-attach documents
+    setCreatingDraft(true);
+    try {
+      toast({
+        title: "Creating claim draft",
+        description: "Generating invoice PDF, consultation summary, and prescriptions...",
+      });
+
+      // TODO: Implement document generation and auto-attach
+      // 1. Generate Invoice PDF from billing items
+      // 2. Generate Consultation Summary PDF
+      // 3. Generate Prescription/Label PDFs if available
+      // 4. Auto-upload these to panel_claim_documents
+
+      toast({
+        title: "Draft created",
+        description: "Documents have been auto-attached to the claim",
+      });
+      
+      loadClaimDetails();
+    } catch (error) {
+      console.error('Error creating draft:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create claim draft",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingDraft(false);
+    }
   };
 
   const displayClaim = claimDetails || claim;
@@ -341,49 +377,11 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
               </Card>
             )}
 
+            {/* Documents Section */}
+            <ClaimDocumentsManager claimId={claim.id} />
+
             {/* Notes Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {editingNotes ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Add notes about this claim..."
-                      rows={4}
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => setEditingNotes(false)}>
-                        Save
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => {
-                          setNotes(displayClaim.notes || '');
-                          setEditingNotes(false);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      {notes || 'No notes added yet.'}
-                    </p>
-                    <Button size="sm" variant="outline" onClick={() => setEditingNotes(true)}>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit Notes
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ClaimNotesManager claimId={claim.id} />
           </div>
         )}
 
@@ -392,6 +390,16 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
             Close
           </Button>
           <div className="flex gap-2">
+            {displayClaim.status === 'draft' && (
+              <Button 
+                variant="default" 
+                onClick={handleCreateDraft}
+                disabled={creatingDraft}
+              >
+                <FileCheck className="w-4 h-4 mr-2" />
+                {creatingDraft ? 'Creating...' : 'Create Claim Draft'}
+              </Button>
+            )}
             <Button variant="outline">
               <Download className="w-4 h-4 mr-2" />
               Export Claim

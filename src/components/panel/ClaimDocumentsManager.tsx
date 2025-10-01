@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { FileIcon, Upload, Download, Trash2, Eye, Plus } from 'lucide-react';
 import { usePanelClaimDocuments } from '@/hooks/usePanelClaimDocuments';
+import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface ClaimDocumentsManagerProps {
@@ -24,10 +26,16 @@ const DOCUMENT_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+const ALLOWED_FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 export function ClaimDocumentsManager({ claimId }: ClaimDocumentsManagerProps) {
   const { documents, loading, uploadDocument, downloadDocument, deleteDocument } = usePanelClaimDocuments(claimId);
+  const { toast } = useToast();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState({
     document_name: '',
     document_type: 'supporting_document' as const,
@@ -37,27 +45,62 @@ export function ClaimDocumentsManager({ claimId }: ClaimDocumentsManagerProps) {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setUploadForm(prev => ({
-        ...prev,
-        document_name: file.name,
-      }));
+    if (!file) return;
+
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Only PDF, PNG, and JPG files are allowed",
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
     }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 10MB",
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
+    setSelectedFile(file);
+    setUploadForm(prev => ({
+      ...prev,
+      document_name: file.name,
+    }));
   };
 
   const handleUpload = async () => {
     if (!selectedFile) return;
 
+    setIsUploading(true);
+    setUploadProgress(0);
+
     try {
-      await uploadDocument(selectedFile, {
-        claim_id: claimId,
-        ...uploadForm,
-        version: 1,
-      });
+      await uploadDocument(
+        selectedFile, 
+        {
+          claim_id: claimId,
+          ...uploadForm,
+          version: 1,
+        },
+        (progress) => setUploadProgress(progress)
+      );
       
+      toast({
+        title: "Upload successful",
+        description: "Document has been uploaded successfully",
+      });
+
       setUploadDialogOpen(false);
       setSelectedFile(null);
+      setUploadProgress(0);
       setUploadForm({
         document_name: '',
         document_type: 'supporting_document',
@@ -66,6 +109,13 @@ export function ClaimDocumentsManager({ claimId }: ClaimDocumentsManagerProps) {
       });
     } catch (error) {
       console.error('Upload failed:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload document. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -122,8 +172,12 @@ export function ClaimDocumentsManager({ claimId }: ClaimDocumentsManagerProps) {
                   id="file-upload"
                   type="file"
                   onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  disabled={isUploading}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Allowed: PDF, PNG, JPG (max 10MB)
+                </p>
                 {selectedFile && (
                   <p className="text-sm text-muted-foreground mt-1">
                     Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
@@ -138,8 +192,19 @@ export function ClaimDocumentsManager({ claimId }: ClaimDocumentsManagerProps) {
                   value={uploadForm.document_name}
                   onChange={(e) => setUploadForm(prev => ({ ...prev, document_name: e.target.value }))}
                   placeholder="Enter document name"
+                  disabled={isUploading}
                 />
               </div>
+
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Uploading...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} />
+                </div>
+              )}
               
               <div>
                 <Label htmlFor="document-type">Document Type</Label>
@@ -169,12 +234,19 @@ export function ClaimDocumentsManager({ claimId }: ClaimDocumentsManagerProps) {
               </div>
               
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setUploadDialogOpen(false)}
+                  disabled={isUploading}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleUpload} disabled={!selectedFile || loading}>
+                <Button 
+                  onClick={handleUpload} 
+                  disabled={!selectedFile || isUploading}
+                >
                   <Upload className="h-4 w-4 mr-2" />
-                  {loading ? 'Uploading...' : 'Upload'}
+                  {isUploading ? 'Uploading...' : 'Upload'}
                 </Button>
               </div>
             </div>

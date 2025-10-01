@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { MessageSquare, Plus, Reply, Edit, Trash2, Clock, User } from 'lucide-react';
 import { usePanelClaimNotes, type PanelClaimNote } from '@/hooks/usePanelClaimNotes';
+import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface ClaimNotesManagerProps {
@@ -36,6 +37,7 @@ const NOTE_VISIBILITY = [
 
 export function ClaimNotesManager({ claimId }: ClaimNotesManagerProps) {
   const { notes, loading, createNote, updateNote, deleteNote } = usePanelClaimNotes(claimId);
+  const { toast } = useToast();
   const [newNoteDialogOpen, setNewNoteDialogOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -47,12 +49,35 @@ export function ClaimNotesManager({ claimId }: ClaimNotesManagerProps) {
   });
 
   const handleCreateNote = async () => {
+    if (!noteForm.content.trim()) {
+      toast({
+        title: "Error",
+        description: "Note content is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (noteForm.content.trim().length < 5) {
+      toast({
+        title: "Error",
+        description: "Note must be at least 5 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await createNote({
         claim_id: claimId,
         ...noteForm,
       });
       
+      toast({
+        title: "Success",
+        description: "Note created successfully",
+      });
+
       setNewNoteDialogOpen(false);
       setNoteForm({
         content: '',
@@ -62,10 +87,24 @@ export function ClaimNotesManager({ claimId }: ClaimNotesManagerProps) {
       });
     } catch (error) {
       console.error('Failed to create note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create note",
+        variant: "destructive",
+      });
     }
   };
 
   const handleReply = async (parentId: string, content: string) => {
+    if (content.trim().length < 5) {
+      toast({
+        title: "Error",
+        description: "Reply must be at least 5 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await createNote({
         claim_id: claimId,
@@ -76,9 +115,19 @@ export function ClaimNotesManager({ claimId }: ClaimNotesManagerProps) {
         parent_note_id: parentId,
       });
       
+      toast({
+        title: "Success",
+        description: "Reply added successfully",
+      });
+
       setReplyingTo(null);
     } catch (error) {
       console.error('Failed to reply:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add reply",
+        variant: "destructive",
+      });
     }
   };
 

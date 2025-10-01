@@ -56,20 +56,28 @@ export function usePanelClaimDocuments(claimId?: string) {
 
   const uploadDocument = async (
     file: File,
-    documentData: Omit<PanelClaimDocument, 'id' | 'file_path' | 'file_size' | 'mime_type' | 'created_at' | 'updated_at'>
+    documentData: Omit<PanelClaimDocument, 'id' | 'file_path' | 'file_size' | 'mime_type' | 'created_at' | 'updated_at'>,
+    onProgress?: (progress: number) => void
   ) => {
     try {
       setLoading(true);
+
+      // Simulate progress for upload preparation
+      onProgress?.(10);
 
       // Upload file to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${documentData.claim_id}/${Date.now()}_${file.name}`;
       
+      onProgress?.(20);
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('panel-claim-files')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
+
+      onProgress?.(70);
 
       // Create document record
       const { data, error } = await supabase
@@ -85,11 +93,14 @@ export function usePanelClaimDocuments(claimId?: string) {
 
       if (error) throw error;
 
+      onProgress?.(90);
+
       toast({
         title: 'Success',
         description: 'Document uploaded successfully',
       });
 
+      onProgress?.(100);
       await fetchDocuments();
       return data;
     } catch (error: any) {
