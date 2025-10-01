@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, FileText, Plus, Search, Eye, Download, Send } from 'lucide-react';
+import { AlertCircle, FileText, Plus, Search, Eye, Download, Send, Check, DollarSign } from 'lucide-react';
 import { usePanelClaims, PanelClaim } from '@/hooks/usePanelClaims';
 import { usePanels } from '@/hooks/usePanels';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -41,6 +41,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
   const [showIntegrationManager, setShowIntegrationManager] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [batchStatus, setBatchStatus] = useState<PanelClaim['status'] | null>(null);
+  const [processingClaimId, setProcessingClaimId] = useState<string | null>(null);
 
   const filteredClaims = useMemo(() => {
     return claims.filter(claim => {
@@ -114,6 +115,27 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
       setSelectedClaims(prev => [...prev, claimId]);
     } else {
       setSelectedClaims(prev => prev.filter(id => id !== claimId));
+    }
+  };
+
+  const handleQuickStatusUpdate = async (claimId: string, newStatus: PanelClaim['status']) => {
+    setProcessingClaimId(claimId);
+    try {
+      await updateClaimStatus(claimId, newStatus);
+      toast({
+        title: "Status Updated",
+        description: `Claim updated to ${newStatus}`,
+      });
+      fetchClaims();
+    } catch (error) {
+      console.error('Quick status update error:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update claim status",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingClaimId(null);
     }
   };
 
@@ -448,7 +470,44 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                       </TableCell>
                       <TableCell>{formatInTimeZone(parseISO(claim.created_at), 'Asia/Kuala_Lumpur', 'MMM dd, yyyy')}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
+                          {/* Quick action buttons based on valid transitions */}
+                          {claim.status === 'draft' && isValidTransition(claim.status, 'submitted') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleQuickStatusUpdate(claim.id, 'submitted')}
+                              disabled={processingClaimId === claim.id}
+                              title="Submit Claim"
+                            >
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          )}
+                          
+                          {claim.status === 'submitted' && isValidTransition(claim.status, 'approved') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleQuickStatusUpdate(claim.id, 'approved')}
+                              disabled={processingClaimId === claim.id}
+                              title="Approve Claim"
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                          )}
+                          
+                          {(claim.status === 'approved' || claim.status === 'short_paid') && isValidTransition(claim.status, 'paid') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleQuickStatusUpdate(claim.id, 'paid')}
+                              disabled={processingClaimId === claim.id}
+                              title="Mark as Paid"
+                            >
+                              <DollarSign className="w-4 h-4" />
+                            </Button>
+                          )}
+
                           <Button
                             variant="ghost"
                             size="sm"

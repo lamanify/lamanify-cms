@@ -10,7 +10,7 @@ interface BulkActionToolbarProps {
   selectedClaims: string[];
   claims: PanelClaim[];
   onClearSelection: () => void;
-  onBulkStatusChange: (status: PanelClaim['status']) => void;
+  onBulkStatusChange: (status: PanelClaim['status']) => void | Promise<void>;
 }
 
 export function BulkActionToolbar({ 
@@ -20,6 +20,7 @@ export function BulkActionToolbar({
   onBulkStatusChange 
 }: BulkActionToolbarProps) {
   const [selectedStatus, setSelectedStatus] = useState<PanelClaim['status'] | ''>('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (selectedClaims.length === 0) {
     return null;
@@ -28,11 +29,30 @@ export function BulkActionToolbar({
   const selectedClaimObjects = claims.filter(claim => selectedClaims.includes(claim.id));
   const totalAmount = selectedClaimObjects.reduce((sum, claim) => sum + claim.total_amount, 0);
 
-  const handleBulkAction = () => {
+  const handleBulkAction = async () => {
     if (selectedStatus) {
-      onBulkStatusChange(selectedStatus);
-      setSelectedStatus('');
+      setIsProcessing(true);
+      try {
+        await onBulkStatusChange(selectedStatus);
+        setSelectedStatus('');
+      } finally {
+        setIsProcessing(false);
+      }
     }
+  };
+
+  const getActionLabel = () => {
+    if (isProcessing) return `Processing ${selectedClaims.length} claims...`;
+    if (!selectedStatus) return `Apply to ${selectedClaims.length}`;
+    
+    const statusLabels: Record<string, string> = {
+      submitted: 'Submit',
+      approved: 'Approve',
+      rejected: 'Reject',
+      paid: 'Mark Paid',
+    };
+    
+    return `${statusLabels[selectedStatus] || 'Update'} ${selectedClaims.length} claim${selectedClaims.length > 1 ? 's' : ''}`;
   };
 
   return (
@@ -73,10 +93,10 @@ export function BulkActionToolbar({
             
             <Button 
               onClick={handleBulkAction}
-              disabled={!selectedStatus}
+              disabled={!selectedStatus || isProcessing}
               size="sm"
             >
-              Apply to {selectedClaims.length}
+              {getActionLabel()}
             </Button>
             
             <Button 

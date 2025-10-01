@@ -19,6 +19,7 @@ import { useBillingManagement } from '@/hooks/useBillingManagement';
 import { useToast } from '@/hooks/use-toast';
 import { ClaimDocumentsManager } from './ClaimDocumentsManager';
 import { ClaimNotesManager } from './ClaimNotesManager';
+import { ClaimActionsToolbar } from './ClaimActionsToolbar';
 
 interface ClaimDetailsModalProps {
   claim: PanelClaim;
@@ -280,24 +281,32 @@ export function ClaimDetailsModal({ claim, open, onOpenChange, onStatusChange }:
                 <CardTitle className="text-lg">Status Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4">
-                  <Label htmlFor="status">Change Status:</Label>
-                  <Select
-                    value={displayClaim.status}
-                    onValueChange={handleStatusChange}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="submitted">Submitted</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="short_paid">Short Paid</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <Label htmlFor="status">Change Status:</Label>
+                    <Select
+                      value={displayClaim.status}
+                      onValueChange={handleStatusChange}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="submitted">Submitted</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="short_paid">Short Paid</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <ClaimActionsToolbar 
+                    claim={displayClaim}
+                    onStatusChange={handleStatusChange}
+                    disabled={loading}
+                  />
                 </div>
               </CardContent>
             </Card>
