@@ -298,11 +298,13 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Panels</SelectItem>
-                {panels.map((panel) => (
-                  <SelectItem key={panel.id} value={panel.id}>
-                    {panel.panel_name}
-                  </SelectItem>
-                ))}
+                {panels
+                  .filter(panel => panel.id && panel.id.trim() !== '')
+                  .map((panel) => (
+                    <SelectItem key={panel.id} value={panel.id}>
+                      {panel.panel_name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
             <Button
