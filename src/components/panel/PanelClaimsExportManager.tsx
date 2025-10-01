@@ -13,7 +13,6 @@ import { format, parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useToast } from '@/hooks/use-toast';
 import { PanelClaim } from '@/hooks/usePanelClaims';
-import * as XLSX from 'xlsx';
 
 interface ExportColumn {
   key: string;
@@ -35,6 +34,8 @@ const defaultColumns: ExportColumn[] = [
   { key: 'billing_period_end', label: 'Period End', visible: true },
   { key: 'total_items', label: 'Total Items', visible: true },
   { key: 'total_amount', label: 'Total Amount', visible: true },
+  { key: 'panel_amount', label: 'Panel Amount', visible: true },
+  { key: 'patient_amount', label: 'Patient Co-pay', visible: true },
   { key: 'status', label: 'Status', visible: true },
   { key: 'created_at', label: 'Created Date', visible: true },
   { key: 'submitted_at', label: 'Submitted Date', visible: false },
@@ -103,10 +104,16 @@ export function PanelClaimsExportManager({ claims, filteredClaims, selectedClaim
             row['Total Items'] = claim.total_items;
             break;
           case 'total_amount':
-            row['Total Amount'] = claim.total_amount.toFixed(2);
+            row['Total Amount'] = claim.total_amount;
+            break;
+          case 'panel_amount':
+            row['Panel Amount'] = claim.panel_amount;
+            break;
+          case 'patient_amount':
+            row['Patient Co-pay'] = claim.patient_amount;
             break;
           case 'status':
-            row['Status'] = claim.status.charAt(0).toUpperCase() + claim.status.slice(1);
+            row['Status'] = claim.status;
             break;
           case 'created_at':
             row['Created Date'] = formatInTimeZone(parseISO(claim.created_at), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd HH:mm');
@@ -166,8 +173,11 @@ export function PanelClaimsExportManager({ claims, filteredClaims, selectedClaim
     URL.revokeObjectURL(link.href);
   };
 
-  const downloadExcel = (data: any[], filename: string) => {
+  const downloadExcel = async (data: any[], filename: string) => {
     if (data.length === 0) return;
+    
+    // Lazy import XLSX
+    const XLSX = await import('xlsx');
     
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -260,7 +270,7 @@ export function PanelClaimsExportManager({ claims, filteredClaims, selectedClaim
           downloadCSV(exportData, filename);
           break;
         case 'excel':
-          downloadExcel(exportData, filename);
+          await downloadExcel(exportData, filename);
           break;
         case 'pdf':
           await generatePDF(exportData, filename);

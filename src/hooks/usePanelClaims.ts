@@ -23,6 +23,9 @@ export interface PanelClaim {
   metadata?: any;
   created_at: string;
   updated_at: string;
+  // Computed fields for reconciliation
+  panel_amount: number;
+  patient_amount: number;
   // Joined data
   panel?: {
     panel_name: string;
@@ -80,7 +83,15 @@ export function usePanelClaims() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setClaims((data || []) as PanelClaim[]);
+      
+      // Compute panel_amount and patient_amount (90/10 split)
+      const claimsWithComputedAmounts = (data || []).map(claim => ({
+        ...claim,
+        panel_amount: claim.total_amount * 0.9,
+        patient_amount: claim.total_amount * 0.1,
+      })) as PanelClaim[];
+      
+      setClaims(claimsWithComputedAmounts);
     } catch (error: any) {
       toast({
         title: "Error fetching panel claims",
@@ -109,7 +120,13 @@ export function usePanelClaims() {
         .single();
 
       if (error) throw error;
-      return data as PanelClaim;
+      
+      // Compute panel_amount and patient_amount (90/10 split)
+      return {
+        ...data,
+        panel_amount: data.total_amount * 0.9,
+        patient_amount: data.total_amount * 0.1,
+      } as PanelClaim;
     } catch (error: any) {
       toast({
         title: "Error fetching claim details",

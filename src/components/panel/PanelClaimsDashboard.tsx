@@ -21,6 +21,7 @@ import { BatchStatusUpdateModal } from './BatchStatusUpdateModal';
 import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Totals, ALLOWED_TRANSITIONS, isValidTransition, coercePaidToShortPaid } from '@/domain/panel';
+import { PanelClaimsFooterSummary } from './PanelClaimsFooterSummary';
 
 interface PanelClaimsDashboardProps {
   onViewClaim?: (claimId: string) => void;
@@ -440,6 +441,9 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
           </div>
         </CardContent>
       </Card>
+
+      {/* Footer Summary */}
+      <PanelClaimsFooterSummary claims={filteredClaims} />
 
       {/* Modals */}
       <CreateClaimModal 
