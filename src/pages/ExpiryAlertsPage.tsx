@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, CalendarX, ArrowLeft, Trash2, Calendar } from "lucide-react";
+import { AlertTriangle, CalendarX, ArrowLeft, Trash2, Calendar, Edit } from "lucide-react";
 import { useStockMovements } from "@/hooks/useStockMovements";
 import { useMedications } from "@/hooks/useMedications";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { StockAdjustmentForm } from "@/components/inventory/StockAdjustmentForm";
 
 interface ExpiryAlert {
   id: string;
@@ -42,6 +43,8 @@ export default function ExpiryAlertsPage() {
   const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlert[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<ExpiryAlert | null>(null);
   const [showWastageDialog, setShowWastageDialog] = useState(false);
+  const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
+  const [selectedMedicationId, setSelectedMedicationId] = useState<string | undefined>();
 
   useEffect(() => {
     if (!stockLoading && !medLoading && stockMovements && medications) {
@@ -54,7 +57,6 @@ export default function ExpiryAlertsPage() {
     const alerts: ExpiryAlert[] = [];
     const inventoryMap = new Map<string, Map<string, { quantity: number; expiryDate: Date }>>();
 
-    // Build inventory map with batches
     stockMovements.forEach(movement => {
       if (!movement.batch_number || !movement.expiry_date) return;
 
@@ -79,7 +81,6 @@ export default function ExpiryAlertsPage() {
       }
     });
 
-    // Generate alerts from inventory
     inventoryMap.forEach((batches, medId) => {
       const medication = medications.find(m => m.id === medId);
       if (!medication) return;
@@ -149,6 +150,15 @@ export default function ExpiryAlertsPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleAdjustStock = (medicationId: string) => {
+    setSelectedMedicationId(medicationId);
+    setAdjustmentDialogOpen(true);
+  };
+
+  const handleAdjustmentSuccess = () => {
+    window.location.reload();
   };
 
   const loading = stockLoading || medLoading;
@@ -281,7 +291,15 @@ export default function ExpiryAlertsPage() {
                     <TableCell>
                       {alert.quantity} {alert.unitOfMeasure}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAdjustStock(alert.medicationId)}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Adjust
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -291,7 +309,7 @@ export default function ExpiryAlertsPage() {
                         }}
                       >
                         <Trash2 className="h-3 w-3 mr-1" />
-                        Mark Wastage
+                        Wastage
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -325,6 +343,13 @@ export default function ExpiryAlertsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <StockAdjustmentForm
+        open={adjustmentDialogOpen}
+        onOpenChange={setAdjustmentDialogOpen}
+        medicationId={selectedMedicationId}
+        onSuccess={handleAdjustmentSuccess}
+      />
     </div>
   );
 }

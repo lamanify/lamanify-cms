@@ -3990,6 +3990,94 @@ export type Database = {
           },
         ]
       }
+      stock_adjustment_audit: {
+        Row: {
+          adjusted_at: string
+          adjusted_by: string | null
+          adjustment_quantity: number
+          after_data: Json | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          before_data: Json | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          medication_id: string
+          metadata: Json | null
+          movement_id: string | null
+          new_stock: number
+          previous_stock: number
+          reason: string
+          reference_number: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          adjusted_at?: string
+          adjusted_by?: string | null
+          adjustment_quantity: number
+          after_data?: Json | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          medication_id: string
+          metadata?: Json | null
+          movement_id?: string | null
+          new_stock: number
+          previous_stock: number
+          reason: string
+          reference_number?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          adjusted_at?: string
+          adjusted_by?: string | null
+          adjustment_quantity?: number
+          after_data?: Json | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          medication_id?: string
+          metadata?: Json | null
+          movement_id?: string | null
+          new_stock?: number
+          previous_stock?: number
+          reason?: string
+          reference_number?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_adjustment_audit_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_adjustment_audit_movement_id_fkey"
+            columns: ["movement_id"]
+            isOneToOne: false
+            referencedRelation: "medication_cost_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_adjustment_audit_movement_id_fkey"
+            columns: ["movement_id"]
+            isOneToOne: false
+            referencedRelation: "stock_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           batch_number: string | null

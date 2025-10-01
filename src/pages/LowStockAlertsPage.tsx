@@ -4,20 +4,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, PackageX, ArrowLeft, Download, ShoppingCart } from "lucide-react";
+import { AlertTriangle, PackageX, ArrowLeft, Download, ShoppingCart, Edit } from "lucide-react";
 import { useStockMovements } from "@/hooks/useStockMovements";
 import { useMedications } from "@/hooks/useMedications";
 import { toast } from "@/hooks/use-toast";
+import { StockAdjustmentForm } from "@/components/inventory/StockAdjustmentForm";
 
 export default function LowStockAlertsPage() {
   const navigate = useNavigate();
   const { stockMovements, loading: stockLoading } = useStockMovements();
   const { medications, loading: medLoading } = useMedications();
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
+  const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
+  const [selectedMedicationId, setSelectedMedicationId] = useState<string | undefined>();
 
   useEffect(() => {
     if (!stockLoading && !medLoading && medications) {
-      // Get default threshold from clinic settings
       const defaultThreshold = 10;
       
       const items = medications
@@ -37,7 +39,6 @@ export default function LowStockAlertsPage() {
           isOutOfStock: med.stock_level === 0
         }))
         .sort((a, b) => {
-          // Out of stock first, then by stock level
           if (a.isOutOfStock && !b.isOutOfStock) return -1;
           if (!a.isOutOfStock && b.isOutOfStock) return 1;
           return a.currentStock - b.currentStock;
@@ -83,8 +84,16 @@ export default function LowStockAlertsPage() {
       title: "Reorder Initiated",
       description: `Creating purchase order for ${name}`,
     });
-    // Navigate to inventory management or PO creation
     navigate("/settings", { state: { tab: "inventory" } });
+  };
+
+  const handleAdjustStock = (medicationId: string) => {
+    setSelectedMedicationId(medicationId);
+    setAdjustmentDialogOpen(true);
+  };
+
+  const handleAdjustmentSuccess = () => {
+    window.location.reload();
   };
 
   const loading = stockLoading || medLoading;
@@ -215,7 +224,15 @@ export default function LowStockAlertsPage() {
                     <TableCell>
                       RM {item.averageCost.toFixed(2)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAdjustStock(item.id)}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Adjust
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -232,6 +249,13 @@ export default function LowStockAlertsPage() {
           )}
         </CardContent>
       </Card>
+
+      <StockAdjustmentForm
+        open={adjustmentDialogOpen}
+        onOpenChange={setAdjustmentDialogOpen}
+        medicationId={selectedMedicationId}
+        onSuccess={handleAdjustmentSuccess}
+      />
     </div>
   );
 }
