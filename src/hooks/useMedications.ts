@@ -21,6 +21,7 @@ export interface Medication {
   remarks?: string;
   enable_dosage_settings?: boolean;
   unit_of_measure?: string;
+  reorder_level?: number;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +44,7 @@ export interface MedicationWithPricing extends Medication {
   pricing: { [tierId: string]: number };
   dosage_template?: DosageTemplate;
   average_cost?: number;
+  reorder_level?: number;
 }
 
 export function useMedications() {
@@ -80,7 +82,8 @@ export function useMedications() {
           ...cleanMedication,
           pricing,
           dosage_template: undefined,
-          average_cost: cleanMedication.average_cost || 0
+          average_cost: cleanMedication.average_cost || 0,
+          reorder_level: (medication as any).reorder_level
         } as MedicationWithPricing;
       }) || [];
 

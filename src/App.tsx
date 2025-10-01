@@ -20,6 +20,8 @@ import Settings from "@/pages/Settings";
 import ClinicSettings from '@/pages/ClinicSettings';
 import AuthPage from "@/components/auth/AuthPage";
 import CalendarView from "@/pages/CalendarView";
+import LowStockAlertsPage from "@/pages/LowStockAlertsPage";
+import ExpiryAlertsPage from "@/pages/ExpiryAlertsPage";
 import ResourceManagement from "@/pages/ResourceManagement";
 import Analytics from "@/pages/Analytics";
 import { WaitlistManager } from "@/components/appointments/WaitlistManager";
@@ -57,6 +59,8 @@ const App = () => (
           <Route path="/panel-claims" element={<AppLayout><PanelClaims /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
           <Route path="/settings/clinic" element={<AppLayout><ClinicSettings /></AppLayout>} />
+          <Route path="/inventory/alerts/low-stock" element={<AppLayout><LowStockAlertsPage /></AppLayout>} />
+          <Route path="/inventory/alerts/expiry" element={<AppLayout><ExpiryAlertsPage /></AppLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
