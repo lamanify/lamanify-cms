@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useConsultation, TreatmentItem, Medication, MedicalService } from '@/hooks/useConsultation';
 import { useTierPricing } from '@/hooks/useTierPricing';
+import { useDosageTemplates } from '@/hooks/useDosageTemplates';
 import { TierPricingHeader } from './TierPricingHeader';
 import { TreatmentItemsTable } from './TreatmentItemsTable';
-import { Pill, Stethoscope, Plus, Trash2, Calculator, Package, AlertTriangle } from 'lucide-react';
+import { Pill, Stethoscope, Plus, Trash2, Calculator, Package, AlertTriangle, Sparkles } from 'lucide-react';
 
 interface TreatmentPlanTabProps {
   sessionId: string;
@@ -44,12 +45,16 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
     formatPriceWithTier
   } = useTierPricing();
 
+  const { getTemplateForMedication } = useDosageTemplates();
+
   const [treatmentForm, setTreatmentForm] = useState({
     quantity: 1,
     rate: 0,
-    dosage_instructions: '',
+    dosage_amount: '',
+    dosage_unit: 'tablet',
     frequency: '',
     duration_days: 7,
+    special_instructions: '',
     notes: '',
     tierPrice: 0,
     hasTierPrice: false
@@ -86,9 +91,11 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
     setTreatmentForm({
       quantity: 1,
       rate: 0,
-      dosage_instructions: '',
+      dosage_amount: '',
+      dosage_unit: 'tablet',
       frequency: '',
       duration_days: 7,
+      special_instructions: '',
       notes: '',
       tierPrice: 0,
       hasTierPrice: false
@@ -103,13 +110,14 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
 
     try {
       const finalRate = treatmentForm.hasTierPrice ? treatmentForm.tierPrice : treatmentForm.rate;
+      const dosageInstructions = `${treatmentForm.dosage_amount}${treatmentForm.dosage_unit} - ${treatmentForm.frequency}${treatmentForm.special_instructions ? ` - ${treatmentForm.special_instructions}` : ''}`;
       
       await addTreatmentItem(sessionId, {
         item_type: 'medication',
         medication_id: selectedMedication.id,
         quantity: treatmentForm.quantity,
         rate: finalRate,
-        dosage_instructions: treatmentForm.dosage_instructions,
+        dosage_instructions: dosageInstructions,
         frequency: treatmentForm.frequency,
         duration_days: treatmentForm.duration_days,
         notes: treatmentForm.notes,
@@ -180,6 +188,9 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
   const handleMedicationSelect = async (medication: Medication) => {
     setSelectedMedication(medication);
     
+    // Auto-fill from dosage template if available
+    const template = getTemplateForMedication(medication.id);
+    
     if (patientTier?.tier) {
       try {
         const medicationWithTierPricing = await getMedicationWithTierPricing(
@@ -187,28 +198,35 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
           patientTier.tier.id
         );
         
-        if (medicationWithTierPricing?.hasTierPrice) {
-          setTreatmentForm(prev => ({
-            ...prev,
-            rate: medicationWithTierPricing.tierPrice || 0,
-            tierPrice: medicationWithTierPricing.tierPrice || 0,
-            hasTierPrice: true
-          }));
-        } else {
-          setTreatmentForm(prev => ({
-            ...prev,
-            rate: medication.price_per_unit || 0,
-            tierPrice: 0,
-            hasTierPrice: false
-          }));
-        }
+        setTreatmentForm(prev => ({
+          ...prev,
+          rate: medicationWithTierPricing?.hasTierPrice ? 
+            (medicationWithTierPricing.tierPrice || 0) : 
+            (medication.price_per_unit || 0),
+          tierPrice: medicationWithTierPricing?.tierPrice || 0,
+          hasTierPrice: medicationWithTierPricing?.hasTierPrice || false,
+          // Auto-fill dosage from template
+          dosage_amount: template?.dosage_amount?.toString() || prev.dosage_amount,
+          dosage_unit: template?.dosage_unit || prev.dosage_unit,
+          frequency: template?.frequency || prev.frequency,
+          duration_days: template?.duration_value || prev.duration_days,
+          special_instructions: template?.instruction || prev.special_instructions,
+          quantity: template?.dispense_quantity || prev.quantity
+        }));
       } catch (error) {
         console.error('Error fetching tier pricing:', error);
         setTreatmentForm(prev => ({
           ...prev,
           rate: medication.price_per_unit || 0,
           tierPrice: 0,
-          hasTierPrice: false
+          hasTierPrice: false,
+          // Still auto-fill dosage from template
+          dosage_amount: template?.dosage_amount?.toString() || prev.dosage_amount,
+          dosage_unit: template?.dosage_unit || prev.dosage_unit,
+          frequency: template?.frequency || prev.frequency,
+          duration_days: template?.duration_value || prev.duration_days,
+          special_instructions: template?.instruction || prev.special_instructions,
+          quantity: template?.dispense_quantity || prev.quantity
         }));
       }
     } else {
@@ -216,7 +234,14 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
         ...prev,
         rate: medication.price_per_unit || 0,
         tierPrice: 0,
-        hasTierPrice: false
+        hasTierPrice: false,
+        // Still auto-fill dosage from template
+        dosage_amount: template?.dosage_amount?.toString() || prev.dosage_amount,
+        dosage_unit: template?.dosage_unit || prev.dosage_unit,
+        frequency: template?.frequency || prev.frequency,
+        duration_days: template?.duration_value || prev.duration_days,
+        special_instructions: template?.instruction || prev.special_instructions,
+        quantity: template?.dispense_quantity || prev.quantity
       }));
     }
   };
@@ -410,24 +435,66 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
                         </div>
                       </div>
 
-                      <div>
-                        <Label htmlFor="dosage">Dosage Instructions</Label>
-                        <Textarea
-                          id="dosage"
-                          placeholder="e.g., Take 1 tablet twice daily with food"
-                          value={treatmentForm.dosage_instructions}
-                          onChange={(e) =>
-                            setTreatmentForm(prev => ({
-                              ...prev,
-                              dosage_instructions: e.target.value
-                            }))
-                          }
-                        />
-                      </div>
+                      {/* Dosage Section */}
+                      <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                        <h4 className="font-medium text-sm flex items-center gap-2">
+                          <Pill className="h-4 w-4" />
+                          Prescription Details
+                          {selectedMedication && getTemplateForMedication(selectedMedication.id) && (
+                            <Badge variant="secondary" className="ml-auto text-xs">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Auto-filled
+                            </Badge>
+                          )}
+                        </h4>
+                        
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2">
+                            <Label htmlFor="dosage-amount">Dosage Amount *</Label>
+                            <Input
+                              id="dosage-amount"
+                              placeholder="e.g., 500, 1, 2"
+                              value={treatmentForm.dosage_amount}
+                              onChange={(e) =>
+                                setTreatmentForm(prev => ({
+                                  ...prev,
+                                  dosage_amount: e.target.value
+                                }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="dosage-unit">Unit</Label>
+                            <Select
+                              value={treatmentForm.dosage_unit}
+                              onValueChange={(value) =>
+                                setTreatmentForm(prev => ({
+                                  ...prev,
+                                  dosage_unit: value
+                                }))
+                              }
+                            >
+                              <SelectTrigger id="dosage-unit">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="tablet">Tablet(s)</SelectItem>
+                                <SelectItem value="capsule">Capsule(s)</SelectItem>
+                                <SelectItem value="mg">mg</SelectItem>
+                                <SelectItem value="ml">ml</SelectItem>
+                                <SelectItem value="g">g</SelectItem>
+                                <SelectItem value="mcg">mcg</SelectItem>
+                                <SelectItem value="unit">Unit(s)</SelectItem>
+                                <SelectItem value="drop">Drop(s)</SelectItem>
+                                <SelectItem value="puff">Puff(s)</SelectItem>
+                                <SelectItem value="patch">Patch(es)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
 
-                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="frequency">Frequency</Label>
+                          <Label htmlFor="frequency">Frequency *</Label>
                           <Select
                             value={treatmentForm.frequency}
                             onValueChange={(value) =>
@@ -437,24 +504,35 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
                               }))
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger id="frequency">
                               <SelectValue placeholder="Select frequency" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="once-daily">Once Daily</SelectItem>
-                              <SelectItem value="twice-daily">Twice Daily</SelectItem>
-                              <SelectItem value="three-times-daily">Three Times Daily</SelectItem>
-                              <SelectItem value="four-times-daily">Four Times Daily</SelectItem>
-                              <SelectItem value="as-needed">As Needed</SelectItem>
+                              <SelectItem value="Once daily">Once daily</SelectItem>
+                              <SelectItem value="Twice daily">Twice daily (BD)</SelectItem>
+                              <SelectItem value="Three times daily">Three times daily (TDS)</SelectItem>
+                              <SelectItem value="Four times daily">Four times daily (QID)</SelectItem>
+                              <SelectItem value="Every 4 hours">Every 4 hours</SelectItem>
+                              <SelectItem value="Every 6 hours">Every 6 hours</SelectItem>
+                              <SelectItem value="Every 8 hours">Every 8 hours</SelectItem>
+                              <SelectItem value="Every 12 hours">Every 12 hours</SelectItem>
+                              <SelectItem value="At bedtime">At bedtime (HS)</SelectItem>
+                              <SelectItem value="As needed">As needed (PRN)</SelectItem>
+                              <SelectItem value="Before meals">Before meals (AC)</SelectItem>
+                              <SelectItem value="After meals">After meals (PC)</SelectItem>
+                              <SelectItem value="With food">With food</SelectItem>
+                              <SelectItem value="On empty stomach">On empty stomach</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
+
                         <div>
-                          <Label htmlFor="duration">Duration (days)</Label>
+                          <Label htmlFor="duration">Duration (days) *</Label>
                           <Input
                             id="duration"
                             type="number"
                             min="1"
+                            placeholder="e.g., 5, 7, 14"
                             value={treatmentForm.duration_days}
                             onChange={(e) =>
                               setTreatmentForm(prev => ({
@@ -462,6 +540,22 @@ export function TreatmentPlanTab({ sessionId, treatmentItems, onUpdate, patientI
                                 duration_days: parseInt(e.target.value) || 7
                               }))
                             }
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="special-instructions">Special Instructions</Label>
+                          <Textarea
+                            id="special-instructions"
+                            placeholder="e.g., Take with food, Avoid alcohol, Take on empty stomach"
+                            value={treatmentForm.special_instructions}
+                            onChange={(e) =>
+                              setTreatmentForm(prev => ({
+                                ...prev,
+                                special_instructions: e.target.value
+                              }))
+                            }
+                            rows={2}
                           />
                         </div>
                       </div>
