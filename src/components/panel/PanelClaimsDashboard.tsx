@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -73,15 +74,28 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
 
   const getStatusColor = (status: PanelClaim['status']) => {
     switch (status) {
-      case 'draft': return 'text-muted-foreground';
-      case 'submitted': return 'text-yellow-600';
-      case 'approved': return 'text-green-600';
-      case 'paid': return 'text-blue-600';
-      case 'short_paid': return 'text-orange-600';
-      case 'rejected': return 'text-red-600';
-      default: return 'text-muted-foreground';
+      case 'draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+      case 'submitted': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'approved': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'paid': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
+      case 'short_paid': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
+      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
     }
   };
+
+  // Calculate status counts for tab indicators
+  const statusCounts = useMemo(() => {
+    return {
+      all: claims.length,
+      draft: claims.filter(c => c.status === 'draft').length,
+      submitted: claims.filter(c => c.status === 'submitted').length,
+      approved: claims.filter(c => c.status === 'approved').length,
+      rejected: claims.filter(c => c.status === 'rejected').length,
+      paid: claims.filter(c => c.status === 'paid').length,
+      short_paid: claims.filter(c => c.status === 'short_paid').length,
+    };
+  }, [claims]);
 
   const handleStatusChange = async (claimId: string, newStatus: PanelClaim['status']) => {
     await updateClaimStatus(claimId, newStatus);
@@ -269,52 +283,82 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search claims..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex flex-col gap-4 mb-6">
+            {/* Search and Panel Filter Row */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search claims..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={panelFilter} onValueChange={setPanelFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Panel" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Panels</SelectItem>
+                  {panels
+                    .filter(panel => panel.id && panel.id.trim() !== '')
+                    .map((panel) => (
+                      <SelectItem key={panel.id} value={panel.id}>
+                        {panel.panel_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="submitted">Submitted</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="short_paid">Short Paid</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={panelFilter} onValueChange={setPanelFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Panel" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Panels</SelectItem>
-                {panels
-                  .filter(panel => panel.id && panel.id.trim() !== '')
-                  .map((panel) => (
-                    <SelectItem key={panel.id} value={panel.id}>
-                      {panel.panel_name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant={statusFilter === 'submitted,approved,short_paid' ? 'default' : 'outline'}
-              onClick={() => setStatusFilter(statusFilter === 'submitted,approved,short_paid' ? 'all' : 'submitted,approved,short_paid')}
-              className="whitespace-nowrap"
-            >
-              Outstanding Only
-            </Button>
+
+            {/* Status Filter Tabs */}
+            <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
+              <TabsList className="w-full justify-start flex-wrap h-auto">
+                <TabsTrigger value="all" className="gap-2">
+                  All Claims
+                  <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">
+                    {statusCounts.all}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="draft" className="gap-2">
+                  Drafts
+                  <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400">
+                    {statusCounts.draft}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="submitted" className="gap-2">
+                  Submitted
+                  <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                    {statusCounts.submitted}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="gap-2">
+                  Approved
+                  <Badge variant="secondary" className="ml-1 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                    {statusCounts.approved}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="gap-2">
+                  Rejected
+                  <Badge variant="secondary" className="ml-1 bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                    {statusCounts.rejected}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="paid" className="gap-2">
+                  Paid
+                  <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+                    {statusCounts.paid}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="short_paid" className="gap-2">
+                  Short Paid
+                  <Badge variant="secondary" className="ml-1 bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">
+                    {statusCounts.short_paid}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
           {/* Bulk Actions Toolbar */}
@@ -325,16 +369,6 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
             onBulkStatusChange={handleBulkStatusChange}
           />
 
-          {/* Status Legend */}
-          <div className="flex flex-wrap items-center gap-4 py-4 px-2 bg-muted/30 rounded-lg mb-4">
-            <span className="text-sm font-medium text-muted-foreground">Status:</span>
-            <Badge variant="secondary" className="text-muted-foreground">Draft</Badge>
-            <Badge variant="default" className="text-yellow-600">Submitted</Badge>
-            <Badge variant="default" className="text-green-600">Approved</Badge>
-            <Badge variant="default" className="text-blue-600">Paid</Badge>
-            <Badge variant="default" className="text-orange-600">Short-paid</Badge>
-            <Badge variant="destructive" className="text-red-600">Rejected</Badge>
-          </div>
 
           {/* Claims Table */}
           <div className="border rounded-lg">
@@ -399,10 +433,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                       <TableCell>
                         {claim.status === 'short_paid' ? (
                           <div className="flex flex-col gap-1">
-                            <Badge 
-                              variant={getStatusBadgeVariant(claim.status)}
-                              className={getStatusColor(claim.status)}
-                            >
+                            <Badge className={getStatusColor(claim.status)}>
                               Short-paid
                             </Badge>
                             <span className="text-xs text-muted-foreground">
@@ -410,10 +441,7 @@ export function PanelClaimsDashboard({ onViewClaim }: PanelClaimsDashboardProps 
                             </span>
                           </div>
                         ) : (
-                          <Badge 
-                            variant={getStatusBadgeVariant(claim.status)}
-                            className={getStatusColor(claim.status)}
-                          >
+                          <Badge className={getStatusColor(claim.status)}>
                             {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
                           </Badge>
                         )}
