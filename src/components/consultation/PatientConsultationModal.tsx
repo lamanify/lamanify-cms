@@ -84,7 +84,7 @@ export function PatientConsultationModal({
   const [isEditingVisitNotes, setIsEditingVisitNotes] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastEditTime, setLastEditTime] = useState<Date | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ file: File; preview: string }>>([]);
   const previousPatientIdRef = useRef<string | null>(null);
   const {
     toast
@@ -669,7 +669,10 @@ export function PatientConsultationModal({
     input.onchange = e => {
       const files = (e.target as HTMLInputElement).files;
       if (files && files.length > 0) {
-        const fileArray = Array.from(files);
+        const fileArray = Array.from(files).map(file => ({
+          file,
+          preview: URL.createObjectURL(file)
+        }));
         setUploadedFiles(prev => [...prev, ...fileArray]);
         toast({
           title: "Success",
@@ -681,8 +684,19 @@ export function PatientConsultationModal({
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadedFiles(prev => {
+      // Revoke the URL to prevent memory leaks
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
+
+  // Cleanup URLs on unmount
+  useEffect(() => {
+    return () => {
+      uploadedFiles.forEach(({ preview }) => URL.revokeObjectURL(preview));
+    };
+  }, [uploadedFiles]);
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
         <div className="flex flex-col h-[90vh]">
@@ -842,13 +856,13 @@ export function PatientConsultationModal({
                         <div className="mt-3 space-y-2">
                           <p className="text-xs text-muted-foreground">Attachments ({uploadedFiles.length})</p>
                           <div className="grid grid-cols-2 gap-2">
-                            {uploadedFiles.map((file, index) => (
+                            {uploadedFiles.map(({ file, preview }, index) => (
                               <div key={index} className="relative group border rounded-lg p-2 bg-card hover:bg-accent/50 transition-colors">
                                 <div className="flex items-start gap-2">
                                   {/* Thumbnail */}
                                   <div className="flex-shrink-0 w-12 h-12 rounded overflow-hidden bg-muted">
                                     <img
-                                      src={URL.createObjectURL(file)}
+                                      src={preview}
                                       alt={file.name}
                                       className="w-full h-full object-cover"
                                     />
