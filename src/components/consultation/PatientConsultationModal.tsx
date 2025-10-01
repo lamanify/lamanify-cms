@@ -15,7 +15,7 @@ import { useConsultationDrafts } from '@/hooks/useConsultationDrafts';
 import { useQueueSessionSync } from '@/hooks/useQueueSessionSync';
 import { usePatientActivities, PatientActivity } from '@/hooks/usePatientActivities';
 import { AppointmentDialog } from '@/components/appointments/AppointmentDialog';
-import { ArrowLeft, Bell, User, Edit, Clock, Bold, Italic, Underline, List, Camera, Save, Calendar, Upload, Search, ChevronDown, ChevronLeft, ChevronRight, X, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, Bell, User, Edit, Clock, Bold, Italic, Underline, List, Camera, Save, Calendar, Upload, Search, ChevronDown, ChevronLeft, ChevronRight, X, Plus, FileText, Loader2, Sparkles } from 'lucide-react';
 import { QueueEntry } from '@/hooks/useQueue';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,6 +85,7 @@ export function PatientConsultationModal({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastEditTime, setLastEditTime] = useState<Date | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ file: File; preview: string }>>([]);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const previousPatientIdRef = useRef<string | null>(null);
   const {
     toast
@@ -697,6 +698,37 @@ export function PatientConsultationModal({
       return prev.filter((_, i) => i !== index);
     });
   };
+
+  const handleEnhanceWithAI = async () => {
+    if (!consultationNotes.trim()) return;
+    
+    setIsEnhancing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enhance-consultation-notes', {
+        body: { notes: consultationNotes }
+      });
+
+      if (error) throw error;
+
+      if (data?.enhancedNotes) {
+        setConsultationNotes(data.enhancedNotes);
+        toast({
+          title: "Notes enhanced",
+          description: "Your consultation notes have been refined by AI",
+        });
+      }
+    } catch (error) {
+      console.error('Error enhancing notes:', error);
+      toast({
+        title: "Enhancement failed",
+        description: error instanceof Error ? error.message : "Failed to enhance notes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
         <div className="flex flex-col h-[90vh]">
@@ -810,6 +842,26 @@ export function PatientConsultationModal({
                       setConsultationNotes(e.target.value);
                       handleEditingChange();
                     }} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
+                       
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={handleEnhanceWithAI}
+                         disabled={!consultationNotes.trim() || isEnhancing || consultationStatus === 'waiting'}
+                         className="mb-3"
+                       >
+                         {isEnhancing ? (
+                           <>
+                             <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                             Enhancing...
+                           </>
+                         ) : (
+                           <>
+                             <Sparkles className="h-3 w-3 mr-2" />
+                             Enhance with AI
+                           </>
+                         )}
+                       </Button>
                        
                        {/* Overlay notification when consultation hasn't started */}
                        {consultationStatus === 'waiting' && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">

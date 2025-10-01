@@ -2,3 +2,6 @@ project_id = "vxnvdmepejjhvphqxopl"
 
 [functions.claims-integrations]
 verify_jwt = true
+
+[functions.enhance-consultation-notes]
+verify_jwt = false
