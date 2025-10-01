@@ -165,6 +165,18 @@ export function QueueRegistrationInterface({
         assignedDoctor: visitData.assignedDoctorId
       });
 
+      // Update patient urgency level if marked as priority
+      if (visitData.isUrgent) {
+        const { error: urgencyError } = await supabase
+          .from('patients')
+          .update({ urgency_level: 'high' })
+          .eq('id', selectedPatient.id);
+
+        if (urgencyError) {
+          console.error('Error updating urgency level:', urgencyError);
+        }
+      }
+
       // Add to queue first
       const queueResult = await addToQueue(selectedPatient.id, visitData.assignedDoctorId === "none" || !visitData.assignedDoctorId ? undefined : visitData.assignedDoctorId);
       console.log('Queue addition result:', queueResult);
@@ -352,6 +364,22 @@ export function QueueRegistrationInterface({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Priority Checkbox - Only for medical staff */}
+                {profile?.role && ['admin', 'doctor', 'nurse', 'receptionist'].includes(profile.role) && (
+                  <div className="flex items-center space-x-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="isUrgent"
+                      checked={visitData.isUrgent}
+                      onChange={(e) => setVisitData({ ...visitData, isUrgent: e.target.checked })}
+                      className="w-4 h-4 text-destructive border-destructive/30 rounded focus:ring-destructive"
+                    />
+                    <label htmlFor="isUrgent" className="text-sm font-medium text-destructive cursor-pointer">
+                      Mark as Priority/Urgent
+                    </label>
+                  </div>
+                )}
 
                  <div className="flex gap-2">
                    <Button onClick={handleAddExistingToQueue} disabled={loading || !visitData.reason.trim()} size="lg" className="flex-1">

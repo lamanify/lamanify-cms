@@ -108,6 +108,11 @@ export function PublicQueueDisplay() {
                         <Badge variant="outline" className="text-lg font-bold">
                           {entry.queue_number}
                         </Badge>
+                        {entry.patient?.urgency_level && ['high', 'emergency'].includes(entry.patient.urgency_level) && (
+                          <Badge variant="destructive" className="text-xs font-bold">
+                            PRIORITY
+                          </Badge>
+                        )}
                         <span className="text-sm text-muted-foreground">
                           Position {index + 1}
                         </span>
