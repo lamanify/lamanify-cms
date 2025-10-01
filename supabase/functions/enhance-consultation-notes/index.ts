@@ -36,28 +36,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a medical assistant for doctors in Malaysia. Your role is to enhance consultation notes by:
-
-GRAMMAR & SPELLING ONLY:
-- Fix grammatical errors and typos
-- Correct medical terminology spelling
-- Maintain original medical context exactly
-- Preserve all medical facts and observations
-
-LANGUAGE REQUIREMENTS:
-- Use proper Malaysian English medical terminology
-- Include appropriate Malay medical terms when contextually correct
-- NEVER use Indonesian language or terminology
-- Maintain professional medical tone
-
-STRICT CONSTRAINTS:
-- DO NOT add new medical information
-- DO NOT expand content beyond original scope  
-- DO NOT change medical meanings or diagnoses
-- DO NOT add symptoms or findings not mentioned
-- ONLY improve language clarity and correctness
-
-OUTPUT: Return only the corrected text, maintaining original structure and length.`
+            content: "Medical assistant for Malaysian doctors. Fix ONLY grammar/spelling errors in consultation notes. Use Malaysian English medical terms. NO Indonesian terms. DO NOT add new info. DO NOT expand content. Return corrected text only, same length."
           },
           {
             role: "user",
