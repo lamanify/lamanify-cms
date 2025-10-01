@@ -119,6 +119,13 @@ export function PatientConsultationModal({
     }
   }, [queueEntry?.status]);
 
+  // Cleanup uploaded file URLs on unmount
+  useEffect(() => {
+    return () => {
+      uploadedFiles.forEach(({ preview }) => URL.revokeObjectURL(preview));
+    };
+  }, [uploadedFiles]);
+
   // Editing detection - track when user stops editing for 3 seconds
   const editingTimeoutRef = useRef<NodeJS.Timeout>();
   const handleEditingChange = useCallback(() => {
@@ -690,13 +697,6 @@ export function PatientConsultationModal({
       return prev.filter((_, i) => i !== index);
     });
   };
-
-  // Cleanup URLs on unmount
-  useEffect(() => {
-    return () => {
-      uploadedFiles.forEach(({ preview }) => URL.revokeObjectURL(preview));
-    };
-  }, [uploadedFiles]);
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
         <div className="flex flex-col h-[90vh]">
