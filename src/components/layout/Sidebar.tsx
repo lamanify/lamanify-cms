@@ -25,7 +25,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Patients', href: '/patients', icon: Users },
   { name: 'Queue Management', href: '/queue', icon: Clock },
-  // { name: 'Queue Display', href: '/display', icon: Monitor },
+  { name: 'Queue Display', href: '/display', icon: Monitor, openInNewTab: true },
   { name: 'Appointments', href: '/appointments', icon: Calendar },
   // { name: 'Analytics', href: '/analytics', icon: TrendingUp },
   // { name: 'Consultation Waiting', href: '/consultation-waiting', icon: FileText },
@@ -86,6 +86,7 @@ export function Sidebar({ userProfile }: SidebarProps) {
         <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
+            const linkProps = item.openInNewTab ? { target: "_blank", rel: "noopener noreferrer" } : {};
             return (
               <Button
                 key={item.name}
@@ -98,7 +99,7 @@ export function Sidebar({ userProfile }: SidebarProps) {
                 )}
                 asChild
               >
-                <Link to={item.href}>
+                <Link to={item.href} {...linkProps}>
                   <item.icon className="mr-3 h-4 w-4" />
                   {item.name}
                 </Link>

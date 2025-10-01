@@ -7,7 +7,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Patients from "@/pages/Patients";
 import Queue from "@/pages/Queue";
-// import QueueDisplay from "@/pages/QueueDisplay";
+import QueueDisplay from "@/pages/QueueDisplay";
 import Appointments from "@/pages/Appointments";
 import Consultations from "@/pages/Consultations";
 import ConsultationWaitingList from "@/pages/ConsultationWaitingList";
@@ -42,7 +42,7 @@ const App = () => (
           <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/patients" element={<AppLayout><Patients /></AppLayout>} />
           <Route path="/queue" element={<AppLayout><Queue /></AppLayout>} />
-          {/* <Route path="/display" element={<QueueDisplay />} /> */}
+          <Route path="/display" element={<QueueDisplay />} />
           <Route path="/appointments" element={<AppLayout><Appointments /></AppLayout>} />
           <Route path="/appointments/calendar" element={<AppLayout><CalendarView /></AppLayout>} />
           <Route path="/appointments/waitlist" element={<AppLayout><WaitlistManager /></AppLayout>} />
