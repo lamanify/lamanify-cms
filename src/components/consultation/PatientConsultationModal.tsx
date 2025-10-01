@@ -84,6 +84,7 @@ export function PatientConsultationModal({
   const [isEditingVisitNotes, setIsEditingVisitNotes] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastEditTime, setLastEditTime] = useState<Date | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const previousPatientIdRef = useRef<string | null>(null);
   const {
     toast
@@ -668,8 +669,8 @@ export function PatientConsultationModal({
     input.onchange = e => {
       const files = (e.target as HTMLInputElement).files;
       if (files && files.length > 0) {
-        // Here you would typically upload the files
-        console.log('Attaching photos:', files);
+        const fileArray = Array.from(files);
+        setUploadedFiles(prev => [...prev, ...fileArray]);
         toast({
           title: "Success",
           description: `${files.length} photo(s) attached`
@@ -677,6 +678,10 @@ export function PatientConsultationModal({
       }
     };
     input.click();
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
@@ -831,6 +836,49 @@ export function PatientConsultationModal({
                         </Button>
                       </div>
                       </div>
+                      
+                      {/* Photo attachments preview */}
+                      {uploadedFiles.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs text-muted-foreground">Attachments ({uploadedFiles.length})</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {uploadedFiles.map((file, index) => (
+                              <div key={index} className="relative group border rounded-lg p-2 bg-card hover:bg-accent/50 transition-colors">
+                                <div className="flex items-start gap-2">
+                                  {/* Thumbnail */}
+                                  <div className="flex-shrink-0 w-12 h-12 rounded overflow-hidden bg-muted">
+                                    <img
+                                      src={URL.createObjectURL(file)}
+                                      alt={file.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  
+                                  {/* File info */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium truncate" title={file.name}>
+                                      {file.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {(file.size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Remove button */}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removeFile(index)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
