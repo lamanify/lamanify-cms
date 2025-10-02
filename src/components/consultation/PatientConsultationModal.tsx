@@ -923,6 +923,10 @@ export function PatientConsultationModal({
                           <Camera className="h-3 w-3 mr-1" />
                           Attach photo
                         </Button>
+                        <Button variant="outline" size="sm" className="h-7 text-xs">
+                          <Upload className="h-3 w-3 mr-1" />
+                          Upload file
+                        </Button>
                         <Button size="sm" onClick={saveConsultationNotes} variant={isDraftSaved ? "secondary" : "default"} className="h-7 text-xs">
                           <Save className="h-3 w-3 mr-1" />
                           {isDraftSaved ? "Draft Saved" : "Save"}
@@ -995,16 +999,6 @@ export function PatientConsultationModal({
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex space-x-1">
-                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setIsAppointmentDialogOpen(true)}>
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Set appointment
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-7 text-xs">
-                          <Upload className="h-3 w-3 mr-1" />
-                          Upload file
-                        </Button>
-                       </div>
                      </div>
                    </div>
 
@@ -1285,9 +1279,15 @@ export function PatientConsultationModal({
                 <Separator />
 
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-3 block">
-                    Patient Appointments
-                  </label>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Patient Appointments
+                    </label>
+                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setIsAppointmentDialogOpen(true)}>
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Set appointment
+                    </Button>
+                  </div>
                   {loadingAppointments ? <div className="flex items-center justify-center py-4">
                       <div className="text-xs text-muted-foreground">Loading appointments...</div>
                     </div> : appointments.length > 0 ? <div className="space-y-2 max-h-[400px] overflow-y-auto">
