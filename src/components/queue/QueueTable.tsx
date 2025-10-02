@@ -215,12 +215,15 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
   const getStatusDropdownOptions = (currentStatus: string) => {
     const options = [];
     
+    // Prevent priority changes for in_consultation, dispensary, or completed statuses
+    const isProtectedStatus = ['in_consultation', 'dispensary', 'completed'].includes(currentStatus);
+    
     // Always show revert to waiting option (except for completed)
     if (currentStatus !== 'waiting' && currentStatus !== 'completed') {
       options.push({ value: 'waiting', label: 'Mark as Waiting' });
     }
     
-    // Urgent option for waiting patients
+    // Urgent option only for waiting patients (not during consultation)
     if (currentStatus === 'waiting') {
       options.push({ value: 'urgent', label: 'Mark as Urgent' });
     }
@@ -242,8 +245,8 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
   };
 
   const getWaitTimeAlert = (waitTime: number) => {
-    if (waitTime >= 15) return 'text-red-600 font-semibold';
-    if (waitTime >= 10) return 'text-orange-600';
+    if (waitTime >= 30) return 'text-red-600 font-semibold';
+    if (waitTime >= 15) return 'text-orange-600';
     return 'text-muted-foreground';
   };
 
@@ -549,16 +552,21 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                           </div>
                         </div>
 
-                        {/* Wait Time - 12.5% */}
-                        <div className="w-[12.5%] px-2">
-                          <div className="text-center">
-                            <div className="text-xs text-muted-foreground">Wait Time</div>
-                            <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
-                              <Clock className="h-3 w-3" />
-                              {formatWaitTime(waitTime)}
-                            </div>
-                          </div>
-                        </div>
+                         {/* Wait Time - 12.5% */}
+                         <div className="w-[12.5%] px-2">
+                           <div className="text-center">
+                             <div className="text-xs text-muted-foreground">Wait Time</div>
+                             <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                               <Clock className="h-3 w-3" />
+                               {formatWaitTime(waitTime)}
+                               {waitTime >= 30 && (
+                                 <Badge variant="destructive" className="ml-1 text-xs">
+                                   ⚠️ SLA
+                                 </Badge>
+                               )}
+                             </div>
+                           </div>
+                         </div>
 
                         {/* Action Buttons */}
                         <div className="flex items-center space-x-2">
