@@ -310,457 +310,219 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
       )}
       
       {(() => {
-        // Separate urgent and regular patients
-        const urgentPatients = displayQueue.filter(entry => 
-          entry.status === 'urgent' || 
-          ((entry.patient as any)?.urgency_level === 'urgent' || (entry.patient as any)?.urgency_level === 'high')
-        );
-        const waitingPatients = displayQueue.filter(entry => 
-          entry.status === 'waiting' && 
-          !((entry.patient as any)?.urgency_level === 'urgent' || (entry.patient as any)?.urgency_level === 'high')
-        );
-        const otherPatients = displayQueue.filter(entry => 
-          !['waiting', 'urgent'].includes(entry.status) &&
-          !((entry.patient as any)?.urgency_level === 'urgent' || (entry.patient as any)?.urgency_level === 'high')
-        );
+        // Server-side ordering ensures deterministic queue across all clients
+        // Render in server order with section headers when section changes
+        let currentSection: 'urgent' | 'waiting' | 'other' | null = null;
+        const sections: JSX.Element[] = [];
 
-        return (
-          <>
-            {/* Urgent Patients Section */}
-            {urgentPatients.length > 0 && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="flex items-center gap-2 pb-2 border-b border-destructive/20">
+        displayQueue.forEach((entry, index) => {
+          const waitTime = getWaitTime(entry);
+          const isUrgent = entry.status === 'urgent' || 
+            ((entry.patient as any)?.urgency_level === 'urgent' || (entry.patient as any)?.urgency_level === 'high');
+          const isWaiting = entry.status === 'waiting' && !isUrgent;
+          
+          // Determine section for this entry
+          const section = isUrgent ? 'urgent' : isWaiting ? 'waiting' : 'other';
+          
+          // Add section header when section changes
+          if (section !== currentSection) {
+            currentSection = section;
+            
+            if (section === 'urgent') {
+              sections.push(
+                <div key={`header-urgent`} className="flex items-center gap-2 pb-2 border-b border-destructive/20 animate-fade-in">
                   <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
-                  <h3 className="text-lg font-semibold text-destructive">Urgent ({urgentPatients.length})</h3>
+                  <h3 className="text-lg font-semibold text-destructive">Urgent</h3>
                 </div>
-                <div className="space-y-3">
-                  {urgentPatients.map((entry) => {
-                    const waitTime = getWaitTime(entry);
-                    
-                    return (
-                       <div
-                         key={entry.id}
-                         onClick={() => handlePatientClick(entry)}
-                         className="flex items-center p-4 pr-16 rounded-lg border-2 border-destructive/30 bg-destructive/5 transition-all duration-200 cursor-pointer hover:border-destructive hover:bg-destructive/10 hover:-translate-y-1 hover:shadow-lg animate-scale-in"
-                       >
-                         {/* Queue Number and Status - 20% */}
-                         <div className="w-[20%] flex flex-col items-center space-y-1">
-                           <DropdownMenu>
-                             <DropdownMenuTrigger asChild>
-                               <div className="text-center cursor-pointer hover:bg-destructive/20 rounded-md p-2 transition-colors">
-                                 <div className="text-2xl font-bold flex items-center gap-1 text-destructive">
-                                   {entry.queue_number}
-                                   <ChevronDown className="h-4 w-4" />
-                                 </div>
-                                 <Badge variant="destructive" className="text-xs animate-pulse">
-                                   URGENT
-                                 </Badge>
-                               </div>
-                             </DropdownMenuTrigger>
-                             <DropdownMenuContent>
-                               {getStatusDropdownOptions(entry.status).map((option) => (
-                                 <DropdownMenuItem 
-                                   key={option.value}
-                                   onClick={() => onStatusChange(entry.id, option.value)}
-                                 >
-                                   {option.label}
-                                 </DropdownMenuItem>
-                               ))}
-                             </DropdownMenuContent>
-                           </DropdownMenu>
-                         </div>
-
-                         {/* Patient Info (Name) - 15% */}
-                         <div className="w-[15%] px-2">
-                           <div className="font-semibold text-lg text-foreground mb-2">
-                             {entry.patient?.first_name} {entry.patient?.last_name}
-                           </div>
-                           <div className="flex items-center gap-2">
-                             {entry.patient?.gender && (
-                               <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                 {entry.patient.gender.charAt(0).toUpperCase()}
-                               </span>
-                             )}
-                             {entry.patient?.date_of_birth && (
-                               <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                 {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
-                               </span>
-                             )}
-                           </div>
-                         </div>
-
-                          {/* Visit Notes - 30% */}
-                          <div className="w-[30%] px-2">
-                            <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
-                            <div className="text-sm text-foreground truncate">
-                            {(updatedPatients.get(entry.patient.id)?.additional_notes || 
-                              (entry.patient as any)?.additional_notes || 'No notes')}
-                            </div>
-                          </div>
-
-                         {/* Payment Method - 10% */}
-                         <div className="w-[10%] px-2">
-                           <div className="text-xs text-muted-foreground mb-1">Payment</div>
-                           <div className="text-sm font-medium">
-                             {(entry.patient as any)?.payment_method ? 
-                               getPaymentMethodDisplay((entry.patient as any).payment_method) : 
-                               'Not set'
-                             }
-                           </div>
-                         </div>
-
-                         {/* Arrived - 12.5% */}
-                         <div className="w-[12.5%] px-2">
-                           <div className="text-center">
-                             <div className="text-xs text-muted-foreground">Arrived</div>
-                             <div className="text-sm font-medium">
-                               {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                             </div>
-                           </div>
-                         </div>
-
-                         {/* Wait Time - 12.5% */}
-                         <div className="w-[12.5%] px-2">
-                           <div className="text-center">
-                             <div className="text-xs text-muted-foreground">Wait Time</div>
-                             <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
-                               <Clock className="h-3 w-3" />
-                               {formatWaitTime(waitTime)}
-                             </div>
-                           </div>
-                         </div>
-
-                         {/* Action Buttons */}
-                         <div className="flex items-center space-x-2">
-                           <Button
-                             size="sm"
-                             onClick={(e) => handleCallPatient(entry, e)}
-                             disabled={callingPatients.has(entry.id)}
-                             className="bg-primary hover:bg-primary/90"
-                           >
-                             {callingPatients.has(entry.id) ? 'Calling...' : 'Call Patient'}
-                           </Button>
-
-                           <Button
-                             size="sm"
-                             variant="destructive"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               handleOptimisticRemove(entry.id);
-                             }}
-                           >
-                             Remove
-                           </Button>
-                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Waiting Patients Section */}
-            {waitingPatients.length > 0 && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="flex items-center gap-2 pb-2 border-b border-muted">
+              );
+            } else if (section === 'waiting') {
+              sections.push(
+                <div key={`header-waiting`} className="flex items-center gap-2 pb-2 border-b border-muted animate-fade-in">
                   <User className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold text-foreground">Waiting ({waitingPatients.length})</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Waiting</h3>
                 </div>
-                <div className="space-y-3">
-                  {waitingPatients.map((entry) => {
-                    const waitTime = getWaitTime(entry);
-                    
-                    return (
-                      <div
-                        key={entry.id}
-                        onClick={() => handlePatientClick(entry)}
-                        className="flex items-center p-4 pr-16 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg bg-white"
+              );
+            }
+          }
+
+          // Render patient card
+          sections.push(
+            <div
+              key={entry.id}
+              onClick={() => handlePatientClick(entry)}
+              className={`flex items-center p-4 pr-16 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
+                isUrgent ? 'border-2 border-destructive/30 bg-destructive/5 hover:border-destructive hover:bg-destructive/10' :
+                entry.status === 'completed' ? 'bg-gray-100' :
+                'bg-white'
+              } animate-scale-in`}
+            >
+              {/* Queue Number and Status - 20% */}
+              <div className="w-[20%] flex flex-col items-center space-y-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
+                      <div className={`text-2xl font-bold flex items-center gap-1 ${
+                        isUrgent ? 'text-destructive' :
+                        entry.status === 'completed' ? 'text-gray-500' : 
+                        'text-primary'
+                      }`}>
+                        {entry.queue_number}
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
+                      <Badge 
+                        variant={isUrgent ? "destructive" : "outline"} 
+                        className={`text-xs ${isUrgent ? 'animate-pulse' : `border ${getStatusColor(entry.status, waitTime)}`}`}
                       >
-                        {/* Queue Number and Status - 20% */}
-                        <div className="w-[20%] flex flex-col items-center space-y-1">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
-                                <div className="text-2xl font-bold flex items-center gap-1 text-primary">
-                                  {entry.queue_number}
-                                  <ChevronDown className="h-4 w-4" />
-                                </div>
-                                 <Badge className={`text-xs border ${getStatusColor(entry.status, waitTime)}`}>
-                                   {getStatusLabel(entry.status)}
-                                 </Badge>
-                              </div>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              {getStatusDropdownOptions(entry.status).map((option) => (
-                                <DropdownMenuItem 
-                                  key={option.value}
-                                  onClick={() => onStatusChange(entry.id, option.value)}
-                                >
-                                  {option.label}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                        {isUrgent ? 'URGENT' : getStatusLabel(entry.status)}
+                      </Badge>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {getStatusDropdownOptions(entry.status).map((option) => (
+                      <DropdownMenuItem 
+                        key={option.value}
+                        onClick={() => onStatusChange(entry.id, option.value)}
+                      >
+                        {option.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-                        {/* Patient Info (Name) - 15% */}
-                        <div className="w-[15%] px-2">
-                          <div className="font-semibold text-lg text-foreground mb-2">
-                            {entry.patient?.first_name} {entry.patient?.last_name}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {entry.patient?.gender && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                {entry.patient.gender.charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                            {entry.patient?.date_of_birth && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                          {/* Visit Notes - 30% */}
-                          <div className="w-[30%] px-2">
-                            <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
-                            <div className="text-sm text-foreground truncate">
-                            {(updatedPatients.get(entry.patient.id)?.additional_notes || 
-                              entry.patient?.additional_notes || 'No notes')}
-                            </div>
-                          </div>
-
-                        {/* Payment Method - 10% */}
-                        <div className="w-[10%] px-2">
-                          <div className="text-xs text-muted-foreground mb-1">Payment</div>
-                          <div className="text-sm font-medium">
-                            {(entry.patient as any)?.payment_method ? 
-                              getPaymentMethodDisplay((entry.patient as any).payment_method) : 
-                              'Not set'
-                            }
-                          </div>
-                        </div>
-
-                        {/* Arrived - 12.5% */}
-                        <div className="w-[12.5%] px-2">
-                          <div className="text-center">
-                            <div className="text-xs text-muted-foreground">Arrived</div>
-                            <div className="text-sm font-medium">
-                              {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </div>
-                          </div>
-                        </div>
-
-                         {/* Wait Time - 12.5% */}
-                         <div className="w-[12.5%] px-2">
-                           <div className="text-center">
-                             <div className="text-xs text-muted-foreground">Wait Time</div>
-                             <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
-                               <Clock className="h-3 w-3" />
-                               {formatWaitTime(waitTime)}
-                               {waitTime >= 30 && (
-                                 <Badge variant="destructive" className="ml-1 text-xs">
-                                   ⚠️ SLA
-                                 </Badge>
-                               )}
-                             </div>
-                           </div>
-                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center space-x-2">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56 bg-popover border" sideOffset={4}>
-                              {getStatusDropdownOptions(entry.status).map((option) => (
-                                <DropdownMenuItem
-                                  key={option.value}
-                                  onClick={() => onStatusChange(entry.id, option.value)}
-                                  className="cursor-pointer"
-                                >
-                                  {option.label}
-                                </DropdownMenuItem>
-                              ))}
-                              <DropdownMenuItem
-                                onClick={() => setSelectedPatient(entry)}
-                                className="cursor-pointer"
-                              >
-                                Update Consultation
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleOptimisticRemove(entry.id)}
-                                className="cursor-pointer text-destructive focus:text-destructive"
-                              >
-                                Remove from Queue
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Patient Info (Name) - 15% */}
+              <div className="w-[15%] px-2">
+                <div className="font-semibold text-lg text-foreground mb-2">
+                  {entry.patient?.first_name} {entry.patient?.last_name}
+                </div>
+                <div className="flex items-center gap-2">
+                  {entry.patient?.gender && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                      {entry.patient.gender.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  {entry.patient?.date_of_birth && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                      {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
 
-            {/* Other Status Patients (In Consultation, Dispensary, etc.) */}
-            {otherPatients.length > 0 && (
-              <div className="space-y-3">
-                {otherPatients.map((entry) => {
-                  const waitTime = getWaitTime(entry);
-                  
-                  return (
-                    <div
-                      key={entry.id}
-                      onClick={() => handlePatientClick(entry)}
-                      className={`flex items-center p-4 pr-16 rounded-lg border transition-all duration-200 cursor-pointer hover:border-accent hover:bg-accent/5 hover:-translate-y-1 hover:shadow-lg ${
-                        entry.status === 'completed' ? 'bg-gray-100' :
-                        'bg-white'
-                      }`}
-                    >
-                      {/* Queue Number and Status - 20% */}
-                      <div className="w-[20%] flex flex-col items-center space-y-1">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <div className="text-center cursor-pointer hover:bg-accent/20 rounded-md p-2 transition-colors">
-                              <div className={`text-2xl font-bold flex items-center gap-1 ${entry.status === 'completed' ? 'text-gray-500' : 'text-primary'}`}>
-                                {entry.queue_number}
-                                <ChevronDown className="h-4 w-4" />
-                              </div>
-                              <Badge className={`text-xs border ${getStatusColor(entry.status, waitTime)}`}>
-                                {getStatusLabel(entry.status)}
-                              </Badge>
-                            </div>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            {getStatusDropdownOptions(entry.status).map((option) => (
-                              <DropdownMenuItem 
-                                key={option.value}
-                                onClick={() => onStatusChange(entry.id, option.value)}
-                              >
-                                {option.label}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Patient Info (Name) - 15% */}
-                      <div className="w-[15%] px-2">
-                        <div className="font-semibold text-lg text-foreground mb-2">
-                          {entry.patient?.first_name} {entry.patient?.last_name}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {entry.patient?.gender && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                              {entry.patient.gender.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                          {entry.patient?.date_of_birth && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                              {new Date().getFullYear() - new Date(entry.patient.date_of_birth).getFullYear()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                          {/* Visit Notes - 30% */}
-                          <div className="w-[30%] px-2">
-                            <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
-                            <div className="text-sm text-foreground truncate">
-                              {(updatedPatients.get(entry.patient.id)?.additional_notes || 
-                                (entry.patient as any)?.additional_notes || 'No notes')}
-                            </div>
-                          </div>
-
-                      {/* Payment Method - 10% */}
-                      <div className="w-[10%] px-2">
-                        <div className="text-xs text-muted-foreground mb-1">Payment</div>
-                        <div className="text-sm font-medium">
-                          {(entry.patient as any)?.payment_method ? 
-                            getPaymentMethodDisplay((entry.patient as any).payment_method) : 
-                            'Not set'
-                          }
-                        </div>
-                      </div>
-
-                      {/* Arrived - 12.5% */}
-                      <div className="w-[12.5%] px-2">
-                        <div className="text-center">
-                          <div className="text-xs text-muted-foreground">Arrived</div>
-                          <div className="text-sm font-medium">
-                            {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Wait Time - 12.5% */}
-                      <div className="w-[12.5%] px-2">
-                        <div className="text-center">
-                          <div className="text-xs text-muted-foreground">Wait Time</div>
-                          <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
-                            <Clock className="h-3 w-3" />
-                            {formatWaitTime(waitTime)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center space-x-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-56 bg-popover border" sideOffset={4}>
-                            {getStatusDropdownOptions(entry.status).map((option) => (
-                              <DropdownMenuItem
-                                key={option.value}
-                                onClick={() => onStatusChange(entry.id, option.value)}
-                                className="cursor-pointer"
-                              >
-                                {option.label}
-                              </DropdownMenuItem>
-                            ))}
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedPatient(entry);
-                                setIsModalOpen(true);
-                              }}
-                              className="cursor-pointer"
-                            >
-                              Update Consultation
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleOptimisticRemove(entry.id)}
-                              className="cursor-pointer text-destructive focus:text-destructive"
-                            >
-                              Remove from Queue
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Visit Notes - 30% */}
+              <div className="w-[30%] px-2">
+                <div className="text-xs text-muted-foreground mb-1">Visit Notes</div>
+                <div className="text-sm text-foreground truncate">
+                  {(updatedPatients.get(entry.patient.id)?.additional_notes || 
+                    entry.patient?.additional_notes || 'No notes')}
+                </div>
               </div>
-            )}
-          </>
-        );
+
+              {/* Payment Method - 10% */}
+              <div className="w-[10%] px-2">
+                <div className="text-xs text-muted-foreground mb-1">Payment</div>
+                <div className="text-sm font-medium">
+                  {(entry.patient as any)?.payment_method ? 
+                    getPaymentMethodDisplay((entry.patient as any).payment_method) : 
+                    'Not set'
+                  }
+                </div>
+              </div>
+
+              {/* Arrived - 12.5% */}
+              <div className="w-[12.5%] px-2">
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground">Arrived</div>
+                  <div className="text-sm font-medium">
+                    {new Date(entry.checked_in_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </div>
+                </div>
+              </div>
+
+              {/* Wait Time - 12.5% */}
+              <div className="w-[12.5%] px-2">
+                <div className="text-center">
+                  <div className="text-xs text-muted-foreground">Wait Time</div>
+                  <div className={`text-sm font-medium flex items-center justify-center gap-1 ${getWaitTimeAlert(waitTime)}`}>
+                    <Clock className="h-3 w-3" />
+                    {formatWaitTime(waitTime)}
+                    {waitTime >= 30 && isWaiting && (
+                      <Badge variant="destructive" className="ml-1 text-xs">
+                        ⚠️ SLA
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-2">
+                {isUrgent ? (
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={(e) => handleCallPatient(entry, e)}
+                      disabled={callingPatients.has(entry.id)}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      {callingPatients.has(entry.id) ? 'Calling...' : 'Call Patient'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOptimisticRemove(entry.id);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </>
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-popover border" sideOffset={4}>
+                      {getStatusDropdownOptions(entry.status).map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          onClick={() => onStatusChange(entry.id, option.value)}
+                          className="cursor-pointer"
+                        >
+                          {option.label}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedPatient(entry);
+                          setIsModalOpen(true);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        Update Consultation
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleOptimisticRemove(entry.id)}
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                      >
+                        Remove from Queue
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </div>
+          );
+        });
+
+        return <div className="space-y-3">{sections}</div>;
       })()}
       
       {/* Patient Consultation Modal */}

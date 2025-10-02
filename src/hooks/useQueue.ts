@@ -127,12 +127,14 @@ export function useQueue() {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // First get the queue entries
+      // First get the queue entries with server-side deterministic ordering
       const { data: queueData, error: queueError } = await supabase
         .from('patient_queue')
         .select('*')
         .eq('queue_date', today)
-        .order('created_at', { ascending: false });
+        .order('priority_rank', { ascending: false })
+        .order('checked_in_at', { ascending: true })
+        .order('id', { ascending: true });
 
       if (queueError) throw queueError;
       

@@ -2374,6 +2374,7 @@ export type Database = {
           estimated_consultation_duration: number | null
           id: string
           patient_id: string
+          priority_rank: number | null
           queue_date: string
           queue_number: string
           status: string
@@ -2388,6 +2389,7 @@ export type Database = {
           estimated_consultation_duration?: number | null
           id?: string
           patient_id: string
+          priority_rank?: number | null
           queue_date?: string
           queue_number: string
           status?: string
@@ -2402,6 +2404,7 @@ export type Database = {
           estimated_consultation_duration?: number | null
           id?: string
           patient_id?: string
+          priority_rank?: number | null
           queue_date?: string
           queue_number?: string
           status?: string
