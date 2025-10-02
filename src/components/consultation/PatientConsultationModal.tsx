@@ -1008,53 +1008,6 @@ export function PatientConsultationModal({
                      </div>
                    </div>
 
-                   {/* Appointments Table */}
-                   <div className="border rounded-lg overflow-hidden">
-                     <div className="text-white p-3 bg-slate-950">
-                       <h3 className="font-medium text-sm">Patient Appointments</h3>
-                     </div>
-                     <div className="p-4">
-                       {loadingAppointments ? <div className="flex items-center justify-center py-8">
-                           <div className="text-sm text-muted-foreground">Loading appointments...</div>
-                         </div> : appointments.length > 0 ? <div className="overflow-x-auto">
-                           <table className="w-full text-sm">
-                             <thead>
-                               <tr className="border-b">
-                                 <th className="text-left p-2 font-medium text-muted-foreground">Date</th>
-                                 <th className="text-left p-2 font-medium text-muted-foreground">Time</th>
-                                 <th className="text-left p-2 font-medium text-muted-foreground">Reason</th>
-                                 <th className="text-left p-2 font-medium text-muted-foreground">Doctor</th>
-                                 <th className="text-left p-2 font-medium text-muted-foreground">Status</th>
-                               </tr>
-                             </thead>
-                             <tbody>
-                               {appointments.map(appointment => <tr key={appointment.id} className="border-b hover:bg-muted/50">
-                                   <td className="p-2">
-                                     {format(new Date(appointment.appointment_date), 'MMM dd, yyyy')}
-                                   </td>
-                                   <td className="p-2">
-                                     {appointment.appointment_time}
-                                   </td>
-                                   <td className="p-2">
-                                     {appointment.reason}
-                                   </td>
-                                   <td className="p-2">
-                                     {appointment.doctor_name || 'Not assigned'}
-                                   </td>
-                                   <td className="p-2">
-                                     <Badge variant={appointment.status === 'completed' ? 'default' : appointment.status === 'scheduled' ? 'secondary' : appointment.status === 'cancelled' ? 'destructive' : 'outline'} className="text-xs">
-                                       {appointment.status}
-                                     </Badge>
-                                   </td>
-                                 </tr>)}
-                             </tbody>
-                           </table>
-                         </div> : <div className="text-center py-8 text-muted-foreground">
-                           <p className="text-sm">No appointments found</p>
-                           <p className="text-xs mt-1">Appointments created during consultation will appear here</p>
-                         </div>}
-                     </div>
-                   </div>
                  </TabsContent>
 
                 <TabsContent value="treatment" className="flex-1 p-4 space-y-4 overflow-y-auto m-0">
@@ -1333,19 +1286,31 @@ export function PatientConsultationModal({
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-3 block">
-                    Previous Consultation Notes
+                    Patient Appointments
                   </label>
-                  {loadingPreviousVisits ? <div className="flex items-center justify-center py-4">
-                      <div className="text-xs text-muted-foreground">Loading previous notes...</div>
-                    </div> : previousVisits.length > 0 ? <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                      {previousVisits.map((visit, index) => <div key={index} className="p-3 bg-background rounded border text-sm">
-                          <div className="text-xs text-muted-foreground mb-1">
-                            {format(new Date(visit.visit_date), 'MMM dd, yyyy')}
+                  {loadingAppointments ? <div className="flex items-center justify-center py-4">
+                      <div className="text-xs text-muted-foreground">Loading appointments...</div>
+                    </div> : appointments.length > 0 ? <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {appointments.map(appointment => <div key={appointment.id} className="p-3 bg-background rounded border hover:bg-muted/50">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(appointment.appointment_date), 'MMM dd, yyyy')}
+                            </div>
+                            <Badge variant={appointment.status === 'completed' ? 'default' : appointment.status === 'scheduled' ? 'secondary' : appointment.status === 'cancelled' ? 'destructive' : 'outline'} className="text-xs">
+                              {appointment.status}
+                            </Badge>
                           </div>
-                          <p className="text-sm line-clamp-3">{visit.consultation_notes}</p>
+                          <div className="text-sm font-medium mb-1">{appointment.reason}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Time: {appointment.appointment_time}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Doctor: {appointment.doctor_name || 'Not assigned'}
+                          </div>
                         </div>)}
                     </div> : <div className="text-xs text-muted-foreground text-center py-4">
-                      No previous consultation notes found
+                      <p>No appointments found</p>
+                      <p className="mt-1">Appointments will appear here</p>
                     </div>}
                 </div>
               </div>
