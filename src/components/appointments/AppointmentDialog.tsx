@@ -356,22 +356,6 @@ export function AppointmentDialog({ open, onOpenChange, appointment, onSave, pre
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Resources</Label>
-            <div className="flex items-center gap-2">
-              <UIButton
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowResourceModal(true)}
-                className="flex items-center gap-2"
-              >
-                <MapPin className="h-4 w-4" />
-                Select Resources ({selectedResources.length})
-              </UIButton>
-            </div>
-          </div>
-
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
