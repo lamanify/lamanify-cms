@@ -856,7 +856,7 @@ export function PatientConsultationModal({
                        <Textarea placeholder="Type your consultation notes here" value={consultationNotes} onChange={e => {
                       setConsultationNotes(e.target.value);
                       handleEditingChange();
-                    }} className="min-h-[100px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
+                    }} className="min-h-[150px] mb-3 resize-none text-sm" disabled={consultationStatus === 'waiting'} />
                        
                        <div className="flex gap-2 mb-3">
                          <Button
