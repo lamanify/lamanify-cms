@@ -316,11 +316,23 @@ export function useQueue() {
     }
   };
 
-  const updateQueueStatus = async (queueId: string, status: QueueEntry['status'], doctorId?: string) => {
+  const updateQueueStatus = async (queueId: string, status: QueueEntry['status'], doctorId?: string, expectedVersion?: number) => {
     try {
+      // Get current version if not provided
+      if (expectedVersion === undefined) {
+        const { data: currentEntry } = await supabase
+          .from('patient_queue')
+          .select('version')
+          .eq('id', queueId)
+          .single();
+        
+        expectedVersion = currentEntry?.version || 1;
+      }
+
       const updates: any = { 
         status,
-        updated_at: new Date().toISOString() // Force updated_at to trigger real-time
+        version: expectedVersion + 1,
+        updated_at: new Date().toISOString()
       };
       
       if (status === 'in_consultation') {
@@ -330,14 +342,21 @@ export function useQueue() {
         updates.consultation_completed_at = new Date().toISOString();
       }
 
-      console.log('Updating queue status:', { queueId, status, updates });
+      console.log('Updating queue status:', { queueId, status, updates, expectedVersion });
 
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('patient_queue')
         .update(updates)
-        .eq('id', queueId);
+        .eq('id', queueId)
+        .eq('version', expectedVersion)
+        .select();
 
       if (error) throw error;
+
+      // Check if update was successful (row was actually updated)
+      if (!data || data.length === 0) {
+        throw new Error('CONCURRENT_UPDATE_CONFLICT');
+      }
 
       // Handle session finalization when status becomes "completed"
       if (status === 'completed') {
@@ -350,8 +369,15 @@ export function useQueue() {
         title: "Status Updated",
         description: `Patient status changed to ${status.replace('_', ' ')}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating queue status:', error);
+      
+      if (error.message === 'CONCURRENT_UPDATE_CONFLICT') {
+        // Refresh queue data to show latest state
+        await fetchQueue();
+        throw new Error('Another user has modified this patient. Please try again.');
+      }
+      
       toast({
         title: "Error",
         description: "Failed to update patient status",

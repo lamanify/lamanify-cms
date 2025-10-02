@@ -8,10 +8,11 @@ import { DispensaryModal } from '@/components/queue/DispensaryModal';
 import { useConsultationWorkflow } from '@/hooks/useConsultationWorkflow';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface QueueTableProps {
   queue: QueueEntry[];
-  onStatusChange: (queueId: string, newStatus: string) => void;
+  onStatusChange: (queueId: string, newStatus: string, doctorId?: string, expectedVersion?: number) => void;
   onRemoveFromQueue: (queueId: string) => void;
   onDataRefresh?: () => Promise<void>;
   isPaused: boolean;
@@ -24,7 +25,9 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
   const [removedEntries, setRemovedEntries] = useState<Set<string>>(new Set());
   const [updatedPatients, setUpdatedPatients] = useState<Map<string, any>>(new Map());
   const [callingPatients, setCallingPatients] = useState<Set<string>>(new Set());
+  const [updatingStatus, setUpdatingStatus] = useState<Set<string>>(new Set());
   const { completeConsultationWorkflow } = useConsultationWorkflow();
+  const { toast } = useToast();
 
   // Real-time subscription for patient visit notes updates
   useEffect(() => {
@@ -485,16 +488,43 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                         size="sm"
                         variant="outline"
                         onClick={(e) => e.stopPropagation()}
+                        disabled={updatingStatus.has(entry.id)}
                       >
-                        <Edit className="h-4 w-4" />
+                        {updatingStatus.has(entry.id) ? (
+                          <span className="text-xs">Updating...</span>
+                        ) : (
+                          <Edit className="h-4 w-4" />
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-popover border" sideOffset={4}>
                       {getStatusDropdownOptions(entry.status).map((option) => (
                         <DropdownMenuItem
                           key={option.value}
-                          onClick={() => onStatusChange(entry.id, option.value)}
+                          onClick={async () => {
+                            if (updatingStatus.has(entry.id)) return;
+                            
+                            try {
+                              setUpdatingStatus(prev => new Set([...prev, entry.id]));
+                              const currentVersion = (entry as any)?.version;
+                              await onStatusChange(entry.id, option.value, undefined, currentVersion);
+                            } catch (error: any) {
+                              console.error('Error updating status:', error);
+                              toast({
+                                title: "Update Conflict",
+                                description: error.message || "Another user modified this patient. Data refreshed.",
+                                variant: "destructive"
+                              });
+                            } finally {
+                              setUpdatingStatus(prev => {
+                                const newSet = new Set(prev);
+                                newSet.delete(entry.id);
+                                return newSet;
+                              });
+                            }
+                          }}
                           className="cursor-pointer"
+                          disabled={updatingStatus.has(entry.id)}
                         >
                           {option.label}
                         </DropdownMenuItem>
@@ -505,12 +535,14 @@ export function QueueTable({ queue, onStatusChange, onRemoveFromQueue, onDataRef
                           setIsModalOpen(true);
                         }}
                         className="cursor-pointer"
+                        disabled={updatingStatus.has(entry.id)}
                       >
                         Update Consultation
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleOptimisticRemove(entry.id)}
                         className="cursor-pointer text-destructive focus:text-destructive"
+                        disabled={updatingStatus.has(entry.id)}
                       >
                         Remove from Queue
                       </DropdownMenuItem>

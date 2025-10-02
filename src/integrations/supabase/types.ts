@@ -2379,6 +2379,7 @@ export type Database = {
           queue_number: string
           status: string
           updated_at: string
+          version: number
         }
         Insert: {
           assigned_doctor_id?: string | null
@@ -2394,6 +2395,7 @@ export type Database = {
           queue_number: string
           status?: string
           updated_at?: string
+          version?: number
         }
         Update: {
           assigned_doctor_id?: string | null
@@ -2409,6 +2411,7 @@ export type Database = {
           queue_number?: string
           status?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
