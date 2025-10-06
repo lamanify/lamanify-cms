@@ -20,7 +20,7 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
-  const { tenant, isInGracePeriod } = useSubscriptionGuard();
+  const { tenant, isInGracePeriod, isSuperAdmin } = useSubscriptionGuard();
 
   if (loading) {
     return (
@@ -34,12 +34,17 @@ export default function Dashboard() {
     return <Navigate to="/auth" replace />;
   }
 
-  return <DashboardContent tenant={tenant} isInGracePeriod={isInGracePeriod} />;
+  return <DashboardContent tenant={tenant} isInGracePeriod={isInGracePeriod} isSuperAdmin={isSuperAdmin} />;
 }
 
-function DashboardContent({ tenant, isInGracePeriod }: { 
+function DashboardContent({ 
+  tenant, 
+  isInGracePeriod, 
+  isSuperAdmin 
+}: { 
   tenant: any; 
-  isInGracePeriod: boolean; 
+  isInGracePeriod: boolean;
+  isSuperAdmin: boolean;
 }) {
   const { profile } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
@@ -87,15 +92,28 @@ function DashboardContent({ tenant, isInGracePeriod }: {
     <div className="min-h-screen bg-background">
       {/* Main Content */}
       <div className="p-8 space-y-12">
-        {/* Past Due Banner - Show if in grace period */}
-        {isInGracePeriod && tenant?.grace_period_ends_at && (
+        {/* Past Due Banner - Only show for regular users in grace period */}
+        {!isSuperAdmin && isInGracePeriod && tenant?.grace_period_ends_at && (
           <PastDueBanner gracePeriodEndsAt={tenant.grace_period_ends_at} />
+        )}
+
+        {/* Super Admin Indicator */}
+        {isSuperAdmin && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-blue-800 font-medium text-sm">
+                🔑 Super Admin Mode - Full system access enabled
+              </span>
+            </div>
+          </div>
         )}
 
         {/* Welcome Message */}
         <div className="border-b border-border pb-6">
           <h1 className="text-2xl font-medium text-foreground mb-1">
             Welcome back, {profile?.first_name || 'User'}
+            {isSuperAdmin && <span className="text-blue-600 ml-2">(Super Admin)</span>}
           </h1>
           <p className="text-sm text-muted-foreground">
             {new Date().toLocaleDateString('en-US', { 
