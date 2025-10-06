@@ -29,8 +29,10 @@ import ResetPassword from "@/pages/ResetPassword";
 import PublicBooking from "@/pages/PublicBooking";
 import Pricing from "@/pages/Pricing";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
+import InactiveSubscription from "@/pages/InactiveSubscription";
 import NotFound from "./pages/NotFound";
 import NoCacheWrapper from "@/components/NoCacheWrapper";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +43,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Public Routes - No subscription required */}
           <Route 
             path="/auth" 
             element={
@@ -60,26 +63,94 @@ const App = () => (
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/book" element={<PublicBooking />} />
-          <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route path="/patients" element={<AppLayout><Patients /></AppLayout>} />
-          <Route path="/queue" element={<AppLayout><Queue /></AppLayout>} />
-          <Route path="/display" element={<QueueDisplay />} />
-          <Route path="/appointments" element={<AppLayout><Appointments /></AppLayout>} />
-          <Route path="/appointments/calendar" element={<AppLayout><CalendarView /></AppLayout>} />
-          <Route path="/appointments/waitlist" element={<AppLayout><WaitlistManager /></AppLayout>} />
-          {/* <Route path="/analytics" element={<AppLayout><Analytics /></AppLayout>} /> */}
-          <Route path="/resources" element={<AppLayout><ResourceManagement /></AppLayout>} />
-          <Route path="/consultations" element={<AppLayout><Consultations /></AppLayout>} />
-          {/* <Route path="/consultation-waiting" element={<AppLayout><ConsultationWaitingList /></AppLayout>} /> */}
-          <Route path="/consultation/:sessionId" element={<AppLayout><ConsultationInterface /></AppLayout>} />
+          <Route path="/billing/inactive" element={<InactiveSubscription />} />
+          
+          {/* Billing Routes - Accessible for payment updates (NOT protected) */}
           <Route path="/billing" element={<AppLayout><Billing /></AppLayout>} />
           <Route path="/billing/outstanding-panel" element={<AppLayout><OutstandingPanelBilling /></AppLayout>} />
-          <Route path="/panel/invoice" element={<AppLayout><PanelInvoice /></AppLayout>} />
-          <Route path="/panel-claims" element={<AppLayout><PanelClaims /></AppLayout>} />
-          <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
-          <Route path="/settings/clinic" element={<AppLayout><ClinicSettings /></AppLayout>} />
-          <Route path="/inventory/alerts/low-stock" element={<AppLayout><LowStockAlertsPage /></AppLayout>} />
-          <Route path="/inventory/alerts/expiry" element={<AppLayout><ExpiryAlertsPage /></AppLayout>} />
+          
+          {/* Protected Routes - Require active subscription */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <AppLayout><Dashboard /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/patients" element={
+            <ProtectedRoute>
+              <AppLayout><Patients /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/queue" element={
+            <ProtectedRoute>
+              <AppLayout><Queue /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/display" element={
+            <ProtectedRoute>
+              <QueueDisplay />
+            </ProtectedRoute>
+          } />
+          <Route path="/appointments" element={
+            <ProtectedRoute>
+              <AppLayout><Appointments /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/appointments/calendar" element={
+            <ProtectedRoute>
+              <AppLayout><CalendarView /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/appointments/waitlist" element={
+            <ProtectedRoute>
+              <AppLayout><WaitlistManager /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/resources" element={
+            <ProtectedRoute>
+              <AppLayout><ResourceManagement /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/consultations" element={
+            <ProtectedRoute>
+              <AppLayout><Consultations /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/consultation/:sessionId" element={
+            <ProtectedRoute>
+              <AppLayout><ConsultationInterface /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/panel/invoice" element={
+            <ProtectedRoute>
+              <AppLayout><PanelInvoice /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/panel-claims" element={
+            <ProtectedRoute>
+              <AppLayout><PanelClaims /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <AppLayout><Settings /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/settings/clinic" element={
+            <ProtectedRoute>
+              <AppLayout><ClinicSettings /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/inventory/alerts/low-stock" element={
+            <ProtectedRoute>
+              <AppLayout><LowStockAlertsPage /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/inventory/alerts/expiry" element={
+            <ProtectedRoute>
+              <AppLayout><ExpiryAlertsPage /></AppLayout>
+            </ProtectedRoute>
+          } />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
