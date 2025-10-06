@@ -18,18 +18,21 @@ export function useSubscriptionGuard() {
 
   useEffect(() => {
     async function checkSubscription() {
+      // If no user or profile yet, keep loading
       if (!user || !profile) {
         setLoading(false);
         return;
       }
 
-      // Super admin bypasses all checks
+      // Super admin bypasses ALL checks - immediate access
       if (profile.role === 'super_admin') {
         setHasAccess(true);
         setLoading(false);
-        return;
+        setTenant(null); // Super admin doesn't need tenant info
+        return; // Exit early, no navigation
       }
 
+      // Regular users need tenant validation
       if (!profile.tenant_id) {
         setHasAccess(false);
         setLoading(false);
@@ -93,12 +96,18 @@ export function useSubscriptionGuard() {
     checkSubscription();
   }, [user, profile, navigate]);
 
+  // For super admins, return immediate access with no tenant restrictions
+  const isSuperAdmin = profile?.role === 'super_admin';
+  
   return { 
     loading, 
-    hasAccess, 
-    tenant,
-    isInGracePeriod: tenant?.subscription_status === 'past_due' && 
-                     tenant?.grace_period_ends_at && 
-                     new Date(tenant.grace_period_ends_at) > new Date()
+    hasAccess: isSuperAdmin ? true : hasAccess, 
+    tenant: isSuperAdmin ? null : tenant,
+    isInGracePeriod: isSuperAdmin ? false : (
+      tenant?.subscription_status === 'past_due' && 
+      tenant?.grace_period_ends_at && 
+      new Date(tenant.grace_period_ends_at) > new Date()
+    ),
+    isSuperAdmin
   };
 }
