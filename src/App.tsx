@@ -28,6 +28,7 @@ import { WaitlistManager } from "@/components/appointments/WaitlistManager";
 import ResetPassword from "@/pages/ResetPassword";
 import PublicBooking from "@/pages/PublicBooking";
 import NotFound from "./pages/NotFound";
+import NoCacheWrapper from "@/components/NoCacheWrapper";
 
 const queryClient = new QueryClient();
 
@@ -38,8 +39,22 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route 
+            path="/auth" 
+            element={
+              <NoCacheWrapper>
+                <AuthPage />
+              </NoCacheWrapper>
+            } 
+          />
+          <Route 
+            path="/reset-password" 
+            element={
+              <NoCacheWrapper>
+                <ResetPassword />
+              </NoCacheWrapper>
+            } 
+          />
           <Route path="/book" element={<PublicBooking />} />
           <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/patients" element={<AppLayout><Patients /></AppLayout>} />
