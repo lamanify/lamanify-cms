@@ -159,7 +159,7 @@ const App = () => (
           <Route path="/inventory/alerts/expiry" element={
             <ProtectedRoute>
               <AppLayout><ExpiryAlertsPage /></AppLayout>
-            </ProtectedRole>
+            </ProtectedRoute>
           } />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
