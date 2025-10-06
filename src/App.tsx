@@ -27,6 +27,8 @@ import Analytics from "@/pages/Analytics";
 import { WaitlistManager } from "@/components/appointments/WaitlistManager";
 import ResetPassword from "@/pages/ResetPassword";
 import PublicBooking from "@/pages/PublicBooking";
+import Pricing from "@/pages/Pricing";
+import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
 import NoCacheWrapper from "@/components/NoCacheWrapper";
 
@@ -55,6 +57,8 @@ const App = () => (
               </NoCacheWrapper>
             } 
           />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/book" element={<PublicBooking />} />
           <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/patients" element={<AppLayout><Patients /></AppLayout>} />
