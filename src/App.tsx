@@ -28,6 +28,7 @@ import { WaitlistManager } from "@/components/appointments/WaitlistManager";
 import ResetPassword from "@/pages/ResetPassword";
 import PublicBooking from "@/pages/PublicBooking";
 import Pricing from "@/pages/Pricing";
+import ProductPage from "@/pages/ProductPage";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import InactiveSubscription from "@/pages/InactiveSubscription";
 import NotFound from "./pages/NotFound";
@@ -60,6 +61,9 @@ const App = () => (
               </NoCacheWrapper>
             } 
           />
+          
+          {/* Product and Marketing Pages */}
+          <Route path="/product" element={<ProductPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/book" element={<PublicBooking />} />
