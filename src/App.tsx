@@ -30,6 +30,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import PublicBooking from "@/pages/PublicBooking";
 import Pricing from "@/pages/Pricing";
 import ProductPage from "@/pages/ProductPage";
+import Landing from "@/pages/Landing";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import InactiveSubscription from "@/pages/InactiveSubscription";
 import NotFound from "./pages/NotFound";
@@ -45,7 +46,10 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public Routes with Public Layout */}
+          {/* Public Routes with layouts */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/home" element={<Landing />} />
+          
           <Route path="/product" element={
             <PublicLayout>
               <ProductPage />
@@ -81,7 +85,7 @@ const App = () => (
           <Route path="/billing/outstanding-panel" element={<AppLayout><OutstandingPanelBilling /></AppLayout>} />
           
           {/* Protected Routes - Require active subscription */}
-          <Route path="/" element={
+          <Route path="/dashboard" element={
             <ProtectedRoute>
               <AppLayout><Dashboard /></AppLayout>
             </ProtectedRoute>
