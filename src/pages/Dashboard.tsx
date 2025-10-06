@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscriptionGuard } from '@/hooks/useSubscriptionGuard';
+import { PastDueBanner } from '@/components/PastDueBanner';
 import { DashboardTopBar } from '@/components/dashboard/DashboardTopBar';
 import { SummaryCards } from '@/components/dashboard/SummaryCards';
 import { PatientStatisticsChart } from '@/components/dashboard/PatientStatisticsChart';
@@ -18,6 +20,7 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
+  const { tenant, isInGracePeriod } = useSubscriptionGuard();
 
   if (loading) {
     return (
@@ -31,10 +34,13 @@ export default function Dashboard() {
     return <Navigate to="/auth" replace />;
   }
 
-  return <DashboardContent />;
+  return <DashboardContent tenant={tenant} isInGracePeriod={isInGracePeriod} />;
 }
 
-function DashboardContent() {
+function DashboardContent({ tenant, isInGracePeriod }: { 
+  tenant: any; 
+  isInGracePeriod: boolean; 
+}) {
   const { profile } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 1500,
@@ -81,6 +87,11 @@ function DashboardContent() {
     <div className="min-h-screen bg-background">
       {/* Main Content */}
       <div className="p-8 space-y-12">
+        {/* Past Due Banner - Show if in grace period */}
+        {isInGracePeriod && tenant?.grace_period_ends_at && (
+          <PastDueBanner gracePeriodEndsAt={tenant.grace_period_ends_at} />
+        )}
+
         {/* Welcome Message */}
         <div className="border-b border-border pb-6">
           <h1 className="text-2xl font-medium text-foreground mb-1">
