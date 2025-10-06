@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PublicLayout } from "@/components/layout/PublicLayout";
 import Dashboard from "@/pages/Dashboard";
 import Patients from "@/pages/Patients";
 import Queue from "@/pages/Queue";
@@ -44,7 +45,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public Routes - No subscription required */}
+          {/* Public Routes with Public Layout */}
+          <Route path="/product" element={
+            <PublicLayout>
+              <ProductPage />
+            </PublicLayout>
+          } />
+          
+          {/* Auth Routes - No layout */}
           <Route 
             path="/auth" 
             element={
@@ -62,8 +70,7 @@ const App = () => (
             } 
           />
           
-          {/* Product and Marketing Pages */}
-          <Route path="/product" element={<ProductPage />} />
+          {/* Other Public Routes */}
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/book" element={<PublicBooking />} />
@@ -152,7 +159,7 @@ const App = () => (
           <Route path="/inventory/alerts/expiry" element={
             <ProtectedRoute>
               <AppLayout><ExpiryAlertsPage /></AppLayout>
-            </ProtectedRoute>
+            </ProtectedRole>
           } />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
