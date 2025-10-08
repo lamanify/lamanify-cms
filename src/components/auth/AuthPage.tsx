@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { Activity } from 'lucide-react';
-import { disableCaching } from '@/utils/cacheUtils';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,14 +26,6 @@ export default function AuthPage() {
     lastName: '',
   });
 
-  useEffect(() => {
-    // Disable caching and clear stale auth
-    disableCaching();
-    
-    // Clear any existing session
-    supabase.auth.signOut();
-  }, []);
-
   // Redirect if already authenticated
   if (user) {
     return <Navigate to="/" replace />;
@@ -45,13 +35,7 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
     
-    const result = await signIn(signInData.email, signInData.password);
-    
-    if (!result.error) {
-      // Force navigation without cache
-      window.location.href = '/dashboard';
-    }
-    
+    await signIn(signInData.email, signInData.password);
     setIsLoading(false);
   };
 
